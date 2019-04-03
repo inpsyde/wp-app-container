@@ -141,7 +141,7 @@ class EnvConfig implements SiteConfig
 
         // Try alt-namespaced constant
         if ($this->altNamespace && defined("\\{$this->altNamespace}\\{$constantName}")) {
-            $this->data[$constantName] = constant("\\{$this->namespace}\\{$constantName}");
+            $this->data[$constantName] = constant("\\{$this->altNamespace}\\{$constantName}");
 
             return $this->data[$constantName];
         }
