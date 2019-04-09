@@ -73,7 +73,7 @@ class Container extends Pimple implements ContainerInterface
      * @param ContainerInterface $container
      * @return Container
      */
-    final public function pushContainer(ContainerInterface $container): Container
+    final public function addContainer(ContainerInterface $container): Container
     {
         $this->wrappedContainers[] = $container;
 
