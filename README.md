@@ -7,7 +7,6 @@
 ---
 
 
-
 ## Table of Contents
 
 - [What is and what is not](#what-is-and-what-is-not)
@@ -29,8 +28,9 @@
   - [Composing the container](#composing-the-container)
   - [Simple service provider example](#simple-service-provider-example)
   - [Service provider example using any PSR-11 container](#service-provider-example-using-any-psr-11-container)
-- [Advanced topics](#advanced-topics)
   - [Website-level providers](#website-level-providers)
+  - [Providers Package](#providers-package)
+- [Advanced topics](#advanced-topics)
   - [Custom boot hook](#custom-boot-hook)
   - [Building custom container upfront](#building-custom-container-upfront)
   - [Resolve objects outside providers](#resolve-objects-outside-providers)
@@ -104,7 +104,7 @@ The "website" package, that will glue together all packages, needs to only inter
 <?php
 namespace AcmeInc;
 
-Inpsyde\App\App::createAndBoot(__NAMESPACE__);
+\Inpsyde\App\App::createAndBoot(__NAMESPACE__);
 ```
 
 That's it. This code should probably go in a MU plugin (in any case before `"plugins_loaded"` action is fired).
@@ -122,6 +122,7 @@ This one-liner will create the relevant objects and will fire actions that will 
 At package level there are two ways to integrate: directly registering services leveraging the Pimple implementation or adding full containers. In both cases the first step is to add providers to the App:
 
 ```php
+<?php
 namespace AcmeInc\Foo;
 
 use Inpsyde\App\App;
@@ -173,13 +174,15 @@ This hook is fired right after any provider is registered. Using this hook it is
 <?php
 namespace AcmeInc\Foo\Extension;
 
+use Inpsyde\App\App;
+use Inpsyde\App\Context;
 use AcmeInc\Foo\MainProvider;
 
 add_action(
     App::ACTION_REGISTERED_PROVIDER,
     function (string $providerId, App $app) {
         if ($providerId === MainProvider::class) {
-            $app->addProvider(new ExtensionProvider(), Context::CORE)
+            $app->addProvider(new ExtensionProvider(), Context::CORE);
         }
     },
     10,
@@ -303,6 +306,7 @@ Receiving an instance of the `Conatiner` service providers can _add_ things to i
 <?php
 namespace AcmeInc\Redirector;
 
+use Inpsyde\App\Container;
 use Inpsyde\App\Provider\Booted;
 
 final class Provider extends Booted {
@@ -313,11 +317,11 @@ final class Provider extends Booted {
     {
         $container[Config::class] = static function (Container $container) {
             return Config::load($container->env()->get(self::CONFIG_KEY));
-        }
+        };
         
         $container[Redirector::class] = static function (Container $container) {
             return new Redirector($container->get(Config::class));
-        }
+        };
     }
     
     public function boot(Container $container): void
@@ -347,6 +351,7 @@ In the following example I will use [PHP-DI](http://php-di.org) but really any P
 namespace AcmeInc\Redirector;
 
 use Inpsyde\App\Provider\Booted;
+use Inpsyde\App\Container;
 
 final class Provider extends Booted {
    
@@ -381,12 +386,6 @@ final class Provider extends Booted {
 
 Please refer to [PHP-DI documentation](http://php-di.org/doc/) to better understand the code, but again, any PSR-11 compatible Container can be "pushed" to the library Container.
 
-
-
-## Advanced topics
-
-
-
 ### Website-level providers
 
 `App::createAndBoot()` returns an instance of the `App` so that it is possible to add providers on the spot, without having to hook `App::ACTION_ADD_PROVIDERS`. This allow to immediately add packages shipped at website level.
@@ -394,11 +393,58 @@ Please refer to [PHP-DI documentation](http://php-di.org/doc/) to better underst
 ```php
 namespace AcmeInc;
 
-Inpsyde\App\App::createAndBoot(__NAMESPACE__)
+\Inpsyde\App\App::createAndBoot(__NAMESPACE__)
     ->addProvider(new SomeWebsiteProvider())
     ->addProvider(new AnotherWebsiteProvider());
 ```
 
+### Providers Package
+
+Often times, when using this package, we found in the need of creating a "package" that is no more than a "collection" of providers.
+Not being a plugin or MU plugin, this package needs to be "loaded" manually, because WordPress will not load it, and using autoload
+for the purpose is not really doable, because using a "file" autoload strategy, the file would be loaded too early, before WP environment is loaded.
+
+The suggested way to deal with this issue is to "load" the package from the same MU plugin that bootstrap the application.
+To ease this workflow, the package provides a `ServiceProviders` class, which resemble a collection of providers.
+
+For example, let's assume we are creating a package to provide an authorization system to our application.
+
+The reason why we will create a "library" and not a plugin is that there should be no way to "deactivate" it, being a core feature of the app, and also more plugins will require it as a dependency.
+
+What we would do in the package is to create a package class, that will implement `Inpsyde\App\Provider\Package`: a very simple interface with a single method: `Package::providers()`.
+
+```php
+<?php
+namespace AcmeInc\Auth;
+
+use Inpsyde\App\Provider;
+use Inpsyde\App\Context;
+
+class Auth implements Provider\Package
+{
+    public function providers(): Provider\ServiceProviders
+    {
+        return Provider\ServiceProviders::new()
+            ->add(new CoreProvider(), Context::CORE)
+            ->add(new AdminProvider(), Context::BACKOFFICE, Context::AJAX)
+            ->add(new RestProvider(), Context::REST, Context::AJAX)
+            ->add(new FrontProvider(), Context::FRONTOFFICE, Context::AJAX);
+    }
+}
+```
+
+With such class in place (and autoloadable), in the MU plugin that bootstrap the application we could do:
+
+```php
+<?php
+namespace AcmeInc;
+
+\Inpsyde\App\App::createAndBoot(__NAMESPACE__)
+    ->addPackage(new Auth\Auth());
+```
+
+
+## Advanced topics
 
 
 ### Custom boot hook
@@ -408,7 +454,10 @@ As described above, `createAndBoot` "boots" the service providers in two moments
 While the latter can not be modified, the first bootstrapping, used for the "early booted" providers, can be customized. To do so, it is necessary to manually create an instance of `App` and call `App::boot()` method at the preferred hook.
 
 ```php
+<?php
 namespace AcmeInc;
+
+use Inpsyde\App\App;
 
 add_action(
     'muplugins_loaded',
@@ -423,7 +472,10 @@ add_action(
 or the almost equivalent:
 
 ```php
+<?php
 namespace AcmeInc;
+
+use Inpsyde\App\App;
 
 $app =  App::new(__NAMESPACE__)->addProvider(new SomeWebsiteProvider());
 add_action('muplugins_loaded', [$app, 'boot']);
@@ -440,6 +492,7 @@ Note that it is also possible to use a _later_ hook, not only an earlier one. Mu
 Sometimes might be desirable to use a pre-built container to be used for the App. This for example allow for easier usage of a different `SiteConfig` instance (of which `EnvConfig` is an implementation) or pushing PSR-11 container _before_ the container is passed to Service Providers.
 
 ```php
+<?php
 namespace AcmeInc;
 
 use Inpsyde\App;

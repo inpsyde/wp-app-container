@@ -2,7 +2,9 @@
 
 namespace Inpsyde\App;
 
+use Inpsyde\App\Provider\Package;
 use Inpsyde\App\Provider\ServiceProvider;
+use Inpsyde\App\Provider\ServiceProviders;
 use Psr\Container\ContainerInterface;
 
 final class App
@@ -228,6 +230,22 @@ final class App
         } catch (\Throwable $throwable) {
             static::handleThrowable($throwable);
         }
+
+        return $this;
+    }
+
+    /**
+     * @param Package $package
+     * @return App
+     */
+    public function addPackage(Package $package): App
+    {
+        add_action(
+            self::ACTION_ADD_PROVIDERS,
+            function (App $app) use ($package) {
+                $package->providers()->provideTo($app);
+            }
+        );
 
         return $this;
     }
