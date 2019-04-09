@@ -18,9 +18,9 @@ interface ServiceProvider
 
     /**
      * @param Container $container
-     * @return void
+     * @return bool
      */
-    public function register(Container $container): void;
+    public function register(Container $container): bool;
 
     /**
      * @return bool
@@ -29,7 +29,7 @@ interface ServiceProvider
 
     /**
      * @param Container $container
-     * @return void
+     * @return bool
      */
-    public function boot(Container $container): void;
+    public function boot(Container $container): bool;
 }

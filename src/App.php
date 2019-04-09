@@ -4,7 +4,6 @@ namespace Inpsyde\App;
 
 use Inpsyde\App\Provider\Package;
 use Inpsyde\App\Provider\ServiceProvider;
-use Inpsyde\App\Provider\ServiceProviders;
 use Psr\Container\ContainerInterface;
 
 final class App
@@ -23,6 +22,15 @@ final class App
     private const STATUS_WAITING = 4;
     private const STATUS_REGISTERED = 5;
     private const STATUS_BOOTSTRAPPED = 6;
+
+    private const PACKAGE_ADDED = 'Added';
+    private const PACKAGE_BOOTED = 'Booted';
+    private const PACKAGE_BOOTED_EARLY = 'Booted (early)';
+    private const PACKAGE_REGISTERED = 'Registered';
+    private const PACKAGE_REGISTERED_DELAYED = 'Registered (delayed)';
+    private const PACKAGE_REGISTERED_EARLY = 'Registered (early)';
+    private const PACKAGE_REGISTERED_EARLY_DELAYED = 'Registered (early, delayed)';
+    private const PACKAGE_SKIPPED = 'Skipped';
 
     /**
      * @var App
@@ -63,6 +71,16 @@ final class App
      * @var string
      */
     private $namespace;
+
+    /**
+     * @var bool
+     */
+    private $doDebug;
+
+    /**
+     * @var array|null
+     */
+    private $debug;
 
     /**
      * @param string $namespace
@@ -158,6 +176,35 @@ final class App
     {
         $this->namespace = $namespace;
         $this->wrappedContainers = $containers;
+        $this->doDebug = defined('WP_DEBUG') && WP_DEBUG;
+    }
+
+    /**
+     * @return App
+     */
+    public function doDebug(): App
+    {
+        $this->doDebug = true;
+
+        return $this;
+    }
+
+    /**
+     * @return App
+     */
+    public function dontDebug(): App
+    {
+        $this->doDebug = false;
+
+        return $this;
+    }
+
+    /**
+     * @return array|null
+     */
+    public function debugInfo(): ?array
+    {
+        return $this->debug;
     }
 
     /**
@@ -219,12 +266,21 @@ final class App
             $this->initializeContainer();
 
             if ($contexts && !$this->container->context()->is(...$contexts)) {
+                $this->updateProviderStatus($provider, self::PACKAGE_SKIPPED);
+
                 return $this;
             }
 
-            $provider->registerLater()
-                ? $this->delayed->enqueue($provider)
-                : $this->registerProvider($provider);
+            $this->updateProviderStatus($provider, self::PACKAGE_ADDED);
+
+            $later = $provider->registerLater();
+            $later and $this->delayed->enqueue($provider);
+
+            if (!$later && $this->registerProvider($provider)) {
+                $late = did_action('init');
+                $status = $late ? self::PACKAGE_REGISTERED : self::PACKAGE_REGISTERED_EARLY;
+                $this->updateProviderStatus($provider, $status);
+            }
 
             $this->bootable->enqueue($provider);
         } catch (\Throwable $throwable) {
@@ -324,7 +380,14 @@ final class App
             /** @var ServiceProvider $delayed */
             $delayed = $this->delayed->dequeue();
             $toRegisterNow = $late || $delayed->bootEarly();
-            $toRegisterNow and $this->registerProvider($delayed);
+            $registered = $toRegisterNow ? $this->registerProvider($delayed) : false;
+
+            if ($registered) {
+                $status = $late
+                    ? self::PACKAGE_REGISTERED_DELAYED
+                    : self::PACKAGE_REGISTERED_EARLY_DELAYED;
+                $this->updateProviderStatus($delayed, $status);
+            }
 
             if ($toRegisterLater && !$toRegisterNow) {
                 $toRegisterLater->enqueue($delayed);
@@ -352,7 +415,13 @@ final class App
 
             /** @var bool $toBootNow */
             $toBootNow = $late || $bootable->bootEarly();
-            $toBootNow and $bootable->boot($this->container);
+
+            $booted = $toBootNow ? $bootable->boot($this->container) : false;
+
+            if ($booted) {
+                $status = $late ? self::PACKAGE_BOOTED : self::PACKAGE_BOOTED_EARLY;
+                $this->updateProviderStatus($bootable, $status);
+            }
 
             if ($toBootLater && !$toBootNow) {
                 $toBootLater->enqueue($bootable);
@@ -365,12 +434,29 @@ final class App
 
     /**
      * @param ServiceProvider $provider
+     * @return bool
      */
-    private function registerProvider(ServiceProvider $provider)
+    private function registerProvider(ServiceProvider $provider): bool
     {
-        $provider->register($this->container);
+        $registered = $provider->register($this->container);
         $this->registered[$provider->id()] = true;
 
-        do_action(self::ACTION_REGISTERED_PROVIDER, $provider->id(), $this);
+        do_action(self::ACTION_REGISTERED_PROVIDER, $provider->id(), $this, $registered);
+
+        return $registered;
+    }
+
+    /**
+     * @param ServiceProvider $provider
+     * @param string $status
+     */
+    private function updateProviderStatus(ServiceProvider $provider, string $status): void
+    {
+        if (!$this->doDebug) {
+            return;
+        }
+
+        $this->debug or $this->debug = [];
+        $this->debug[$provider->id()] = $status;
     }
 }

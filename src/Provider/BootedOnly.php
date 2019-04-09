@@ -26,10 +26,12 @@ abstract class BootedOnly implements ServiceProvider
 
     /**
      * @param Container $container
+     * @return bool
      *
      * @suppress PhanUnusedPublicFinalMethodParameter
      */
-    final public function register(Container $container): void
+    final public function register(Container $container): bool
     {
+        return false;
     }
 }

@@ -34,6 +34,7 @@
   - [Custom boot hook](#custom-boot-hook)
   - [Building custom container upfront](#building-custom-container-upfront)
   - [Resolve objects outside providers](#resolve-objects-outside-providers)
+  - [Debug info](#debug-info)
 - [Installation](#installation)
 - [Crafted by Inpsyde](#crafted-by-inpsyde)
 - [License](#license)
@@ -486,7 +487,6 @@ With such code in place, "early booted" providers can only be registered in MU p
 Note that it is also possible to use a _later_ hook, not only an earlier one. Must be noted however that the _latest_ hook hat can be used for manual boot is `init`, when the _second_ bootstrapping usually happen. In this edge case, only a single bootstrap will happen.
 
 
-
 ### Building custom container upfront
 
 Sometimes might be desirable to use a pre-built container to be used for the App. This for example allow for easier usage of a different `SiteConfig` instance (of which `EnvConfig` is an implementation) or pushing PSR-11 container _before_ the container is passed to Service Providers.
@@ -526,7 +526,6 @@ add_action('plugins_loaded', [app(), 'boot']);
 ```
 
 
-
 ### Resolve objects outside providers
 
 `App` class provide a static `App::make()` method that can be used to access objects from container outside any provider.
@@ -547,6 +546,36 @@ Assuming the code in the previous section, where we defined the `app()` function
 $someService = app()->resolve(AcmeInc\SomeService::class);
 ```
 
+### Debug info
+
+The `App` class collects information on the added providers and their status when `WP_DEBUG` is `true`.
+
+`App::debugInfo()`, when debug is on, will return an array where keys are service provider IDs and values their status in the App.
+An example of output could be:
+
+```
+[
+    'AcmeInc\SomeProvider' => 'Registered (early),
+    'AcmeInc\FooProvider' => 'Registered (early, delayed),
+    'AcmeInc\BarProvider' => 'Booted (early),
+    'AcmeInc\BazProvider' => 'Registered,
+    'AcmeInc\CliProvider' => 'Skipped,
+    'AcmeInc\AnotherProvider' => 'Booted',
+]
+```
+
+When debug is off, `App::debugInfo()` returns `null`.
+
+To force enabling debug even if `WP_DEBUG` is false, it is possible to call `App::doDebug()`.
+
+It is also possible to force debug to be off even if `WP_DEBUG` is true via `App::dontDebug()`.
+
+```php
+<?php
+namespace AcmeInc;
+
+\Inpsyde\App\App::createAndBoot(__NAMESPACE__)->doDebug();
+```
 
 
 ## Installation
@@ -558,11 +587,9 @@ $ composer require inpsyde/wp-app-container
 ```
 
 
-
 ## Crafted by Inpsyde
 
 The team at [Inpsyde](https://inpsyde.com) is engineering the Web since 2006.
-
 
 
 ## License
@@ -570,7 +597,6 @@ The team at [Inpsyde](https://inpsyde.com) is engineering the Web since 2006.
 Copyright (c) 2019 Inpsyde GmbH
 
 Good news, this library is free for everyone! Since it's released under the [MIT License](LICENSE) you can use it free of charge on your personal or commercial website.
-
 
 
 ## Contributing
