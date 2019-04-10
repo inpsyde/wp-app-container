@@ -75,7 +75,7 @@ final class App
     /**
      * @var bool
      */
-    private $doDebug;
+    private $debugEnabled;
 
     /**
      * @var array|null
@@ -176,15 +176,15 @@ final class App
     {
         $this->namespace = $namespace;
         $this->wrappedContainers = $containers;
-        $this->doDebug = defined('WP_DEBUG') && WP_DEBUG;
+        $this->debugEnabled = defined('WP_DEBUG') && WP_DEBUG;
     }
 
     /**
      * @return App
      */
-    public function doDebug(): App
+    public function enableDebug(): App
     {
-        $this->doDebug = true;
+        $this->debugEnabled = true;
 
         return $this;
     }
@@ -192,9 +192,9 @@ final class App
     /**
      * @return App
      */
-    public function dontDebug(): App
+    public function disableDebug(): App
     {
-        $this->doDebug = false;
+        $this->debugEnabled = false;
 
         return $this;
     }
@@ -452,7 +452,7 @@ final class App
      */
     private function updateProviderStatus(ServiceProvider $provider, string $status): void
     {
-        if (!$this->doDebug) {
+        if (!$this->debugEnabled) {
             return;
         }
 

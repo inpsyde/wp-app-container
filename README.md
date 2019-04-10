@@ -566,15 +566,15 @@ An example of output could be:
 
 When debug is off, `App::debugInfo()` returns `null`.
 
-To force enabling debug even if `WP_DEBUG` is false, it is possible to call `App::doDebug()`.
+To force enabling debug even if `WP_DEBUG` is false, it is possible to call `App::enableDebug()`.
 
-It is also possible to force debug to be off even if `WP_DEBUG` is true via `App::dontDebug()`.
+It is also possible to force debug to be disabled, even if `WP_DEBUG` is true, via `App::disableDebug()`.
 
 ```php
 <?php
 namespace AcmeInc;
 
-\Inpsyde\App\App::createAndBoot(__NAMESPACE__)->doDebug();
+\Inpsyde\App\App::createAndBoot(__NAMESPACE__)->enableDebug();
 ```
 
 
@@ -606,6 +606,7 @@ All feedback / bug reports / pull requests are welcome.
 Before sending a PR make sure that `composer run qa` will output no errors.
 
 It will run, in turn:
+
 - [PHPCS](https://github.com/squizlabs/PHP_CodeSniffer) checks
 - [Phan](https://github.com/phan/phan) checks
 - [PHPUnit](https://phpunit.de/) tests
