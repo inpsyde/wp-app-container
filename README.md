@@ -3,7 +3,6 @@
 > DI Container and related tools to be used at website level.
 
 
-
 ---
 
 
@@ -11,39 +10,37 @@
 
 - [What is and what is not](#what-is-and-what-is-not)
 - [Concepts overview](#concepts-overview)
-  - [App](#app)
-  - [Service provider](#service-provider)
-  - [Container](#container)
-  - [Env config](#env-config)
-  - [Context](#context)
+    - [App](#app)
+    - [Service provider](#service-provider)
+    - [Container](#container)
+    - [Env config](#env-config)
+    - [Context](#context)
 - [Decisions](#decisions)
 - [Usage at website level](#usage-at-website-level)
 - [Usage at package level](#usage-at-package-level)
-  - [Contextual registration](#contextual-registration)
-  - [Package-dependant registration](#package-dependantpregistration)
-  - [Providers workflow](#providers-workflow)
-    - [Available service provider abstract classes](#available-service-provider-abstract-classes)
-    - [The case for delayed registration](#the-case-for-delayed-registration)
-  - [Service providers ID](#service-providers-id)
-  - [Composing the container](#composing-the-container)
-  - [Simple service provider example](#simple-service-provider-example)
-  - [Service provider example using any PSR-11 container](#service-provider-example-using-any-psr-11-container)
-  - [Website-level providers](#website-level-providers)
-  - [Providers Package](#providers-package)
+    - [Contextual registration](#contextual-registration)
+    - [Package-dependant registration](#package-dependant-registration)
+    - [Providers workflow](#providers-workflow)
+        - [Available service provider abstract classes](#available-service-provider-abstract-classes)
+        - [The case for delayed registration](#the-case-for-delayed-registration)
+    - [Service providers ID](#service-providers-id)
+    - [Composing the container](#composing-the-container)
+    - [Simple service provider example](#simple-service-provider-example)
+    - [Service provider example using any PSR-11 container](#service-provider-example-using-any-psr-11-container)
+    - [Website-level providers](#website-level-providers)
+    - [Providers Package](#providers-package)
 - [Advanced topics](#advanced-topics)
-  - [Custom boot hook](#custom-boot-hook)
-  - [Building custom container upfront](#building-custom-container-upfront)
-  - [Resolve objects outside providers](#resolve-objects-outside-providers)
-  - [Debug info](#debug-info)
+    - [Custom last boot hook](#custom-last-boot-hook)
+    - [Building custom container upfront](#building-custom-container-upfront)
+    - [Resolve objects outside providers](#resolve-objects-outside-providers)
+    - [Debug info](#debug-info)
 - [Installation](#installation)
 - [Crafted by Inpsyde](#crafted-by-inpsyde)
 - [License](#license)
 - [Contributing](#contributing)
 
 
-
 ---
-
 
 
 ## What is and what is not
@@ -59,7 +56,6 @@ Technically speaking, right now, there's nothing that prevents the use at packag
 This package was not written to be "just a standard", i.e. provide just the abstraction, leaving the implementations to consumers, but instead had been written to be a ready-to-use implementation.
 
 However, an underlying support for [PSR-11](<https://www.php-fig.org/psr/psr-11/>) allows for very flexible usage.
-
 
 
 ## Concepts overview
@@ -86,7 +82,6 @@ As stated above, this package targets websites development, and something that i
 Service providers job is to both to add services in the container and add the hooks that make use of them, however in WordPress it often happen that services are required under a specific "context". For example, a service provider responsible to register and enqueue assets for the front-end is not required in backoffice (dashboard), nor in AJAX or REST requests and so on. Using the proper hooks to execute code that is something that can be often addressed, but often not. E.g. distinguish a REST request is not very easy at an early hook, or there's no function or constants that tell us when we are on a login page and so on. The scope of this class is to provide a centralized service that provide info on the current request. `Container::context()` method returns and instance of Context.
 
 
-
 ## Decisions
 
 Because we wanted a ready-to-use package, we needed to pick a DI container _implementation_, and we went for [Pimple](<https://pimple.symfony.com/>), for the very reason that it is one of the simplest implementation out there.
@@ -94,7 +89,6 @@ Because we wanted a ready-to-use package, we needed to pick a DI container _impl
 However, as shown later, anyone who want to use a different PSR-11 container will be very able to do so.
 
 In the "Concepts Overview" above, the last two concepts ("Env Config" and "Context") are not really something that are naturally coupled with the other three, however, the assumption that this package will be used for WordPress _websites_ allow us to introduce this "coupling" without many risks (or sense of guilt): assuming we would ship these packages separately, when building websites (which, again, is the only goal of this package) we will very likely going to require those separate packages anyway, making this the perfect example for the _Common-Reuse Principle_: _classes that tend to be reused together belong in the same package together._
-
 
 
 ## Usage at website level
@@ -105,22 +99,21 @@ The "website" package, that will glue together all packages, needs to only inter
 <?php
 namespace AcmeInc;
 
-\Inpsyde\App\App::createAndBoot(__NAMESPACE__);
+add_action('muplugins_loaded', [\Inpsyde\App\App::new(__NAMESPACE__), 'boot']);
 ```
 
-That's it. This code should probably go in a MU plugin (in any case before `"plugins_loaded"` action is fired).
+That's it. This code is assumed to be placed in MU plugin, but as better explained later, it is possible to do it outside any MU plugin or plugin, wrapping the `App::boot()` call in a hook or not.
 
-The parameter passed to `createAndBoot` should be the "main" namespace that we will use for the packages in the websites, e.g. for the fictional website where the snippet above is used, we will probably have packages with sub-namespace like `AcmeInc\Theme` or `AcmeInc\SomePlugin`.
+The parameter passed to the static constructor `App::new()` should be the "main" namespace that we will use for the packages in the websites, e.g. for the fictional website where the snippet above is used, we will probably have packages with sub-namespace like `AcmeInc\Theme` or `AcmeInc\SomePlugin`.
 
 Technically it is used on in the `EnvConfig` class which via its `EnvConfig::get()` method, will look for constants in the `AcmeInc` and `AcmeInc\Config` namespace.
 
 This one-liner will create the relevant objects and will fire actions that will enable other packages to register service providers.
 
 
-
 ## Usage at package level
 
-At package level there are two ways to integrate: directly registering services leveraging the Pimple implementation or adding full containers. In both cases the first step is to add providers to the App:
+At package level there are two ways to register services (will be shown later), but first add providers need to be added to the App:
 
 ```php
 <?php
@@ -140,17 +133,15 @@ add_action(
 );
 ```
 
-The hook `App::ACTION_ADD_PROVIDERS` will actually be fired two times, once when core is at `plugins_loaded` and the other when core is at `init` so that themes and packages required by themes can register providers too.
+The hook `App::ACTION_ADD_PROVIDERS` can actually be fired from one to three times, depending on when `App::boot()` is called for the first time.
 
-The `App` class will be clever enough to add the provider only once.
-
-The "bootstrapping" normally happen after `init`, but some providers might tell the App to do it earlier, in that case it is responsibility of the developer to make sure that services provided by "early booted" service providers don't need any service / object provided by service providers booted later.
+The entire workflow will be explained below, but for now is relevant that even if the hook is fired more times, the `App` class will be clever enough to add the provider only once.
 
 
 
 ### Contextual registration
 
-As shown in the example above, `App::addProvider()` besides the provide itself, accept a variadic number of context constants, that tell the App that the given provider should be only used in the listed contexts.
+As shown in the example above, `App::addProvider()` besides the service provider itself, accepts a variadic number of context constants, that tell the App that the given provider should be only used in the listed contexts.
 
 The full list of possible constants is:
 
@@ -162,7 +153,6 @@ The full list of possible constants is:
 - `CRON`
 - `LOGIN`
 - `CLI` (in the context of WP CLI)
-
 
 
 ### Package-dependant registration
@@ -194,74 +184,85 @@ add_action(
 The just-registered package ID is passed as first argument by the hook. By default the package ID is the same as the class, but that can be easily changed, so to be dependant on a package it is necessary to know the ID it uses.
 
 
-
 ### Providers workflow
 
-Before adding providers it is necessary to write them. A Service Provider in this package is a class implementing `Inpsyde\App\Provider\ServiceProvider` interface.
+As already stated multiple times, the scope of the library is to provide a common ground for service registration and bootstrapping of all packages that compose a website.
 
-Before looking into it, let's reinforce that providers do two things:
+This means that it is necessary to allow generic libraries, MU plugins, plugins, and themes, to register their services, which means that application should "wait" for all of those packages to be available.
+However, at same time, it is very possible that some packages will need at an early stage in the WordPress loading workflow.
 
-1. _register_ service in the container
-2. _make use_ of registered service (we say the provider "bootstrap" the services).
+To satisfy both these requirements, the application _might_ run its "bootstrapping procedure" **from one to three times**, depending on when `App::boot()` is called for first time.
 
-Note that is fine to have providers that do just one of the two things.
+If `App::boot()` is called first time **before `plugins_loaded`** hook, it will automatically called again at `plugins_loaded` and `init`.
+For a total of 3 times.
 
-On top of that, these two things happen two times:
+If `App::boot()` is called first time **after (or during) `plugins_loaded`  and before `init`** it will automatically called again at `init`.
+For a total of 2 times.
 
-1. once at `plugins_loaded` for the so-called "early booted" providers
-2. again at `init`
+If `App::boot()` is called first time **during `init`** it will not be called again, so will run once in total.
 
-Finally, for each of the two registration the package allow for a "delayed registration" (more on this later).
+If `App::boot()` is called first time **after `init`** an exception will be thrown.
 
-The full workflow, is something like this:
+Each time `App::boot()` is called, the `App::ACTION_ADD_PROVIDERS` action is fired allowing packages to add service providers.
 
-- **Core is at "plugins_loaded"**
+Added service providers `register()` method, that add services in the container, is normally _immediately_ called, unless the service provider declare to support "dalayed registration" (more on this soon).
 
-  1. Register not-delayed providers
-  2. Register delayed and early-booted  providers 
-  3. Boot early-booted providers
+Added service providers `boot()` method, that makes use of the registered services, is normally delayed until last time `App::boot()` is called (WP is at `init` hook), but service providers can declare to support "early booting" (more on this soon), in which case their `boot()` meethod is called immediately after the `register` method.
 
-- **Core is at "init"**
+In case a service provider declare to support both _delayed registration_ and _early booting_ its `register()` method will still be called before its `boot()` method, but _after_ having called the `register()` method of all non-delayed providers that are going to be run.
 
-  4. Register all not-delayed providers not already registered
-  5. Register all delayed providers not already registered
-  6. `App::ACTION_REGISTERED` action is fired
-  7. Boot all providers not already booted
-  8. `App::ACTION_BOOTSTRAPPED` action is fired
+Considering the case in which `App::boot()` is ran 3 times, (before `plugins_loaded`, on `plugins_loaded`, and on `init`) the order of events is the following:
 
-To understand if a provider is early-booted or has delayed registration the `ServiceProvider` interface uses, respectively, the methods `bootEarly()` and `registerLater()` which returns a boolean.
+- Core is _before_ `plugins_loaded`
+    1. added service providers _without_ support for _delayed registration_ are registered
+    2. added service providers _with_ support for _delayed registration_ and also  _with_ support for _early booting_ are registered
+    3. added service providers _with_ support for _early booting_ are booted
+    
+- Core is _at_ `plugins_loaded`
+    1. added service providers _without_ support for _delayed registration_ are registered
+    2. added service providers _with_ support for _delayed registration_ and also  _with_ support for _early booting_ are registered
+    3. added service providers _with_ support for _early booting_ are booted
+    
+- Core is _at_ `init`
+    1. all added service providers _without_ support for _delayed registration_ which are not registered yet, are registered
+    2. all added service providers _with_ support for _delayed registration_ which are not registered yet, are registered
+    3. all added service providers which are not booted yet, are booted
 
-The package ships several abstract classes that provides definitions for these method and also for `boot()` and `register()` so that consumers can only focus on what matters: `register()` and / or `boot()` methods.
+To understand if a provider has support for _delayed registration_ or for _early booting_, we have to look at two methods of the ServiceProvider` interface, respectively `registerLater()` and `bootEarly()`, both returns a boolean.
 
+The interface has a total of 5 methods.
+Besides the two already mentioned there's also an `id()` method, and then the most relevant: `register()` and `boot()`.
+
+The package ships several abstract classes that provides definitions for many of the methods.
 
 
 #### Available service provider abstract classes
 
-- **`Provider\Booted`** is a providers that requires both `register()` and `boot()` method to be implemented. It is **not booted early** and does **not uses delayed registration**.
-- **`Provider\BootedOnly`** is a providers that requires only `boot()` method to be implemented (`register()` is implemented with no body). It is **not booted early** and does **not uses delayed registration**.
-- **`Provider\EarlyBooted`** is a providers that requires both `register()` and `boot()` method to be implemented. It is **booted early** and does **not uses delayed registration**.
-- **`Provider\EarlyBootedOnly`** is a providers that requires only `boot()` method to be implemented (`register()` is implemented with no body). It is **booted early** and does **not uses delayed registration**.
-- **`Provider\RegisteredLater`** is a providers that requires both `register()` and `boot()` method to be implemented. It is **not booted early ** and it uses **delayed registration**.
-- **`Provider\RegisteredLaterEarlyBooted`** is a providers that requires both `register()` and `boot()` method to be implemented. It is **booted early** and it uses **delayed registration**.
-- **`Provider\RegisteredLaterOnly`** is a providers that requires only `register()` method to be implemented (`boot()` is implemented with no body). It uses **delayed registration**.
-- **`Provider\RegisteredOnly`** is a providers that requires only `register()` method to be implemented (`boot()` is implemented with no body). It **does not uses delayed registration**.
+- **`Provider\Booted`** is a providers that requires both `register()` and `boot()` method to be implemented. It has **no support for delayed registration** and **no support for early booting**.
+- **`Provider\BootedOnly`** is a providers that requires only `boot()` method to be implemented (`register()` is implemented with no body). It has **no support for early booting**.
+- **`Provider\EarlyBooted`** is a providers that requires both `register()` and `boot()` method to be implemented. It has **no support for delayed registration** but has **supports for early booting**.
+- **`Provider\EarlyBootedOnly`** is a providers that requires only `boot()` method to be implemented (`register()` is implemented with no body). It has **support for early booting**.
+- **`Provider\RegisteredLater`** is a providers that requires both `register()` and `boot()` method to be implemented. It has **support for delayed registration** but **no support for early booting**.
+- **`Provider\RegisteredLaterEarlyBooted`** is a providers that requires both `register()` and `boot()` method to be implemented. It has both **support for delayed registration** and **for early booting**.
+- **`Provider\RegisteredLaterOnly`** is a providers that requires only `register()` method to be implemented (`boot()` is implemented with no body). It has **support for delayed registration**.
+- **`Provider\RegisteredOnly`** is a providers that requires only `register()` method to be implemented (`boot()` is implemented with no body). It has **no support for delayed registration**.
 
 By extending one of these classes, consumers can focus only on the methods that matter.
 
 
-
 #### The case for delayed registration
 
-If the reason behind "normal" _VS_ "early" booted providers should be quite evident, that might not be the case for the "delayed registration" that providers can support.
+If the reason behind "normal" _VS_ "early" booted providers should be quite evident, and has been already mentioned (some providers _needs_ to run early but some other will not be available early) that's not the case for the "delayed registration" that providers can support.
+
+To explain why this is a thing, let's do an example.
 
 Let's assume a _Acme Advanced Logger_ plugin has a service provider that registers an `Acme\Logger` service.
 
 Then, let's assume a separate plugin _Acme Authentication_ has a service provider that registers several other services that require `Acme\Logger` service.
 
-The _Acme Authentication_ service provider will need to make sure that the `Acme\Logger` service is available, so it will probably check the container for its availability, and in case it is missing (e.g.  _Acme Advanced Logger_ plugin is deactivated) _Acme Authentication_ will probably register an alternative logger that could replace it.
+The _Acme Authentication_ service provider will need to make sure that the `Acme\Logger` service is available, so it will probably check the container for its availability, and in case it is missing (e.g.  _Acme Advanced Logger_ plugin is deactivated), _Acme Authentication_ will probably register an alternative logger that could replace it.
 
-For the check to be effective, it must be done **after** _Acme Advanced Logger_ service provider has been registered. By declaring itself as "delayed",  _Acme Authentication_ service provider will surely be registered after _Acme Advanced Logger_ is eventually registered (assuming that is not delayed as well) and on its `register` method can reliably check if  `Acme\Logger` service is already available or not.
-
+For that check for availability to be effective, it must be done **after** _Acme Advanced Logger_ service provider has been registered. By supporting delayed registration, _Acme Authentication_ service provider will surely be registered after _Acme Advanced Logger_ is eventually registered (assuming that is not delayed as well) and so on its `register` method can reliably check if  `Acme\Logger` service is already available or not.
 
 
 ### Service providers ID
@@ -283,7 +284,6 @@ So by just extending one of the abstract classes and doing nothing else there's 
 In case this is not fine for some reason, e.g. the same service provider class is used for several providers, it is possible to define the property, or just override the `id()` method.
 
 
-
 ### Composing the container
 
 `ServiceProvider::register()` is where providers add services to the Container, so that they will be available to be "consumed" in the `ServiceProvider::boot()` method.
@@ -297,8 +297,7 @@ public function register(Container $container): void;
 Receiving an instance of the `Conatiner` service providers can _add_ things to it in two ways:
 
 - directly using Pimple `\ArrayAccess` method
-- using `Container::pushContainer()` which accept any PSR-11 compatible container and make all the services available in it accessible through the package Container
-
+- using `Container::addContainer()` which accept any PSR-11 compatible container and make all the services available in it accessible through the package Container
 
 
 ### Simple service provider example
@@ -342,7 +341,6 @@ final class Provider extends Booted {
 Please refers to [Pimple docs](https://pimple.symfony.com/) for more details on its usage.
 
 
-
 ### Service provider example using any PSR-11 container
 
 In the following example I will use [PHP-DI](http://php-di.org) but really any PSR-11-compatible container will do.
@@ -368,7 +366,7 @@ final class Provider extends Booted {
         $defsPath = $container->env()->get('ACME_INC_DEFS_PATH');
         $diBuilder->addDefinitions("{$defsPath}/redirector/defs.php");
         
-        $container->pushContainer($diBuilder->build());
+        $container->addContainer($diBuilder->build());
     }
     
     public function boot(Container $container): void
@@ -387,9 +385,12 @@ final class Provider extends Booted {
 
 Please refer to [PHP-DI documentation](http://php-di.org/doc/) to better understand the code, but again, any PSR-11 compatible Container can be "pushed" to the library Container.
 
+
 ### Website-level providers
 
-`App::createAndBoot()` returns an instance of the `App` so that it is possible to add providers on the spot, without having to hook `App::ACTION_ADD_PROVIDERS`. This allow to immediately add packages shipped at website level.
+`App::new()` returns an instance of the `App` so that it is possible to add providers on the spot, without having to hook `App::ACTION_ADD_PROVIDERS`.
+
+This allow to immediately add service providers shipped at website level.
 
 ```php
 namespace AcmeInc;
@@ -398,6 +399,7 @@ namespace AcmeInc;
     ->addProvider(new SomeWebsiteProvider())
     ->addProvider(new AnotherWebsiteProvider());
 ```
+
 
 ### Providers Package
 
@@ -440,51 +442,33 @@ With such class in place (and autoloadable), in the MU plugin that bootstrap the
 <?php
 namespace AcmeInc;
 
-\Inpsyde\App\App::createAndBoot(__NAMESPACE__)
-    ->addPackage(new Auth\Auth());
+\Inpsyde\App\App::new(__NAMESPACE__)->addPackage(new Auth\Auth());
 ```
 
 
 ## Advanced topics
 
 
-### Custom boot hook
+### Custom last boot hook
 
-As described above, `createAndBoot` "boots" the service providers in two moments: `"plugins_loaded"` and `"init"`.
+Above in several places have been said that the last time `App::boot()` is called is `init`. Even if this is fine in many cases,
+it is actually possible to use _any_ hook that runs after `plugins_loaded`, just keep in mind that:
 
-While the latter can not be modified, the first bootstrapping, used for the "early booted" providers, can be customized. To do so, it is necessary to manually create an instance of `App` and call `App::boot()` method at the preferred hook.
+- using anything earlier that `after_setup_theme` means that themes will not be able to add providers.
+- using anything later that `init` providers that will booted so late will not be able to do much.
 
-```php
-<?php
-namespace AcmeInc;
-
-use Inpsyde\App\App;
-
-add_action(
-    'muplugins_loaded',
-    static function () {
-        App::new(__NAMESPACE__)
-            ->addProvider(new SomeWebsiteProvider())
-            ->boot();
-    }
-);
-```
-
-or the almost equivalent:
+In any case the way to customize the hook is to call `App::runLastBootAt()` method:
 
 ```php
 <?php
 namespace AcmeInc;
 
-use Inpsyde\App\App;
-
-$app =  App::new(__NAMESPACE__)->addProvider(new SomeWebsiteProvider());
-add_action('muplugins_loaded', [$app, 'boot']);
+\Inpsyde\App\App::new(__NAMESPACE__)
+    ->runLastBootAt('after_setup_theme')
+    ->boot();
 ```
 
-With such code in place, "early booted" providers can only be registered in MU plugins, because when regular plugins are loaded the first bootstrap already happened.
-
-Note that it is also possible to use a _later_ hook, not only an earlier one. Must be noted however that the _latest_ hook hat can be used for manual boot is `init`, when the _second_ bootstrapping usually happen. In this edge case, only a single bootstrap will happen.
+Please not that `App::runLastBootAt()`  must be called **before** `App::boot()` is called for first time, or an exception will be thrown.
 
 
 ### Building custom container upfront
@@ -512,7 +496,7 @@ function app(): App\App
         // Create PSR-11 container and push into the App container
         $diBuilder = new \DI\ContainerBuilder();
 		$diBuilder->addDefinitions('./definitions.php');
-        $container->pushContainer($diBuilder->build());
+        $container->addContainer($diBuilder->build());
         
         // Instantiate the app with the container
         $app = App\App::newWithContainer($container);
@@ -522,7 +506,7 @@ function app(): App\App
 }
 
 // Finally create and bootstrap app
-add_action('plugins_loaded', [app(), 'boot']);
+add_action('muplugins_loaded', [app(), 'boot']);
 ```
 
 
@@ -536,31 +520,42 @@ This can be used in plugins that just want to access a service in the Container 
 $someService = App::make(AcmeInc\SomeService::class);
 ```
 
-The snippet above works **only** if the App was created and bootstrapped using `App::createAndBoot()`, because only in that case the package knows in which instance of Container to look for the service.
+Because the method is static, it needs to refer to a booted instance of `App`.
+The one that will be used in the first `App` that is instantiated during a request.
 
-In the case an App is created "manually" using one of the method shown in previous sections above, the relevant App instance can be passes as second parameter.
+Considering that the great majority of times there will be a single application, that is fine and convenient because allow to resolve services in the container having no access to the container nor to the `App` instance.
 
-Assuming the code in the previous section, where we defined the `app()` function, we could obtain same result, by accessing the App instance and then call `resolve()` method on it:
+If `App::make()` is called without any app has been created at all, an exception will be thrown.
+
+In the case, for any reason, more instances of `App` are created, to resolve a service in a specific `App` instance it is necessary to have access to it and call `resolve()` method on it.
+
+Assuming the code in the previous section, where we defined the `app()` function, we could do something like this to resolve a service:
 
 ```php
 $someService = app()->resolve(AcmeInc\SomeService::class);
 ```
 
+
 ### Debug info
 
 The `App` class collects information on the added providers and their status when `WP_DEBUG` is `true`.
 
-`App::debugInfo()`, when debug is on, will return an array where keys are service provider IDs and values their status in the App.
-An example of output could be:
+`App::debugInfo()`, when debug is on, will return an array that could be something like this:
 
 ```
 [
-    'AcmeInc\SomeProvider' => 'Registered (early),
-    'AcmeInc\FooProvider' => 'Registered (early, delayed),
-    'AcmeInc\BarProvider' => 'Booted (early),
-    'AcmeInc\BazProvider' => 'Registered,
-    'AcmeInc\CliProvider' => 'Skipped,
-    'AcmeInc\AnotherProvider' => 'Booted',
+    'namespace' => 'AcmeInc'
+    'status' => 'Done with themes'
+    'providers' => [
+        'AcmeInc\FooProvider' => 'Registered (Registered when registering early),
+        'AcmeInc\BarProvider' => 'Booted (Registered when registering early, Booted when booting early),
+        'AcmeInc\CliProvider' => 'Skipped (Skipped when registering plugins)',
+        'AcmeInc\LoremProvider' => 'Booted (Booted when booting plugins)',
+        'AcmeInc\IpsumProvider' => 'Booted (Registered when registering plugins, Booted when booting themes),
+        'AcmeInc\DolorProvider' => 'Booted (Registered when registering themes, Booted when booting themes),
+        'AcmeInc\SicProvider' => 'Registered (Registered when registering themes),
+        'AcmeInc\AmetProvider' => 'Booted (Registered with delay when registering themes, Booted when booting themes),
+    ]
 ]
 ```
 
@@ -574,7 +569,7 @@ It is also possible to force debug to be disabled, even if `WP_DEBUG` is true, v
 <?php
 namespace AcmeInc;
 
-\Inpsyde\App\App::createAndBoot(__NAMESPACE__)->enableDebug();
+\Inpsyde\App\App::new(__NAMESPACE__)->enableDebug();
 ```
 
 
