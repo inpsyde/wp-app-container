@@ -248,8 +248,15 @@ final class App
 
         $this->registerAndBootProviders($late);
 
+        // Remove the actions so that when the method runs again, there's no duplicate registration
         remove_all_actions(self::ACTION_ADD_PROVIDERS);
 
+        // If "boot" is ran manually very early, we run it again on plugins loaded.
+        if (!$late && !did_action('plugins_loaded')) {
+            add_action('plugins_loaded', [$this, 'boot'], PHP_INT_MAX);
+        }
+
+        // If "boot" is ran before "init" run it again on "init".
         if (!$late) {
             add_action('init', [$this, 'boot'], PHP_INT_MAX);
         }
