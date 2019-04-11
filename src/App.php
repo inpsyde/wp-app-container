@@ -15,13 +15,24 @@ final class App
     public const ACTION_BOOTSTRAPPED = 'app.providers-bootstrapped';
     public const ACTION_ERROR = 'app.error';
 
+    public const REGISTER_EARLY = 'early';
+    public const REGISTER_VERY_EARLY = 'very-early';
+    public const REGISTER_REGULAR = 'regulars';
+
     private const STATUS_IDLE = 0;
-    private const STATUS_WAITING_EARLY = 1;
-    private const STATUS_REGISTERED_EARLY = 2;
-    private const STATUS_BOOTSTRAPPED_EARLY = 3;
-    private const STATUS_WAITING = 4;
-    private const STATUS_REGISTERED = 5;
-    private const STATUS_BOOTSTRAPPED = 6;
+    private const STATUS_VERY_EARLY = 1;
+    private const STATUS_WAITING_EARLY = 2;
+    private const STATUS_REGISTERED_EARLY = 3;
+    private const STATUS_BOOTSTRAPPED_EARLY = 4;
+    private const STATUS_WAITING = 5;
+    private const STATUS_REGISTERED = 6;
+    private const STATUS_BOOTSTRAPPED = 7;
+
+    private const REGISTER_TYPE_MAP = [
+        self::STATUS_VERY_EARLY => self::REGISTER_VERY_EARLY,
+        self::STATUS_WAITING_EARLY => self::REGISTER_EARLY,
+        self::STATUS_WAITING => self::REGISTER_REGULAR,
+    ];
 
     private const PACKAGE_ADDED = 'Added';
     private const PACKAGE_BOOTED = 'Booted';
@@ -31,6 +42,11 @@ final class App
     private const PACKAGE_REGISTERED_EARLY = 'Registered (early)';
     private const PACKAGE_REGISTERED_EARLY_DELAYED = 'Registered (early, delayed)';
     private const PACKAGE_SKIPPED = 'Skipped';
+
+    private const _NAMESPACE = 'namespace';
+    private const _DEBUG_ENABLED = 'debug-enabled';
+    private const _PROVIDERS_STATUS = 'providers-status';
+    private const _STATUS = 'status';
 
     /**
      * @var App
@@ -63,24 +79,9 @@ final class App
     private $registered = [];
 
     /**
-     * @var int
+     * @var \stdClass
      */
-    private $status = self::STATUS_IDLE;
-
-    /**
-     * @var string
-     */
-    private $namespace;
-
-    /**
-     * @var bool
-     */
-    private $debugEnabled;
-
-    /**
-     * @var array|null
-     */
-    private $debug;
+    private $settings;
 
     /**
      * @param string $namespace
@@ -174,9 +175,14 @@ final class App
      */
     private function __construct(string $namespace, ContainerInterface ...$containers)
     {
-        $this->namespace = $namespace;
         $this->wrappedContainers = $containers;
-        $this->debugEnabled = defined('WP_DEBUG') && WP_DEBUG;
+
+        $this->settings = [
+            self::_NAMESPACE => $namespace,
+            self::_DEBUG_ENABLED => defined('WP_DEBUG') && WP_DEBUG,
+            self::_PROVIDERS_STATUS => null,
+            self::_STATUS => self::STATUS_IDLE,
+        ];
     }
 
     /**
@@ -184,7 +190,7 @@ final class App
      */
     public function enableDebug(): App
     {
-        $this->debugEnabled = true;
+        $this->settings[self::_DEBUG_ENABLED] = true;
 
         return $this;
     }
@@ -194,7 +200,7 @@ final class App
      */
     public function disableDebug(): App
     {
-        $this->debugEnabled = false;
+        $this->settings[self::_DEBUG_ENABLED] = false;
 
         return $this;
     }
@@ -204,7 +210,15 @@ final class App
      */
     public function debugInfo(): ?array
     {
-        return $this->debug;
+        if (!$this->settings[self::_DEBUG_ENABLED]) {
+            return null;
+        }
+
+        return [
+            'namespace' => $this->settings[self::_NAMESPACE],
+            'services' => $this->settings[self::_PROVIDERS_STATUS],
+            'status' => $this->settings[self::_STATUS],
+        ];
     }
 
     /**
@@ -223,6 +237,16 @@ final class App
      */
     public function boot(): void
     {
+        static $booting;
+
+        if ($booting) {
+            self::handleThrowable(
+                new \Exception('It is not possible to call App::boot() when booting().')
+            );
+
+            return;
+        }
+
         if (did_action('init') && !doing_action('init')) {
             self::handleThrowable(new \Exception('It is too late to initialize the app.'));
 
@@ -230,29 +254,32 @@ final class App
         }
 
         $late = (bool)did_action('init');
+        $veryEarly = !$late && !did_action('plugins_loaded');
 
-        $targetStatus = $late ? self::STATUS_WAITING : self::STATUS_WAITING_EARLY;
-
-        if ($this->status >= $targetStatus) {
-            self::handleThrowable(new \Exception('App is already initialized.'));
-
-            return;
+        $targetStatus = self::STATUS_WAITING_EARLY;
+        if ($late || $veryEarly) {
+            $targetStatus = $late ? self::STATUS_WAITING : self::STATUS_VERY_EARLY;
         }
 
-        $this->status = $targetStatus;
+        $this->updateAppStatus($targetStatus);
+
+        // We set to true to prevent anything listening self::ACTION_ADD_PROVIDERS to call boot().
+        $booting = true;
 
         /**
-         * Allow registration of providers via App::addProvider() when using using `App::create()`
+         * Allow registration of providers via App::addProvider() when using using `App::create()`.
          */
-        do_action(self::ACTION_ADD_PROVIDERS, $this, $late);
+        do_action(self::ACTION_ADD_PROVIDERS, $this, self::REGISTER_TYPE_MAP[$targetStatus]);
 
-        $this->registerAndBootProviders($late);
+        $booting = false;
 
-        // Remove the actions so that when the method runs again, there's no duplicate registration
+        $this->registerAndBootProviders($late, $veryEarly);
+
+        // Remove the actions so that when the method runs again, there's no duplicate registration.
         remove_all_actions(self::ACTION_ADD_PROVIDERS);
 
         // If "boot" is ran manually very early, we run it again on plugins loaded.
-        if (!$late && !did_action('plugins_loaded')) {
+        if ($veryEarly) {
             add_action('plugins_loaded', [$this, 'boot'], PHP_INT_MAX);
         }
 
@@ -333,7 +360,7 @@ final class App
     {
         if (!$this->container) {
             $this->container = new Container(
-                new EnvConfig($this->namespace),
+                new EnvConfig($this->settings[self::_NAMESPACE]),
                 Context::create(),
                 ...$this->wrappedContainers
             );
@@ -344,26 +371,26 @@ final class App
 
     /**
      * @param bool $late
-     * @return void
+     * @param bool $veryEarly
      */
-    private function registerAndBootProviders(bool $late): void
+    private function registerAndBootProviders(bool $late, bool $veryEarly): void
     {
         $this->initializeContainer();
         $late or $this->container[Container::REGISTERED_PROVIDERS] = $this->registered;
 
         try {
-            $this->registerDeferredProviders($late);
+            $this->registerDeferredProviders($late, $veryEarly);
 
             $this->container[Container::REGISTERED_PROVIDERS] = $this->registered;
 
             if ($late) {
-                $this->status = self::STATUS_REGISTERED;
+                $this->updateAppStatus(self::STATUS_REGISTERED);
                 $this->container[Container::APP_REGISTERED] = true;
                 do_action(self::ACTION_REGISTERED);
                 $this->registered = [];
             }
 
-            $this->bootProviders($late);
+            $this->bootProviders($late, $veryEarly);
             //
         } catch (\Throwable $throwable) {
             static::handleThrowable($throwable);
@@ -377,9 +404,9 @@ final class App
 
     /**
      * @param bool $late
-     * @return void
+     * @param bool $veryEarly
      */
-    private function registerDeferredProviders(bool $late): void
+    private function registerDeferredProviders(bool $late, bool $veryEarly): void
     {
         $toRegisterLater = $late ? null : new \SplQueue();
 
@@ -389,7 +416,7 @@ final class App
             $toRegisterNow = $late || $delayed->bootEarly();
             $registered = $toRegisterNow ? $this->registerProvider($delayed) : false;
 
-            if ($registered) {
+            if ($registered && !$veryEarly) {
                 $status = $late
                     ? self::PACKAGE_REGISTERED_DELAYED
                     : self::PACKAGE_REGISTERED_EARLY_DELAYED;
@@ -402,13 +429,17 @@ final class App
         }
 
         $this->delayed = $toRegisterLater;
-        $this->status = $late ? self::STATUS_REGISTERED : self::STATUS_REGISTERED_EARLY;
+
+        if (!$veryEarly) {
+            $this->updateAppStatus($late ? self::STATUS_REGISTERED : self::STATUS_REGISTERED_EARLY);
+        }
     }
 
     /**
      * @param bool $late
+     * @param bool $veryEarly
      */
-    private function bootProviders(bool $late): void
+    private function bootProviders(bool $late, bool $veryEarly): void
     {
         $toBootLater = $late ? null : new \SplQueue();
 
@@ -425,7 +456,7 @@ final class App
 
             $booted = $toBootNow ? $bootable->boot($this->container) : false;
 
-            if ($booted) {
+            if ($booted && !$veryEarly) {
                 $status = $late ? self::PACKAGE_BOOTED : self::PACKAGE_BOOTED_EARLY;
                 $this->updateProviderStatus($bootable, $status);
             }
@@ -436,7 +467,11 @@ final class App
         }
 
         $this->bootable = $toBootLater;
-        $this->status = $late ? self::STATUS_BOOTSTRAPPED : self::STATUS_BOOTSTRAPPED_EARLY;
+
+        if (!$veryEarly) {
+            $status = $late ? self::STATUS_BOOTSTRAPPED : self::STATUS_BOOTSTRAPPED_EARLY;
+            $this->updateAppStatus($status);
+        }
     }
 
     /**
@@ -454,16 +489,26 @@ final class App
     }
 
     /**
+     * @param int $status
+     */
+    private function updateAppStatus(int $status): void
+    {
+        if ($this->settings[self::_DEBUG_ENABLED]) {
+            $this->settings[self::_STATUS] = $status;
+        }
+    }
+
+    /**
      * @param ServiceProvider $provider
      * @param string $status
      */
     private function updateProviderStatus(ServiceProvider $provider, string $status): void
     {
-        if (!$this->debugEnabled) {
+        if (!$this->settings[self::_DEBUG_ENABLED]) {
             return;
         }
 
-        $this->debug or $this->debug = [];
-        $this->debug[$provider->id()] = $status;
+        isset($this->settings[self::_PROVIDERS_STATUS]) or $this->settings[self::_PROVIDERS_STATUS] = [];
+        $this->settings[self::_PROVIDERS_STATUS][$provider->id()] = $status;
     }
 }
