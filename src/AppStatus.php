@@ -10,29 +10,29 @@ final class AppStatus
 
     public const REGISTERING_EARLY = 'registering early';
     public const BOOTING_EARLY = 'booting early';
-    public const BOOTSTRAPPED_EARLY = 'Done with early boot';
+    public const BOOTED_EARLY = 'Done with early boot';
 
     public const REGISTERING_PLUGINS = 'registering plugins';
     public const BOOTING_PLUGINS = 'booting plugins';
-    public const BOOTSTRAPPED_PLUGINS = 'Done with plugins';
+    public const BOOTED_PLUGINS = 'Done with plugins';
 
     public const REGISTERING_THEMES = 'registering themes';
     public const BOOTING_THEMES = 'booting themes';
-    public const BOOTSTRAPPED_THEMES = 'Done with themes';
+    public const BOOTED_THEMES = 'Done with themes';
 
-    private const MOVE_MAP = [
+    private const NEXT_STEP_MAP = [
         self::REGISTERING_EARLY => self::BOOTING_EARLY,
-        self::BOOTING_EARLY => self::BOOTSTRAPPED_EARLY,
-        self::BOOTSTRAPPED_EARLY => self::REGISTERING_PLUGINS,
+        self::BOOTING_EARLY => self::BOOTED_EARLY,
+        self::BOOTED_EARLY => self::REGISTERING_PLUGINS,
         self::REGISTERING_PLUGINS => self::BOOTING_PLUGINS,
-        self::BOOTING_PLUGINS => self::BOOTSTRAPPED_PLUGINS,
-        self::BOOTSTRAPPED_PLUGINS => self::REGISTERING_THEMES,
+        self::BOOTING_PLUGINS => self::BOOTED_PLUGINS,
+        self::BOOTED_PLUGINS => self::REGISTERING_THEMES,
         self::REGISTERING_THEMES => self::BOOTING_THEMES,
-        self::BOOTING_THEMES => self::BOOTSTRAPPED_THEMES,
+        self::BOOTING_THEMES => self::BOOTED_THEMES,
     ];
 
     /**
-     * @var int
+     * @var string
      */
     private $status;
 
@@ -78,7 +78,7 @@ final class AppStatus
             return $this->initialize($app);
         }
 
-        $status = self::MOVE_MAP[$this->status] ?? null;
+        $status = self::NEXT_STEP_MAP[$this->status] ?? null;
 
         if ($status === null) {
             throw new \DomainException("Can't move out of status '{$this->status}'.");
@@ -104,7 +104,7 @@ final class AppStatus
     {
         return in_array(
             $this->status,
-            [self::REGISTERING_EARLY, self::BOOTING_EARLY, self::BOOTSTRAPPED_EARLY],
+            [self::REGISTERING_EARLY, self::BOOTING_EARLY, self::BOOTED_EARLY],
             true
         );
     }
@@ -116,7 +116,7 @@ final class AppStatus
     {
         return in_array(
             $this->status,
-            [self::REGISTERING_PLUGINS, self::BOOTING_PLUGINS, self::BOOTSTRAPPED_PLUGINS],
+            [self::REGISTERING_PLUGINS, self::BOOTING_PLUGINS, self::BOOTED_PLUGINS],
             true
         );
     }
@@ -128,7 +128,7 @@ final class AppStatus
     {
         return in_array(
             $this->status,
-            [self::REGISTERING_THEMES, self::BOOTING_THEMES, self::BOOTSTRAPPED_THEMES],
+            [self::REGISTERING_THEMES, self::BOOTING_THEMES, self::BOOTED_THEMES],
             true
         );
     }
@@ -160,11 +160,11 @@ final class AppStatus
     /**
      * @return bool
      */
-    public function isBootstrapped(): bool
+    public function isBooted(): bool
     {
         return in_array(
             $this->status,
-            [self::BOOTSTRAPPED_EARLY, self::BOOTSTRAPPED_PLUGINS, self::BOOTSTRAPPED_THEMES],
+            [self::BOOTED_EARLY, self::BOOTED_PLUGINS, self::BOOTED_THEMES],
             true
         );
     }
@@ -174,7 +174,7 @@ final class AppStatus
      */
     public function isDone(): bool
     {
-        return $this->status === self::BOOTSTRAPPED_THEMES;
+        return $this->status === self::BOOTED_THEMES;
     }
 
     /**
@@ -188,9 +188,13 @@ final class AppStatus
 
     /**
      * @return string
+     *
+     * phpcs:disable Inpsyde.CodeQuality.ReturnTypeDeclaration
      */
     public function __toString()
     {
+        // phpcs:enable Inpsyde.CodeQuality.ReturnTypeDeclaration
+
         return $this->status;
     }
 
@@ -206,12 +210,14 @@ final class AppStatus
             $filter = current_filter();
             $filter and $message .= " WordPress is at {$filter} hook.";
 
-            throw new \Exception($message);
+            throw new \DomainException($message);
         }
 
         if (!did_action('plugins_loaded')) {
-            // If app is booted before "plugins_loaded", we boot it again on plugins loaded.
+            // App is booted before "plugins_loaded": we boot it a second time on "plugins_loaded"
+            // and then again a third time on last step hook.
             add_action('plugins_loaded', [$app, 'boot'], PHP_INT_MAX);
+            add_action($this->lastStepHook, [$app, 'boot'], PHP_INT_MAX);
 
             $this->status = self::REGISTERING_EARLY;
 

@@ -2,10 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Inpsyde\App\Tests;
+namespace Inpsyde\App\Tests\Provider;
 
 use Inpsyde\App\Container;
 use Inpsyde\App\Provider\RegisteredOnly;
+use Inpsyde\App\Tests\TestCase;
 
 class AutoDiscoverIdTest extends TestCase
 {
@@ -14,8 +15,9 @@ class AutoDiscoverIdTest extends TestCase
     {
         $provider = new class extends RegisteredOnly {
             public $id = 'hi there';
-            public function register(Container $container): void
+            public function register(Container $container): bool
             {
+                return false;
             }
         };
 
@@ -26,8 +28,9 @@ class AutoDiscoverIdTest extends TestCase
     {
         $provider = new class extends RegisteredOnly {
             public const ID = 'constant!';
-            public function register(Container $container): void
+            public function register(Container $container): bool
             {
+                return false;
             }
         };
 
@@ -37,8 +40,9 @@ class AutoDiscoverIdTest extends TestCase
     public function testFromClass()
     {
         $provider = new class extends RegisteredOnly {
-            public function register(Container $container): void
+            public function register(Container $container): bool
             {
+                return false;
             }
         };
 
@@ -48,8 +52,9 @@ class AutoDiscoverIdTest extends TestCase
     public function testFromClassNotUnique()
     {
         $provider1 = new class extends RegisteredOnly {
-            public function register(Container $container): void
+            public function register(Container $container): bool
             {
+                return false;
             }
         };
 

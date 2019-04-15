@@ -4,15 +4,15 @@ namespace Inpsyde\App;
 
 final class ProviderStatus
 {
-    private const IDLE = 'None';
-    private const ADDED = 'Added';
-    private const REGISTERED = 'Registered';
-    private const REGISTERED_DELAYED = 'Registered with delay';
-    private const BOOTED = 'Booted';
-    private const SKIPPED = 'Skipped';
+    public const IDLE = 'None';
+    public const ADDED = 'Added';
+    public const REGISTERED = 'Registered';
+    public const REGISTERED_DELAYED = 'Registered with delay';
+    public const BOOTED = 'Booted';
+    public const SKIPPED = 'Skipped';
 
     /**
-     * @var int
+     * @var string
      */
     private $status;
 
@@ -82,7 +82,7 @@ final class ProviderStatus
      * @param bool $delay
      * @return ProviderStatus
      */
-    public function nowRegistered(AppStatus $appStatus, bool $delay): ProviderStatus
+    public function nowRegistered(AppStatus $appStatus, bool $delay = false): ProviderStatus
     {
         if ($this->status !== self::ADDED) {
             $this->cantMoveTo(self::REGISTERED);
@@ -118,16 +118,20 @@ final class ProviderStatus
      * @param string $statuses
      * @return bool
      */
-    public function anyOf(string ...$statuses): bool
+    public function isAnyOf(string ...$statuses): bool
     {
         return in_array($this->status, $statuses, true);
     }
 
     /**
      * @return string
+     *
+     * phpcs:disable Inpsyde.CodeQuality.ReturnTypeDeclaration
      */
     public function __toString()
     {
+        // phpcs:enable Inpsyde.CodeQuality.ReturnTypeDeclaration
+
         $status = "{$this->status} (";
         foreach ($this->appStatuses as $which => $when) {
             $status .= "{$which} when {$when}, ";
@@ -138,6 +142,7 @@ final class ProviderStatus
 
     /**
      * @param string $desired
+     * @return void
      */
     private function cantMoveTo(string $desired): void
     {
@@ -145,15 +150,17 @@ final class ProviderStatus
     }
 
     /**
-     * @param string $desired
+     * @param AppStatus $appStatus
+     * @param string $status
+     * @return void
      */
     private function checkAndUpdateAppStatus(AppStatus $appStatus, string $status): void
     {
         $error = sprintf(
             "Can't move to status '%s': current App status '%s', is not compatible with '%s'.",
             $status,
-            $this->appStatus,
-            $appStatus
+            (string)$this->appStatus,
+            (string)$appStatus
         );
 
         if ($this->appStatus->isThemesStep() && !$appStatus->isThemesStep()) {

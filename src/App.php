@@ -4,14 +4,14 @@ namespace Inpsyde\App;
 
 use Inpsyde\App\Provider\Package;
 use Inpsyde\App\Provider\ServiceProvider;
-use Psr\Container\ContainerInterface;
 
 final class App
 {
     public const ACTION_ADD_PROVIDERS = 'app.add-providers';
     public const ACTION_REGISTERED = 'app.providers-registered';
     public const ACTION_REGISTERED_PROVIDER = 'app.providers-provider-registered';
-    public const ACTION_BOOTSTRAPPED = 'app.providers-bootstrapped';
+    public const ACTION_BOOTED_PROVIDER = 'app.providers-provider-booted';
+    public const ACTION_BOOTED = 'app.providers-booted';
     public const ACTION_ERROR = 'app.error';
 
     /**
@@ -20,34 +20,14 @@ final class App
     private static $app;
 
     /**
-     * @var Container
+     * @var Container|null
      */
     private $container;
 
     /**
-     * @var ContainerInterface[]
+     * @var AppLogger
      */
-    private $wrappedContainers;
-
-    /**
-     * @var \SplQueue
-     */
-    private $bootable;
-
-    /**
-     * @var \SplQueue
-     */
-    private $delayed;
-
-    /**
-     * @var array<string,bool>
-     */
-    private $registered = [];
-
-    /**
-     * @var AppInfo
-     */
-    private $appInfo;
+    private $logger;
 
     /**
      * @var AppStatus
@@ -55,9 +35,14 @@ final class App
     private $status;
 
     /**
-     * @var string
+     * @var \SplQueue|null
      */
-    private $namespace;
+    private $bootable;
+
+    /**
+     * @var \SplQueue|null
+     */
+    private $delayed;
 
     /**
      * @var bool
@@ -65,26 +50,12 @@ final class App
     private $booting = false;
 
     /**
-     * @param string $namespace
-     * @param ContainerInterface ...$containers
+     * @param Container|null $container
      * @return App
      */
-    public static function new(string $namespace, ContainerInterface ...$containers): App
+    public static function new(Container $container = null): App
     {
-        $app = new static($namespace, ...$containers);
-        self::$app or self::$app = $app;
-
-        return $app;
-    }
-
-    /**
-     * @param string $namespace
-     * @return App
-     */
-    public static function newWithContainer(Container $container): App
-    {
-        $app = new static('');
-        $app->container = $container;
+        $app = new App($container);
         self::$app or self::$app = $app;
 
         return $app;
@@ -110,6 +81,7 @@ final class App
             }
 
             $theApp->initializeContainer();
+            // @phan-suppress-next-line PhanPossiblyNonClassMethodCall
             $value = $theApp->container->get($id);
         } catch (\Throwable $throwable) {
             static::handleThrowable($throwable);
@@ -121,7 +93,7 @@ final class App
     /**
      * @param \Throwable $throwable
      */
-    private static function handleThrowable(\Throwable $throwable): void
+    public static function handleThrowable(\Throwable $throwable): void
     {
         do_action(self::ACTION_ERROR, $throwable);
 
@@ -131,15 +103,13 @@ final class App
     }
 
     /**
-     * @param string $namespace
-     * @param ContainerInterface ...$containers
+     * @param Container|null $container
      */
-    private function __construct(string $namespace, ContainerInterface ...$containers)
+    private function __construct(Container $container = null)
     {
         $this->status = AppStatus::new();
-        $this->appInfo = AppInfo::new();
-        $this->namespace = $namespace;
-        $this->wrappedContainers = $containers;
+        $this->logger = AppLogger::new();
+        $this->container = $container;
     }
 
     /**
@@ -147,7 +117,7 @@ final class App
      */
     public function enableDebug(): App
     {
-        $this->appInfo->enableDebug();
+        $this->logger->enableDebug();
 
         return $this;
     }
@@ -157,7 +127,7 @@ final class App
      */
     public function disableDebug(): App
     {
-        $this->appInfo->disableDebug();
+        $this->logger->disableDebug();
 
         return $this;
     }
@@ -181,16 +151,23 @@ final class App
      */
     public function debugInfo(): ?array
     {
-        $providers = $this->appInfo->providersStatus();
+        $providers = $this->logger->dump();
         if ($providers === null) {
             return null;
         }
 
         return [
-            'namespace' => $this->namespace,
             'status' => (string)$this->status,
             'providers' => $providers,
         ];
+    }
+
+    /**
+     * @return AppStatus
+     */
+    public function status(): AppStatus
+    {
+        return clone $this->status;
     }
 
     /**
@@ -203,7 +180,7 @@ final class App
                 throw new \Exception('Can\'t call App::boot() when already booting.');
             }
 
-            $this->status = $this->status->next($this);
+            $this->status = $this->status->next($this); // registering
 
             // We set to true to prevent anything listening self::ACTION_ADD_PROVIDERS to call boot().
             $this->booting = true;
@@ -234,18 +211,21 @@ final class App
         try {
             $this->initializeContainer();
 
+            // @phan-suppress-next-line PhanPossiblyNonClassMethodCall
             if ($contexts && !$this->container->context()->is(...$contexts)) {
-                $this->appInfo->providerSkipped($provider, $this->status);
+                $this->logger->providerSkipped($provider, $this->status);
 
                 return $this;
             }
 
-            $this->appInfo->providerAdded($provider, $this->status);
+            $this->logger->providerAdded($provider, $this->status);
 
             $provider->registerLater()
+                // @phan-suppress-next-line PhanPossiblyNonClassMethodCall
                 ? $this->delayed->enqueue($provider)
                 : $this->registerProvider($provider);
 
+            // @phan-suppress-next-line PhanPossiblyNonClassMethodCall
             $this->bootable->enqueue($provider);
         } catch (\Throwable $throwable) {
             static::handleThrowable($throwable);
@@ -260,11 +240,7 @@ final class App
      */
     public function addPackage(Package $package): App
     {
-        try {
-            $package->providers()->provideTo($this);
-        } catch (\Throwable $throwable) {
-            static::handleThrowable($throwable);
-        }
+        $package->providers()->provideTo($this);
 
         return $this;
     }
@@ -287,15 +263,9 @@ final class App
      */
     private function initializeContainer(): void
     {
-        if (!$this->container) {
-            $this->container = new Container(
-                new EnvConfig($this->namespace),
-                Context::create(),
-                ...$this->wrappedContainers
-            );
-            $this->delayed = new \SplQueue();
-            $this->bootable = new \SplQueue();
-        }
+        $this->container or $this->container = new Container();
+        $this->delayed or $this->delayed = new \SplQueue();
+        $this->bootable or $this->bootable = new \SplQueue();
     }
 
     /**
@@ -306,28 +276,31 @@ final class App
         $this->initializeContainer();
         $lastRun = $this->status->isThemesStep();
 
-        $lastRun or $this->container[Container::REGISTERED_PROVIDERS] = $this->registered;
-
         try {
             $this->registerDeferredProviders();
 
-            $this->container[Container::REGISTERED_PROVIDERS] = $this->registered;
+            $this->status = $this->status->next($this); // booting
 
-            if ($lastRun) {
-                $this->container[Container::APP_REGISTERED] = true;
-                do_action(self::ACTION_REGISTERED);
-                $this->registered = [];
-            }
+            $lastRun and do_action(self::ACTION_REGISTERED);
 
             $this->bootProviders();
-            //
+
+            $this->status = $this->status->next($this); // booted
+
+            $lastRun and do_action(self::ACTION_BOOTED, $this->container);
         } catch (\Throwable $throwable) {
             static::handleThrowable($throwable);
-        }
-
-        if ($lastRun) {
-            $this->container[Container::APP_BOOTSTRAPPED] = true;
-            do_action(self::ACTION_BOOTSTRAPPED, $this->container);
+        } finally {
+            if ($lastRun) {
+                return;
+            }
+            // If exception has been caught, ensure status is booted, so new `boot()` will not fail.
+            if ($this->status->isRegistering()) {
+                $this->status = $this->status->next($this);
+            }
+            if ($this->status->isBooting()) {
+                $this->status = $this->status->next($this);
+            }
         }
     }
 
@@ -336,11 +309,17 @@ final class App
      */
     private function registerDeferredProviders(): void
     {
+        if (!$this->delayed) {
+            return;
+        }
+
         $lastRun = $this->status->isThemesStep();
         $toRegisterLater = $lastRun ? null : new \SplQueue();
 
+        // @phan-suppress-next-line PhanPossiblyNonClassMethodCall
         while ($this->delayed->count()) {
             /** @var ServiceProvider $delayed */
+            // @phan-suppress-next-line PhanPossiblyNonClassMethodCall
             $delayed = $this->delayed->dequeue();
             $toRegisterNow = $lastRun || $delayed->bootEarly();
             $toRegisterNow and $this->registerProvider($delayed);
@@ -351,7 +330,6 @@ final class App
         }
 
         $this->delayed = $toRegisterLater;
-        $this->status->next($this);
     }
 
     /**
@@ -359,28 +337,31 @@ final class App
      */
     private function bootProviders(): void
     {
+        if (!$this->bootable) {
+            return;
+        }
+
         $lastRun = $this->status->isThemesStep();
+
         $toBootLater = $lastRun ? null : new \SplQueue();
 
+        // @phan-suppress-next-line PhanPossiblyNonClassMethodCall
         while ($this->bootable->count()) {
             /** @var ServiceProvider $bootable */
+            // @phan-suppress-next-line PhanPossiblyNonClassMethodCall
             $bootable = $this->bootable->dequeue();
 
-            /** @var bool $toBootNow */
-            $toBootNow = $lastRun || $bootable->bootEarly();
-
-            if ($toBootNow && $bootable->boot($this->container)) {
-                $this->appInfo->providerBooted($bootable, $this->status);
+            if ($lastRun || $bootable->bootEarly()) {
+                $this->bootProvider($bootable);
+                continue;
             }
 
-            if ($toBootLater && !$toBootNow) {
+            if ($toBootLater) {
                 $toBootLater->enqueue($bootable);
             }
         }
 
         $this->bootable = $toBootLater;
-
-        $this->status->next($this);
     }
 
     /**
@@ -389,19 +370,42 @@ final class App
      */
     private function registerProvider(ServiceProvider $provider): void
     {
-        $registered = $provider->register($this->container);
-        $this->registered[$provider->id()] = true;
-
         try {
+            $this->initializeContainer();
+            $id = $provider->id();
+
+            // @phan-suppress-next-line PhanPossiblyNullTypeArgument
+            $registered = $provider->register($this->container);
+
             if ($registered) {
                 $this->booting = true;
-                do_action(self::ACTION_REGISTERED_PROVIDER, $provider->id(), $this, $registered);
+                do_action(self::ACTION_REGISTERED_PROVIDER, $id, $this);
                 $this->booting = false;
 
-                $this->appInfo->providerRegistered($provider, $this->status);
+                $this->logger->providerRegistered($provider, $this->status);
             }
         } catch (\Throwable $exception) {
             self::handleThrowable($exception);
         }
+    }
+
+    /**
+     * @param ServiceProvider $provider
+     * @return void
+     */
+    private function bootProvider(ServiceProvider $provider): void
+    {
+        $this->initializeContainer();
+
+        // @phan-suppress-next-line PhanPossiblyNullTypeArgument
+        $booted = $provider->boot($this->container);
+        if (!$booted) {
+            return;
+        }
+
+        $id = $provider->id();
+        $this->logger->providerBooted($provider, $this->status);
+
+        do_action(self::ACTION_BOOTED_PROVIDER, $id);
     }
 }

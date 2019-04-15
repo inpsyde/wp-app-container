@@ -24,5 +24,4 @@ interface SiteConfig
      * phpcs:disable Inpsyde.CodeQuality.ArgumentTypeDeclaration
      */
     public function get(string $name, $default = null);
-
 }

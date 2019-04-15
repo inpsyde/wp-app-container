@@ -2,24 +2,20 @@
 
 namespace Inpsyde\App;
 
-use Pimple\Container as Pimple;
-use Pimple\Exception\FrozenServiceException;
+use Pimple;
+use Pimple\Exception\UnknownIdentifierException;
 use Psr\Container\ContainerInterface;
 
 /**
  * phpcs:disable Inpsyde.CodeQuality.ArgumentTypeDeclaration
  * phpcs:disable Inpsyde.CodeQuality.ReturnTypeDeclaration
  */
-class Container extends Pimple implements ContainerInterface
+final class Container implements ContainerInterface, \ArrayAccess
 {
-    public const REGISTERED_PROVIDERS = 'app.container.registered-providers';
-    public const APP_BOOTSTRAPPED = 'app.container.app-bootstrapped';
-    public const APP_REGISTERED = 'app.container.app-registered';
-
     /**
      * @var SiteConfig
      */
-    private $env;
+    private $config;
 
     /**
      * @var Context
@@ -27,38 +23,60 @@ class Container extends Pimple implements ContainerInterface
     private $context;
 
     /**
-     * @var array<string,bool>
+     * @var Pimple\Container|null
      */
-    private $registeredProviders = [];
+    private $pimple;
 
     /**
      * @var ContainerInterface[]
      */
-    private $wrappedContainers = [];
+    private $containers = [];
 
     /**
-     * @param SiteConfig $env
-     * @param Context $context
-     * @param ContainerInterface ...$wrappedContainers
+     * @var bool
+     */
+    private $hasCustomContainers = true;
+
+    /**
+     * @param SiteConfig|null $config
+     * @param Context|null $context
+     * @param ContainerInterface ...$containers
      */
     public function __construct(
-        SiteConfig $env,
-        Context $context,
-        ContainerInterface ...$wrappedContainers
+        SiteConfig $config = null,
+        Context $context = null,
+        ContainerInterface ...$containers
     ) {
 
-        parent::__construct();
-        $this->env = $env;
-        $this->context = $context;
-        $this->wrappedContainers = $wrappedContainers;
+        if (!$containers) {
+            $pimple = new Pimple\Container();
+            $containers = [new Pimple\Psr11\Container($pimple)];
+            $this->pimple = $pimple;
+            $this->hasCustomContainers = false;
+        }
+
+        $this->config = $config ?? new EnvConfig();
+        $this->context = $context ?? Context::create();
+        $this->containers = $containers;
+    }
+
+    /**
+     * @return Container
+     */
+    public function withSiteConfig(SiteConfig $config): Container
+    {
+        $instance = clone $this;
+        $instance->config = $config;
+
+        return $instance;
     }
 
     /**
      * @return SiteConfig
      */
-    public function env(): SiteConfig
+    public function config(): SiteConfig
     {
-        return $this->env;
+        return $this->config;
     }
 
     /**
@@ -73,9 +91,10 @@ class Container extends Pimple implements ContainerInterface
      * @param ContainerInterface $container
      * @return Container
      */
-    final public function addContainer(ContainerInterface $container): Container
+    public function addContainer(ContainerInterface $container): Container
     {
-        $this->wrappedContainers[] = $container;
+        $this->containers[] = $container;
+        $this->hasCustomContainers = true;
 
         return $this;
     }
@@ -85,15 +104,19 @@ class Container extends Pimple implements ContainerInterface
      * @param mixed $value
      * @return void
      */
-    final public function offsetSet($id, $value)
+    public function offsetSet($id, $value)
     {
         try {
             $this->assertString($id, __METHOD__);
-            if (!$this->maybeSaveRegistered($id, $value)) {
-                parent::offsetSet($id, $value);
+            if (!$this->pimple) {
+                $pimple = new Pimple\Container();
+                $this->containers[] = new Pimple\Psr11\Container($pimple);
+                $this->pimple = $pimple;
             }
+            $this->pimple[$id] = $value;
         } catch (\Throwable $throwable) {
             do_action(App::ACTION_ERROR, $throwable);
+
             throw $throwable;
         }
     }
@@ -110,19 +133,17 @@ class Container extends Pimple implements ContainerInterface
 
         try {
             $this->assertString($id, __METHOD__);
-            if (parent::offsetExists($id)) {
-                return parent::offsetGet($id);
-            }
 
-            foreach ($this->wrappedContainers as $container) {
+            foreach ($this->containers as $container) {
                 if ($container->has($id)) {
                     return $container->get($id);
                 }
             }
 
-            return parent::offsetGet($id);
+            throw new UnknownIdentifierException($id);
         } catch (\Throwable $throwable) {
             do_action(App::ACTION_ERROR, $throwable);
+
             throw $throwable;
         }
     }
@@ -139,11 +160,8 @@ class Container extends Pimple implements ContainerInterface
 
         try {
             $this->assertString($id, __METHOD__);
-            if (parent::offsetExists($id)) {
-                return true;
-            }
 
-            foreach ($this->wrappedContainers as $container) {
+            foreach ($this->containers as $container) {
                 if ($container->has($id)) {
                     return true;
                 }
@@ -152,6 +170,7 @@ class Container extends Pimple implements ContainerInterface
             return false;
         } catch (\Throwable $throwable) {
             do_action(App::ACTION_ERROR, $throwable);
+
             throw $throwable;
         }
     }
@@ -165,9 +184,14 @@ class Container extends Pimple implements ContainerInterface
         try {
             $this->assertString($id, __METHOD__);
 
-            parent::offsetUnset($id);
+            if (!$this->pimple || $this->hasCustomContainers) {
+                throw new ContainerUnsetNotAllowed($id);
+            }
+
+            unset($this->pimple[$id]);
         } catch (\Throwable $throwable) {
             do_action(App::ACTION_ERROR, $throwable);
+
             throw $throwable;
         }
     }
@@ -188,44 +212,6 @@ class Container extends Pimple implements ContainerInterface
     public function has($id)
     {
         return $this->offsetExists($id);
-    }
-
-    /**
-     * @param string $providerId
-     * @return bool
-     */
-    final public function hasProvider(string $providerId): bool
-    {
-        return $this->registeredProviders[$providerId] ?? false;
-    }
-
-    /**
-     * @param string $id
-     * @param $value
-     * @return bool
-     */
-    private function maybeSaveRegistered(string $id, $value): bool
-    {
-        if ($id !== self::REGISTERED_PROVIDERS) {
-            return false;
-        }
-
-        if ($this->has(self::APP_REGISTERED)) {
-            throw new FrozenServiceException($id);
-        }
-
-        if (!is_array($value)) {
-            throw new \TypeError(
-                sprintf(
-                    'Registered provider must be an array, %s given.',
-                    gettype($value)
-                )
-            );
-        }
-
-        $this->registeredProviders = $value;
-
-        return true;
     }
 
     /**

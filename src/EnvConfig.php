@@ -34,32 +34,19 @@ class EnvConfig implements SiteConfig
     private $data = [];
 
     /**
-     * @var string
+     * @var string[]
      */
-    private $namespace;
+    private $namespaces = [];
 
     /**
-     * @var string
+     * @param string ...$namespaces
      */
-    private $altNamespace;
-
-    /**
-     * @param string $namespace
-     * @param string|null $altNamespace
-     */
-    public function __construct(string $namespace, string $altNamespace = null)
+    public function __construct(string ...$namespaces)
     {
-        $namespace = trim($namespace, '\\');
-        $namespace and $this->namespace = $namespace;
-
-        if ($namespace && $altNamespace === null) {
-            $this->altNamespace = "{$this->namespace}\\Config";
-
-            return;
+        foreach ($namespaces as $namespace) {
+            $trimmed = $namespace ? trim($namespace, '\\') : null;
+            $trimmed and $this->namespaces[] = $trimmed;
         }
-
-        $altNamespace = $altNamespace ? trim($altNamespace, '\\') : null;
-        $altNamespace and $this->altNamespace = $altNamespace;
     }
 
     /**
@@ -126,35 +113,28 @@ class EnvConfig implements SiteConfig
             return $default;
         }
 
-        $constantName = strtoupper($name);
-
-        if (array_key_exists($constantName, $this->data)) {
-            return $this->data[$constantName];
+        if (array_key_exists($name, $this->data)) {
+            return $this->data[$name];
         }
 
         // Try namespaced constant
-        if ($this->namespace && defined("\\{$this->namespace}\\{$constantName}")) {
-            $this->data[$constantName] = constant("\\{$this->namespace}\\{$constantName}");
+        foreach ($this->namespaces as $namespace) {
+            if (defined("\\{$namespace}\\{$name}")) {
+                $this->data[$name] = constant("\\{$namespace}\\{$name}");
 
-            return $this->data[$constantName];
-        }
-
-        // Try alt-namespaced constant
-        if ($this->altNamespace && defined("\\{$this->altNamespace}\\{$constantName}")) {
-            $this->data[$constantName] = constant("\\{$this->altNamespace}\\{$constantName}");
-
-            return $this->data[$constantName];
+                return $this->data[$name];
+            }
         }
 
         // Try env var or global constant
-        $env = $this->readEnvVarOrConstant($constantName);
+        $env = $this->readEnvVarOrConstant($name);
         if ($env !== null) {
-            $this->data[$constantName] = $env;
+            $this->data[$name] = $env;
 
             return $env;
         }
 
-        $this->data[$constantName] = $default;
+        $this->data[$name] = $default;
 
         return $default;
     }
@@ -191,15 +171,15 @@ class EnvConfig implements SiteConfig
      */
     private function filterEnv(string $env): string
     {
+        $lower = strtolower($env);
+        $env = self::ENV_ALIASES[$lower] ?? $lower;
+
         // @phan-suppress-next-line PhanTypeVoidAssignment
-        $filtered = apply_filters(self::FILTER_ENV_NAME, strtolower($env));
+        $filtered = apply_filters(self::FILTER_ENV_NAME, $env);
 
         if (($filtered !== $env) && is_string($filtered)) {
-            $env = strtolower($filtered);
-        }
-
-        if (array_key_exists($env, self::ENV_ALIASES)) {
-            $env = self::ENV_ALIASES[$env];
+            $filteredLower = strtolower($filtered);
+            $env = self::ENV_ALIASES[$filteredLower] ?? $filteredLower;
         }
 
         return $env;

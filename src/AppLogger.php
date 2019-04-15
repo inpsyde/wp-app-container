@@ -4,7 +4,7 @@ namespace Inpsyde\App;
 
 use Inpsyde\App\Provider\ServiceProvider;
 
-final class AppInfo
+final class AppLogger
 {
     /**
      * @var bool
@@ -17,16 +17,13 @@ final class AppInfo
     private $providers = [];
 
     /**
-     * @return AppInfo
+     * @return AppLogger
      */
-    public static function new(): AppInfo
+    public static function new(): AppLogger
     {
         return new static();
     }
 
-    /**
-     * @param string $namespace
-     */
     private function __construct()
     {
         $this->debugEnabled = defined('WP_DEBUG') && WP_DEBUG;
@@ -50,7 +47,8 @@ final class AppInfo
 
     /**
      * @param ServiceProvider $provider
-     * @param AppStatus $status
+     * @param AppStatus $appStatus
+     * @return void
      */
     public function providerSkipped(ServiceProvider $provider, AppStatus $appStatus): void
     {
@@ -64,7 +62,8 @@ final class AppInfo
 
     /**
      * @param ServiceProvider $provider
-     * @param AppStatus $status
+     * @param AppStatus $appStatus
+     * @return void
      */
     public function providerAdded(ServiceProvider $provider, AppStatus $appStatus): void
     {
@@ -78,7 +77,8 @@ final class AppInfo
 
     /**
      * @param ServiceProvider $provider
-     * @param AppStatus $status
+     * @param AppStatus $appStatus
+     * @return void
      */
     public function providerRegistered(ServiceProvider $provider, AppStatus $appStatus): void
     {
@@ -110,7 +110,7 @@ final class AppInfo
     /**
      * @return array|null
      */
-    public function providersStatus(): ?array
+    public function dump(): ?array
     {
         if (!$this->debugEnabled) {
             return null;

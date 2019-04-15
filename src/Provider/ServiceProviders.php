@@ -12,11 +12,6 @@ class ServiceProviders
     private $providers;
 
     /**
-     * @var bool
-     */
-    private $done = false;
-
-    /**
      * @return ServiceProviders
      */
     public static function new(): ServiceProviders
@@ -31,15 +26,9 @@ class ServiceProviders
      */
     public function add(ServiceProvider $provider, string ...$contexts): ServiceProviders
     {
-        if ($this->done) {
-            $this->handleThrowable(
-                new \Exception('Providers already added to app, can\'t add more providers.')
-            );
-
-            return $this;
-        }
-
         $this->providers or $this->providers = new \SplObjectStorage();
+
+        // @phan-suppress-next-line PhanPossiblyNonClassMethodCall
         $this->providers->attach($provider, $contexts);
 
         return $this;
@@ -50,39 +39,32 @@ class ServiceProviders
      */
     public function provideTo(App $app): void
     {
-        if ($this->done) {
-            $this->handleThrowable(
-                new \Exception('Providers already added to app, can\'t provide again.')
-            );
-
+        if (!$this->providers) {
             return;
         }
 
-        $this->done = true;
-        $this->providers->rewind();
-        while ($this->providers->valid()) {
-            /** @var ServiceProvider $provider */
-            $provider = $this->providers->current();
-            /** @var string[] $contexts */
-            $contexts = $this->providers->getInfo();
-
-            $app->addProvider($provider, ...$contexts);
-
-            $this->providers->next();
-        }
-
+        // @phan-suppress-next-line PhanPossiblyNullTypeArgument
+        $this->addProvidersToApp($app, $this->providers);
         $this->providers = null;
     }
 
     /**
-     * @param \Throwable $throwable
+     * @param App $app
+     * @param \SplObjectStorage $providers
      */
-    private function handleThrowable(\Throwable $throwable): void
+    private function addProvidersToApp(App $app, \SplObjectStorage $providers): void
     {
-        do_action(App::ACTION_ERROR, $throwable);
+        $providers->rewind();
 
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            throw $throwable;
+        while ($providers->valid()) {
+            /** @var ServiceProvider $provider */
+            $provider = $providers->current();
+            /** @var string[] $contexts */
+            $contexts = $providers->getInfo();
+
+            $app->addProvider($provider, ...$contexts);
+
+            $providers->next();
         }
     }
 }
