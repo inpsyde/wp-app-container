@@ -7,12 +7,12 @@ use Inpsyde\App\Provider\ServiceProvider;
 
 final class App
 {
-    public const ACTION_ADD_PROVIDERS = 'app.add-providers';
-    public const ACTION_REGISTERED = 'app.providers-registered';
-    public const ACTION_REGISTERED_PROVIDER = 'app.providers-provider-registered';
-    public const ACTION_BOOTED_PROVIDER = 'app.providers-provider-booted';
-    public const ACTION_BOOTED = 'app.providers-booted';
-    public const ACTION_ERROR = 'app.error';
+    public const ACTION_ADD_PROVIDERS = 'wp-app.add-providers';
+    public const ACTION_REGISTERED = 'wp-app.all-providers-registered';
+    public const ACTION_REGISTERED_PROVIDER = 'wp-app.provider-registered';
+    public const ACTION_BOOTED_PROVIDER = 'wp-app.provider-booted';
+    public const ACTION_BOOTED = 'wp-app.all-providers-booted';
+    public const ACTION_ERROR = 'wp-app.error';
 
     /**
      * @var App

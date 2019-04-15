@@ -118,7 +118,7 @@ By creating an instance of `App` via `App::new()`, it will take care of creating
 Information regarding running environment are auto-discovered from env variables supported by [WP Starter](https://github.com/wecodemore/wpstarter) or from configurations defined in well-known hosting like Automattic VIP or WP Engine.
 There's a fallback in case no environment can be determined: if `WP_DEBUG`: is true, `development` environment is assumed, otherwise `production`.
 
-In *any* case, a filter: `"app-environment"` is available for customization of the determined environment.
+In *any* case, a filter: `"wp-app-environment"` is available for customization of the determined environment.
 
 Regarding PHP constants, `EnvConfig` is capable to search for constants defined in the root namespace, but also inside other namespaces.
 For the latter case, the class has to configured to let it know which "alternative" namespaces are supported.

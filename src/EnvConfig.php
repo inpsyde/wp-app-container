@@ -8,7 +8,7 @@ class EnvConfig implements SiteConfig
     public const PRODUCTION = 'production';
     public const STAGING = 'staging';
 
-    public const FILTER_ENV_NAME = 'app-environment';
+    public const FILTER_ENV_NAME = 'wp-app.environment';
 
     private const ENV_ALIASES = [
         'dev' => self::DEVELOPMENT,
