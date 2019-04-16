@@ -50,6 +50,25 @@ class AppTest extends TestCase
         return new ConfigurableProvider($id, $register ?? '__return_true', '__return_true');
     }
 
+    /**
+     * @param string $string
+     * @return object
+     */
+    public static function stubStringObject(string $string)
+    {
+        return new class($string) {
+            private $string;
+            public function __construct(string $string)
+            {
+               $this->string = $string;
+            }
+            public function __toString()
+            {
+                return $this->string;
+            }
+        };
+    }
+
     public function testMakeFailsIfNoAppCreated()
     {
         $this->expectException(\Exception::class);
@@ -126,7 +145,9 @@ class AppTest extends TestCase
         $early = new ConfigurableProvider(
             'p-early',
             function (Container $c) {
-                $c['a'] = 'A-';
+                $c->addService('a', function () {
+                    return AppTest::stubStringObject('A-');
+                });
 
                 return true;
             }
@@ -142,7 +163,7 @@ class AppTest extends TestCase
                             'p-plugins-1',
                             '__return_true',
                             function (Container $c) {
-                                echo $c['a'] . $c['b'] . $c['c'];
+                                echo $c->get('a') . $c->get('b') . $c->get('c');
 
                                 return true;
                             },
@@ -154,7 +175,9 @@ class AppTest extends TestCase
                         new ConfigurableProvider(
                             'p-plugins-2',
                             function (Container $c) {
-                                $c['b'] = 'B-';
+                                $c->addService('c', function () {
+                                    return AppTest::stubStringObject('C!');
+                                });
 
                                 return true;
                             }
@@ -166,7 +189,9 @@ class AppTest extends TestCase
         $themes = new ConfigurableProvider(
             'p-themes',
             function (Container $c) {
-                $c['c'] = 'C!';
+                $c->addService('b', function () {
+                    return AppTest::stubStringObject('B-');
+                });
 
                 return true;
             }
@@ -206,19 +231,25 @@ class AppTest extends TestCase
     public function testNestedAddProvider()
     {
         $p1 = self::stubProvider('p1', function (Container $container) {
-            $container['a'] = 'A-';
+            $container->addService('a', function () {
+                return AppTest::stubStringObject('A-');
+            });
 
             return true;
         });
 
         $p2 = self::stubProvider('p2', function (Container $container) {
-            $container['b'] = 'B-';
+            $container->addService('b', function () {
+                return AppTest::stubStringObject('B-');
+            });
 
             return true;
         });
 
         $p3 = self::stubProvider('p3', function (Container $container) {
-            $container['c'] = 'C!';
+            $container->addService('c', function () {
+                return AppTest::stubStringObject('C!');
+            });
 
             return true;
         });
@@ -247,7 +278,7 @@ class AppTest extends TestCase
             ->once()
             ->with(\Mockery::type(Container::class))
             ->whenHappen(function (Container $container) {
-                echo $container['a'] . $container['b'] . $container['c'];
+                echo $container->get('a') . $container->get('b') . $container->get('c');
             });
 
         Actions\expectDone('init')

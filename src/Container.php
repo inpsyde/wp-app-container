@@ -10,7 +10,7 @@ use Psr\Container\ContainerInterface;
  * phpcs:disable Inpsyde.CodeQuality.ArgumentTypeDeclaration
  * phpcs:disable Inpsyde.CodeQuality.ReturnTypeDeclaration
  */
-final class Container implements ContainerInterface, \ArrayAccess
+final class Container implements ContainerInterface
 {
     /**
      * @var SiteConfig
@@ -33,11 +33,6 @@ final class Container implements ContainerInterface, \ArrayAccess
     private $containers = [];
 
     /**
-     * @var bool
-     */
-    private $hasCustomContainers = true;
-
-    /**
      * @param SiteConfig|null $config
      * @param Context|null $context
      * @param ContainerInterface ...$containers
@@ -52,7 +47,6 @@ final class Container implements ContainerInterface, \ArrayAccess
             $pimple = new Pimple\Container();
             $containers = [new Pimple\Psr11\Container($pimple)];
             $this->pimple = $pimple;
-            $this->hasCustomContainers = false;
         }
 
         $this->config = $config ?? new EnvConfig();
@@ -94,26 +88,60 @@ final class Container implements ContainerInterface, \ArrayAccess
     public function addContainer(ContainerInterface $container): Container
     {
         $this->containers[] = $container;
-        $this->hasCustomContainers = true;
 
         return $this;
     }
 
     /**
      * @param string $id
-     * @param mixed $value
+     * @param callable $factory
      * @return void
      */
-    public function offsetSet($id, $value)
+    public function addService(string $id, callable $factory)
     {
         try {
-            $this->assertString($id, __METHOD__);
-            if (!$this->pimple) {
-                $pimple = new Pimple\Container();
-                $this->containers[] = new Pimple\Psr11\Container($pimple);
-                $this->pimple = $pimple;
-            }
-            $this->pimple[$id] = $value;
+            $this->ensurePimple();
+            $this->pimple[$id] = $this->wrapCallback($factory);
+        } catch (\Throwable $throwable) {
+            do_action(App::ACTION_ERROR, $throwable);
+
+            throw $throwable;
+        }
+    }
+
+    /**
+     * @param string $id
+     * @param callable $extender
+     * @return void
+     */
+    public function extendService(string $id, callable $extender)
+    {
+        try {
+            $this->ensurePimple();
+            // @phan-suppress-next-line PhanPossiblyNonClassMethodCall
+            $this->pimple->extend(
+                $id,
+                function ($service) use (&$extender) {
+                    return $extender($service, $this);
+                }
+            );
+        } catch (\Throwable $throwable) {
+            do_action(App::ACTION_ERROR, $throwable);
+
+            throw $throwable;
+        }
+    }
+
+    /**
+     * @param string $id
+     * @param callable $callable
+     */
+    public function addFactory(string $id, callable $callable): void
+    {
+        try {
+            $this->ensurePimple();
+            // @phan-suppress-next-line PhanPossiblyNonClassMethodCall
+            $this->pimple[$id] = $this->pimple->factory($this->wrapCallback($callable));
         } catch (\Throwable $throwable) {
             do_action(App::ACTION_ERROR, $throwable);
 
@@ -127,13 +155,12 @@ final class Container implements ContainerInterface, \ArrayAccess
      *
      * phpcs:disable Generic.Metrics.NestingLevel
      */
-    public function offsetGet($id)
+    public function get($id)
     {
         // phpcs:enable Generic.Metrics.NestingLevel
+        $this->assertString($id, __METHOD__);
 
         try {
-            $this->assertString($id, __METHOD__);
-
             foreach ($this->containers as $container) {
                 if ($container->has($id)) {
                     return $container->get($id);
@@ -154,13 +181,12 @@ final class Container implements ContainerInterface, \ArrayAccess
      *
      * phpcs:disable Generic.Metrics.NestingLevel
      */
-    public function offsetExists($id)
+    public function has($id)
     {
         // phpcs:enable Generic.Metrics.NestingLevel
+        $this->assertString($id, __METHOD__);
 
         try {
-            $this->assertString($id, __METHOD__);
-
             foreach ($this->containers as $container) {
                 if ($container->has($id)) {
                     return true;
@@ -176,46 +202,19 @@ final class Container implements ContainerInterface, \ArrayAccess
     }
 
     /**
-     * @param string $id
      * @return void
      */
-    public function offsetUnset($id)
+    private function ensurePimple(): void
     {
-        try {
-            $this->assertString($id, __METHOD__);
-
-            if (!$this->pimple || $this->hasCustomContainers) {
-                throw new ContainerUnsetNotAllowed($id);
-            }
-
-            unset($this->pimple[$id]);
-        } catch (\Throwable $throwable) {
-            do_action(App::ACTION_ERROR, $throwable);
-
-            throw $throwable;
+        if (!$this->pimple) {
+            $pimple = new Pimple\Container();
+            $this->containers[] = new Pimple\Psr11\Container($pimple);
+            $this->pimple = $pimple;
         }
     }
 
     /**
-     * @param string $id
-     * @return mixed
-     */
-    public function get($id)
-    {
-        return $this->offsetGet($id);
-    }
-
-    /**
-     * @param string $id
-     * @return bool
-     */
-    public function has($id)
-    {
-        return $this->offsetExists($id);
-    }
-
-    /**
-     * Simulating type declaration, which is not possible due to PSR-11 and \ArrayAccess interface.
+     * Simulating type declaration, which is not possible due to PSR-11 interface.
      *
      * @param mixed $value Should be string
      * @param string $method
@@ -231,5 +230,17 @@ final class Container implements ContainerInterface, \ArrayAccess
                 )
             );
         }
+    }
+
+    /**
+     * @param \callable $factory
+     * @return \Closure
+     */
+    private function wrapCallback(callable $factory): \Closure
+    {
+        // @phan-suppress-next-line PhanUnreferencedClosure
+        return function () use (&$factory) {
+            return $factory($this);
+        };
     }
 }

@@ -51,7 +51,7 @@ final class App
     private $booting = false;
 
     /**
-     * @var string[]
+     * @var array<string,bool>
      */
     private $providers = [];
 
@@ -206,6 +206,7 @@ final class App
     {
         try {
             $this->initializeContainer();
+
             $providerId = $provider->id();
 
             if (isset($this->providers[$providerId])) {

@@ -66,7 +66,7 @@ final class ProviderStatus
      */
     public function nowAdded(AppStatus $appStatus): ProviderStatus
     {
-        if ($this->status !== self::IDLE) {
+        if ($this->status !== self::IDLE && $this->status !== self::SKIPPED) {
             $this->cantMoveTo(self::ADDED);
         }
 

@@ -10,9 +10,7 @@ use Inpsyde\App\Container;
 use Inpsyde\App\Context;
 use Inpsyde\App\EnvConfig;
 use Pimple\Exception\UnknownIdentifierException;
-use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
-use Psr\Container\NotFoundExceptionInterface;
 
 class ContainerTest extends TestCase
 {
@@ -60,7 +58,6 @@ class ContainerTest extends TestCase
     {
         $container = static::newContainer();
 
-        Actions\expectDone(App::ACTION_ERROR)->once();
         $this->expectException(\TypeError::class);
 
         $container->get(1);
@@ -70,18 +67,61 @@ class ContainerTest extends TestCase
     {
         $container = static::newContainer();
 
-        $container['foo'] = static function () {
+        $container->addService('foo', static function () {
             return new \ArrayObject(['bar' => 'baz']);
-        };
+        });
 
-        static::assertSame('baz', $container['foo']['bar']);
+        static::assertSame('baz', $container->get('foo')['bar']);
+    }
+
+    public function testAddServiceMakeGetReturnSameInstance()
+    {
+        $container = static::newContainer();
+
+        $container->addService('foo', static function () {
+            return new \ArrayObject(['bar' => 'baz']);
+        });
+
+        static::assertSame($container->get('foo'), $container->get('foo'));
+    }
+
+    public function testExtendService()
+    {
+        $container = static::newContainer();
+
+        $container->addService('foo', static function () {
+            return new \ArrayObject(['bar' => 'baz']);
+        });
+
+        $container->addService('x', static function () {
+            return new \ArrayObject(['y' => 'z']);
+        });
+
+        $container->extendService('foo', static function (\ArrayObject $foo, Container $container) {
+            $foo['x'] = $container->get('x')['y'];
+
+            return $foo;
+        });
+
+        static::assertSame('z', $container->get('foo')['x']);
+    }
+
+    public function testAddFactoryMakeGetReturnDifferentInstances()
+    {
+        $container = static::newContainer();
+
+        $container->addFactory('foo', static function () {
+            return new \ArrayObject(['bar' => 'baz']);
+        });
+
+        static::assertNotSame($container->get('foo'), $container->get('foo'));
+        static::assertEquals($container->get('foo'), $container->get('foo'));
     }
 
     public function testHasFailWithTypeErrorIfNeeded()
     {
         $container = static::newContainer();
 
-        Actions\expectDone(App::ACTION_ERROR)->once();
         $this->expectException(\TypeError::class);
 
         $container->has(1);
@@ -91,36 +131,12 @@ class ContainerTest extends TestCase
     {
         $container = static::newContainer();
 
-        $container['foo'] = static function () {
+        $container->addService('foo', static function () {
             return new \ArrayObject(['bar' => 'baz']);
-        };
+        });
 
         static::assertTrue($container->has('foo'));
         static::assertFalse($container->has('bar'));
-    }
-
-    public function testUnsetFromPimple()
-    {
-        $container = static::newContainer();
-        $container['a'] = 'A';
-
-        static::assertTrue($container->has('a'));
-
-        unset($container['a']);
-
-        static::assertFalse($container->has('a'));
-
-        $this->expectException(NotFoundExceptionInterface::class);
-        $container->get('a');
-    }
-
-    public function testUnsetFromPimpleFailWithCustomContainers()
-    {
-        $container = static::newContainer(self::stubContainer(['x' => 'x!']));
-        $container['a'] = 'A';
-
-        $this->expectException(ContainerExceptionInterface::class);
-        unset($container['a']);
     }
 
     public function testWithMultiContainers()
@@ -131,7 +147,9 @@ class ContainerTest extends TestCase
 
         $container = static::newContainer($c1, $c2);
         $container->addContainer($c3);
-        $container['d'] = 'D!';
+        $container->addService('d', function () {
+            return new \ArrayObject(['d' => 'D!']);
+        });
 
         static::assertTrue($container->has('a'));
         static::assertSame('A!', $container->get('a'));
@@ -143,6 +161,6 @@ class ContainerTest extends TestCase
         static::assertSame('C!', $container->get('c'));
 
         static::assertTrue($container->has('d'));
-        static::assertSame('D!', $container->get('d'));
+        static::assertSame('D!', $container->get('d')['d']);
     }
 }

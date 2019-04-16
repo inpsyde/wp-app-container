@@ -163,6 +163,7 @@ $container->config()->get('SOMETHING_NOT_DEFINED', 3); // 3
 ```
 
 
+
 ## Usage at package level
 
 At package level there are two ways to register services (will be shown later), but first providers need to be added to the App:
@@ -355,7 +356,13 @@ Receiving an instance of the `Container` service providers can _add_ things to i
 
 ### Simple service provider example
 
-Here's an example of registering services using Pimple:
+The container shipped with the package is a PSR-11 container with basic features for _adding_ services that use [Pimple](https://pimple.symfony.com/) behind the scenes.
+
+Besides the two PSR-11 methods, the container has the methods:
+
+- **`Container::addService()`** to add service factory callbacks by ID. Factories passed to this method will be called only once, and then every time `Container::get()` is called, same instance is returned. Uses `Pimple\Container::offsetSet()` behind the scenes.
+-  **`Container::addFactory()`** to add service factory callbacks by ID, but factories passed to this method will always be called when  `Container::get()` is called, returning a difference instance. Uses `Pimple\Container::factory()` behind the scenes.
+- **`Container::extendService()`** to add a callback that receives a service previously added to the container and the container and return a modified version of the same service. Uses `Pimple\Container::extend()` behind the scenes.
 
 ```php
 <?php
@@ -370,13 +377,21 @@ final class Provider extends Booted {
    
     public function register(Container $container): bool
     {
-        $container[Config::class] = static function (Container $container) {
-            return Config::load($container->config()->get(self::CONFIG_KEY));
-        };
+        // classs names are used as service ids...
+      
+        $container->addService(
+            Config::class,
+            static function (Container $container): Config {
+                return Config::load($container->config()->get(self::CONFIG_KEY));
+            }
+        );
         
-        $container[Redirector::class] = static function (Container $container) {
-            return new Redirector($container->get(Config::class));
-        };
+        $container->addService(
+            Redirector::class,
+            static function (Container $container): Redirector {
+                return new Redirector($container->get(Config::class));
+            }
+        );
         
         return true;
     }
@@ -387,15 +402,13 @@ final class Provider extends Booted {
             'template_redirect',
             static function () use ($container) {
                 /** @var AcmeInc\Redirector\Redirector $redirector */
-                $redirector = $container[Redirector::class];
+                $redirector = $container->get(Redirector::class);
                 $redirector->redirect();
             }
         );
     }
 }
 ```
-
-Please refers to [Pimple docs](https://pimple.symfony.com/) for more details on its usage.
 
 
 
@@ -435,7 +448,7 @@ final class Provider extends Booted {
             'template_redirect',
             static function () use ($container) {
                 /** @var AcmeInc\Redirector\Redirector $redirector */
-                $redirector = $container[Redirector::class];
+                $redirector = $container->get(Redirector::class);
                 $redirector->redirect();
             }
         );
