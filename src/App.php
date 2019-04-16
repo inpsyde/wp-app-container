@@ -9,9 +9,10 @@ final class App
 {
     public const ACTION_ADD_PROVIDERS = 'wp-app.add-providers';
     public const ACTION_REGISTERED = 'wp-app.all-providers-registered';
-    public const ACTION_REGISTERED_PROVIDER = 'wp-app.provider-registered';
-    public const ACTION_BOOTED_PROVIDER = 'wp-app.provider-booted';
     public const ACTION_BOOTED = 'wp-app.all-providers-booted';
+    public const ACTION_REGISTERED_PROVIDER = 'wp-app.provider-registered';
+    public const ACTION_ADDED_PROVIDER = 'wp-app.provider-added';
+    public const ACTION_BOOTED_PROVIDER = 'wp-app.provider-booted';
     public const ACTION_ERROR = 'wp-app.error';
 
     /**
@@ -63,31 +64,21 @@ final class App
 
     /**
      * @param string $id
-     * @param App|null $app
      * @return mixed
      *
      * phpcs:disable Inpsyde.CodeQuality.ReturnTypeDeclaration
      */
-    public static function make(string $id, App $app = null)
+    public static function make(string $id)
     {
         // phpcs:enable Inpsyde.CodeQuality.ReturnTypeDeclaration
 
-        $value = null;
-        $theApp = $app ?? self::$app;
+        if (!self::$app) {
+            static::handleThrowable(new \Exception('No valid app found.'));
 
-        try {
-            if (!$theApp || $theApp->status->isIdle()) {
-                throw new \Exception('No valid app found, not any app object given.');
-            }
-
-            $theApp->initializeContainer();
-            // @phan-suppress-next-line PhanPossiblyNonClassMethodCall
-            $value = $theApp->container->get($id);
-        } catch (\Throwable $throwable) {
-            static::handleThrowable($throwable);
+            return null;
         }
 
-        return $value;
+        return self::$app->resolve($id);
     }
 
     /**
@@ -220,6 +211,10 @@ final class App
 
             $this->logger->providerAdded($provider, $this->status);
 
+            $this->booting = true;
+            do_action(self::ACTION_ADDED_PROVIDER, $provider->id(), $this);
+            $this->booting = false;
+
             $provider->registerLater()
                 // @phan-suppress-next-line PhanPossiblyNonClassMethodCall
                 ? $this->delayed->enqueue($provider)
@@ -255,7 +250,23 @@ final class App
     {
         // phpcs:enable Inpsyde.CodeQuality.ReturnTypeDeclaration
 
-        return static::make($id, $this);
+        $value = null;
+
+        try {
+            if ($this->status->isIdle()) {
+                throw new \Exception('Can\'t resolve from an uninitialised application.');
+            }
+
+            $this->initializeContainer();
+
+            // @phan-suppress-next-line PhanPossiblyNonClassMethodCall
+            $value = $this->container->get($id);
+            //
+        } catch (\Throwable $throwable) {
+            static::handleThrowable($throwable);
+        }
+
+        return $value;
     }
 
     /**
@@ -294,7 +305,7 @@ final class App
             if ($lastRun) {
                 return;
             }
-            // If exception has been caught, ensure status is booted, so new `boot()` will not fail.
+            // If exception has been caught, ensure status is booted, so next `boot()` will not fail
             if ($this->status->isRegistering()) {
                 $this->status = $this->status->next($this);
             }
@@ -375,9 +386,7 @@ final class App
             $id = $provider->id();
 
             // @phan-suppress-next-line PhanPossiblyNullTypeArgument
-            $registered = $provider->register($this->container);
-
-            if ($registered) {
+            if ($provider->register($this->container)) {
                 $this->booting = true;
                 do_action(self::ACTION_REGISTERED_PROVIDER, $id, $this);
                 $this->booting = false;
@@ -398,8 +407,7 @@ final class App
         $this->initializeContainer();
 
         // @phan-suppress-next-line PhanPossiblyNullTypeArgument
-        $booted = $provider->boot($this->container);
-        if (!$booted) {
+        if (!$provider->boot($this->container)) {
             return;
         }
 
