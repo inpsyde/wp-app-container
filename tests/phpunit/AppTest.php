@@ -45,9 +45,9 @@ class AppTest extends TestCase
      * @param $id
      * @return ServiceProvider
      */
-    private static function newProvider($id): ServiceProvider
+    private static function stubProvider($id, callable $register = null): ServiceProvider
     {
-        return new ConfigurableProvider($id, '__return_true', '__return_true');
+        return new ConfigurableProvider($id, $register ?? '__return_true', '__return_true');
     }
 
     public function testMakeFailsIfNoAppCreated()
@@ -60,8 +60,8 @@ class AppTest extends TestCase
 
     public function testMakeFailsIfAppIdle()
     {
-        $this->expectException(\Exception::class);
-        $this->expectExceptionMessageRegExp('/no valid app/i');
+        $this->expectException(\DomainException::class);
+        $this->expectExceptionMessageRegExp('/uninitialised/i');
 
         $container = new Container(new EnvConfig(), Context::create());
         App::new($container);
@@ -92,7 +92,7 @@ class AppTest extends TestCase
     public function testDebugInfo()
     {
         $app = App::new()->enableDebug();
-        $app->addProvider(self::newProvider('p1'))->addProvider(self::newProvider('p2'));
+        $app->addProvider(self::stubProvider('p1'))->addProvider(self::stubProvider('p2'));
 
         $info = $app->debugInfo();
 
@@ -201,5 +201,84 @@ class AppTest extends TestCase
 
         $onPluginsLoaded();
         $onAfterSetupTheme();
+    }
+
+    public function testNestedAddProvider()
+    {
+        $p1 = self::stubProvider('p1', function (Container $container) {
+            $container['a'] = 'A-';
+
+            return true;
+        });
+
+        $p2 = self::stubProvider('p2', function (Container $container) {
+            $container['b'] = 'B-';
+
+            return true;
+        });
+
+        $p3 = self::stubProvider('p3', function (Container $container) {
+            $container['c'] = 'C!';
+
+            return true;
+        });
+
+        $app = App::new();
+
+        Actions\expectDone(App::ACTION_ADDED_PROVIDER)
+            ->times(3)
+            ->with(\Mockery::type('string'), $app)
+            ->whenHappen(function (string $id, App $app) use ($p2) {
+                if ($id === 'p1') {
+                    $app->addProvider($p2);
+                }
+            });
+
+        Actions\expectDone(App::ACTION_REGISTERED_PROVIDER)
+            ->times(3)
+            ->with(\Mockery::type('string'), $app)
+            ->whenHappen(function (string $id, App $app) use ($p3) {
+                if ($id === 'p2') {
+                    $app->addProvider($p3);
+                }
+            });
+
+        Actions\expectDone(App::ACTION_BOOTED)
+            ->once()
+            ->with(\Mockery::type(Container::class))
+            ->whenHappen(function (Container $container) {
+                echo $container['a'] . $container['b'] . $container['c'];
+            });
+
+        Actions\expectDone('init')
+            ->once()
+            ->whenHappen(function () use ($app, $p1) {
+                $app->addProvider($p1)->boot();
+            });
+
+        $this->expectOutputString('A-B-C!');
+
+        do_action('plugins_loaded');
+        do_action('init');
+    }
+
+    public function testCallingBootFromNestedAddProviderFails()
+    {
+        $app = App::new();
+
+        Actions\expectDone(App::ACTION_ADDED_PROVIDER)
+            ->twice()
+            ->with(\Mockery::type('string'), $app)
+            ->whenHappen(function (string $id, App $app) {
+                if ($id === 'p1') {
+                    $app->addProvider(self::stubProvider('p2'));
+                    $app->boot();
+                }
+            });
+
+        $this->expectException(\DomainException::class);
+        $this->expectExceptionMessageRegExp('/already booting/');
+
+        $app->addProvider(self::stubProvider('p1'));
     }
 }

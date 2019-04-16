@@ -51,6 +51,11 @@ final class App
     private $booting = false;
 
     /**
+     * @var string[]
+     */
+    private $providers = [];
+
+    /**
      * @param Container|null $container
      * @return App
      */
@@ -168,16 +173,16 @@ final class App
     {
         try {
             if ($this->booting) {
-                throw new \Exception('Can\'t call App::boot() when already booting.');
+                throw new \DomainException('Can\'t call App::boot() when already booting.');
             }
 
             $this->status = $this->status->next($this); // registering
 
-            // We set to true to prevent anything listening self::ACTION_ADD_PROVIDERS to call boot().
+            // Prevent anything listening self::ACTION_ADD_PROVIDERS to call boot().
             $this->booting = true;
 
             /**
-             * Allow registration of providers via App::addProvider() when using using `App::create()`.
+             * Allows registration of providers via `App::addProvider()`
              */
             do_action(self::ACTION_ADD_PROVIDERS, $this, $this->status);
 
@@ -185,7 +190,7 @@ final class App
 
             $this->registerAndBootProviders();
 
-            // Remove the actions so that when the method runs again, there's no duplicate registration.
+            // Remove the actions to prevent duplicate registration.
             remove_all_actions(self::ACTION_ADD_PROVIDERS);
         } catch (\Throwable $exception) {
             self::handleThrowable($exception);
@@ -201,6 +206,11 @@ final class App
     {
         try {
             $this->initializeContainer();
+            $providerId = $provider->id();
+
+            if (isset($this->providers[$providerId])) {
+                return $this;
+            }
 
             // @phan-suppress-next-line PhanPossiblyNonClassMethodCall
             if ($contexts && !$this->container->context()->is(...$contexts)) {
@@ -209,11 +219,9 @@ final class App
                 return $this;
             }
 
+            $this->providers[$providerId] = true;
             $this->logger->providerAdded($provider, $this->status);
-
-            $this->booting = true;
-            do_action(self::ACTION_ADDED_PROVIDER, $provider->id(), $this);
-            $this->booting = false;
+            $this->fireBootingHook(self::ACTION_ADDED_PROVIDER, $providerId);
 
             $provider->registerLater()
                 // @phan-suppress-next-line PhanPossiblyNonClassMethodCall
@@ -254,7 +262,7 @@ final class App
 
         try {
             if ($this->status->isIdle()) {
-                throw new \Exception('Can\'t resolve from an uninitialised application.');
+                throw new \DomainException('Can\'t resolve from an uninitialised application.');
             }
 
             $this->initializeContainer();
@@ -303,6 +311,8 @@ final class App
             static::handleThrowable($throwable);
         } finally {
             if ($lastRun) {
+                $this->providers = [];
+
                 return;
             }
             // If exception has been caught, ensure status is booted, so next `boot()` will not fail
@@ -383,14 +393,10 @@ final class App
     {
         try {
             $this->initializeContainer();
-            $id = $provider->id();
 
             // @phan-suppress-next-line PhanPossiblyNullTypeArgument
             if ($provider->register($this->container)) {
-                $this->booting = true;
-                do_action(self::ACTION_REGISTERED_PROVIDER, $id, $this);
-                $this->booting = false;
-
+                $this->fireBootingHook(self::ACTION_REGISTERED_PROVIDER, $provider->id());
                 $this->logger->providerRegistered($provider, $this->status);
             }
         } catch (\Throwable $exception) {
@@ -411,9 +417,25 @@ final class App
             return;
         }
 
-        $id = $provider->id();
         $this->logger->providerBooted($provider, $this->status);
 
-        do_action(self::ACTION_BOOTED_PROVIDER, $id);
+        do_action(self::ACTION_BOOTED_PROVIDER, $provider->id());
+    }
+
+    /**
+     * @param string $hook
+     * @param string $providerId
+     */
+    private function fireBootingHook(string $hook, string $providerId): void
+    {
+        if ($this->booting) {
+            do_action($hook, $providerId, $this);
+
+            return;
+        }
+
+        $this->booting = true;
+        do_action($hook, $providerId, $this);
+        $this->booting = false;
     }
 }
