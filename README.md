@@ -334,7 +334,7 @@ So by just extending one of the abstract classes and doing nothing else there's 
 
 In case this is not fine for some reason, e.g. the same service provider class is used for several providers, it is possible to define the property, or just override the `id()` method.
 
-
+**Note**: Provider IDs must be unique. Trying to add a provider with an ID that was already used will just skip the addition, doing nothing else.
 
 ### Composing the container
 
@@ -610,7 +610,6 @@ The `App` class collects information on the added providers and their status whe
 
 ```
 [
-    'namespace' => 'AcmeInc'
     'status' => 'Done with themes'
     'providers' => [
         'AcmeInc\FooProvider' => 'Registered (Registered when registering early),
