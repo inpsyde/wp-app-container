@@ -4,14 +4,16 @@ namespace Inpsyde\App;
 
 final class Context implements \JsonSerializable
 {
-    public const CORE = 'core';
-    public const FRONTOFFICE = 'frontoffice';
-    public const BACKOFFICE = 'backoffice';
     public const AJAX = 'ajax';
-    public const REST = 'rest';
-    public const CRON = 'cron';
-    public const LOGIN = 'login';
+    public const BACKOFFICE = 'backoffice';
     public const CLI = 'wpcli';
+    public const CORE = 'core';
+    public const CRON = 'cron';
+    public const FRONTOFFICE = 'frontoffice';
+    public const INSTALLING = 'installing';
+    public const LOGIN = 'login';
+    public const REST = 'rest';
+    public const XML_RPC = 'xml-rpc';
 
     /**
      * @var array
@@ -23,25 +25,43 @@ final class Context implements \JsonSerializable
      */
     public static function create(): Context
     {
+        $installing = defined('WP_INSTALLING') && WP_INSTALLING;
+        $xmlRpc = defined('XMLRPC_REQUEST') && XMLRPC_REQUEST;
         $isCore = defined('ABSPATH');
-        $isAjax = $isCore ? wp_doing_ajax() : false;
-        $isAdmin = $isCore ? is_admin() && !$isAjax : false;
-        $isCron = $isCore ? wp_doing_cron() : false;
-        $isRest = $isCore ? static::isRestRequest() : false;
-        $isLogin = $isCore ? static::isLoginRequest() : false;
+        $notInstalling = $isCore && !$installing;
+        $isAjax = $notInstalling ? wp_doing_ajax() : false;
+        $isAdmin = $notInstalling ? is_admin() && !$isAjax : false;
+        $isCron = $notInstalling ? wp_doing_cron() : false;
+        $isRest = $notInstalling ? static::isRestRequest() : false;
+        $isLogin = $notInstalling ? static::isLoginRequest() : false;
         $isCli = defined('WP_CLI');
-        $isFront = !$isAdmin && !$isAjax && !$isRest && !$isCron && !$isLogin && !$isCli;
+
+        $isFront = $isCore
+            && !$isAdmin
+            && !$isAjax
+            && !$isRest
+            && !$isCron
+            && !$isLogin
+            && !$isCli
+            && !$xmlRpc
+            && !$installing;
+
+        // Note that when installing **only** `INSTALLING` will be true, not even `CORE`.
+        // This is done to do as less as possible during installation, when most of WP does not act
+        // as expected.
 
         return new static(
             [
-                self::CORE => $isCore,
-                self::FRONTOFFICE => $isCore && $isFront,
+                self::CORE => ($isCore || $xmlRpc) && !$installing,
+                self::FRONTOFFICE => $isFront,
                 self::BACKOFFICE => $isAdmin,
                 self::LOGIN => $isLogin,
                 self::AJAX => $isAjax,
                 self::REST => $isRest,
                 self::CRON => $isCron,
                 self::CLI => $isCli,
+                self::XML_RPC => $xmlRpc,
+                self::INSTALLING => $installing,
             ]
         );
     }
@@ -73,6 +93,10 @@ final class Context implements \JsonSerializable
      */
     private static function isLoginRequest(): bool
     {
+        if (isset($_REQUEST['interim-login'])) { // phpcs:ignore
+            return true;
+        }
+
         $pageNow = $GLOBALS['pagenow'] ?? '';
 
         return $pageNow && (basename($pageNow) === 'wp-login.php');
@@ -188,6 +212,22 @@ final class Context implements \JsonSerializable
     public function isWpCli(): bool
     {
         return $this->is(self::CLI);
+    }
+
+    /**
+     * @return bool
+     */
+    public function isXmlRpc(): bool
+    {
+        return $this->is(self::XML_RPC);
+    }
+
+    /**
+     * @return bool
+     */
+    public function isInstalling(): bool
+    {
+        return $this->is(self::INSTALLING);
     }
 
     /**
