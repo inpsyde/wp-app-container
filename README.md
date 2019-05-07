@@ -235,6 +235,10 @@ add_action(
 
 The just-registered package ID is passed as first argument by the hook. By default the package ID is the FQCN of the provider class, but that can be easily changed, so to be dependant on a package it is necessary to know the ID it uses.
 
+One think important to note is that `App::ACTION_REGISTERED_PROVIDER` hook is fired only if the target service provider `register()` method returns `true`. If e.g. the provider is a "booted only" provider (more on this below) the hook will not be fired.
+
+In that case it is possible to use  `App::ACTION_ADDED_PROVIDER` hook, which works similarly and it is fired in the moment the provider is _added_, so before registration is ever attempted.
+
 
 
 ### Providers workflow
