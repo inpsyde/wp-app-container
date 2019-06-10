@@ -251,15 +251,17 @@ final class App
 
     /**
      * @param string $id
+     * @param mixed|null $default
      * @return mixed
      *
+     * phpcs:disable Inpsyde.CodeQuality.ArgumentTypeDeclaration
      * phpcs:disable Inpsyde.CodeQuality.ReturnTypeDeclaration
      */
-    public function resolve(string $id)
+    public function resolve(string $id, $default = null)
     {
         // phpcs:enable Inpsyde.CodeQuality.ReturnTypeDeclaration
 
-        $value = null;
+        $value = $default;
 
         try {
             if ($this->status->isIdle()) {
@@ -267,6 +269,16 @@ final class App
             }
 
             $this->initializeContainer();
+
+            // @phan-suppress-next-line PhanPossiblyNonClassMethodCall
+            if (!$this->container->has($id)) {
+                do_action(
+                    self::ACTION_ERROR,
+                    new \Error("Tried to resolve non registered '{$id}' service.")
+                );
+
+                return $default;
+            }
 
             // @phan-suppress-next-line PhanPossiblyNonClassMethodCall
             $value = $this->container->get($id);
