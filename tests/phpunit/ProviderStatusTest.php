@@ -193,7 +193,7 @@ class ProviderStatusTest extends TestCase
         $regex = '~^' . ProviderStatus::BOOTED . ' \(';
         $regex .= ProviderStatus::ADDED . '(.+?)' . AppStatus::REGISTERING_PLUGINS . ', ';
         $regex .= ProviderStatus::REGISTERED . '(.+?)' . AppStatus::REGISTERING_PLUGINS . ', ';
-        $regex .= ProviderStatus::BOOTED . '(.+?)' . AppStatus::BOOTING_PLUGINS . '\)$~';
+        $regex .= ProviderStatus::BOOTED . '(.+?)' . AppStatus::BOOTING_PLUGINS . '\)$~i';
 
         static::assertTrue((bool)preg_match($regex, (string)$status));
     }

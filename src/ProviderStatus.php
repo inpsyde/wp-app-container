@@ -137,7 +137,7 @@ final class ProviderStatus
             $status .= "{$which} when {$when}, ";
         }
 
-        return rtrim($status, ', ') . ')';
+        return ucfirst(strtolower(rtrim($status, ', ') . ')'));
     }
 
     /**

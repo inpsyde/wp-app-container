@@ -6,7 +6,7 @@ namespace Inpsyde\App;
 
 final class AppStatus
 {
-    public const IDLE = 'Init';
+    public const IDLE = 'Before initialization';
 
     public const REGISTERING_EARLY = 'registering early';
     public const BOOTING_EARLY = 'booting early';
