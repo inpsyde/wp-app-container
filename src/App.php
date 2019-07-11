@@ -4,6 +4,7 @@ namespace Inpsyde\App;
 
 use Inpsyde\App\Provider\Package;
 use Inpsyde\App\Provider\ServiceProvider;
+use Pimple\Exception\UnknownIdentifierException;
 
 final class App
 {
@@ -227,7 +228,7 @@ final class App
 
             $providerId = $provider->id();
 
-            if (isset($this->providers[$providerId])) {
+            if ($this->hasProviders($providerId)) {
                 return $this;
             }
 
@@ -292,7 +293,7 @@ final class App
             if (!$this->container->has($id)) {
                 do_action(
                     self::ACTION_ERROR,
-                    new \Error("Tried to resolve non registered '{$id}' service.")
+                    new UnknownIdentifierException($id)
                 );
 
                 return $default;
