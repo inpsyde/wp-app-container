@@ -198,6 +198,24 @@ final class App
     }
 
     /**
+     * @param string $serviceProviderId
+     * @param string ...$serviceProviderIds
+     * @return bool
+     */
+    public function hasProviders(string $serviceProviderId, string ...$serviceProviderIds): bool
+    {
+        array_unshift($serviceProviderIds, $serviceProviderId);
+
+        foreach ($serviceProviderIds as $id) {
+            if (!isset($this->providers[$id])) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * @param ServiceProvider $provider
      * @param string ...$contexts
      * @return App
