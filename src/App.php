@@ -342,11 +342,6 @@ final class App
         } catch (\Throwable $throwable) {
             static::handleThrowable($throwable);
         } finally {
-            if ($lastRun) {
-                $this->providers = [];
-
-                return;
-            }
             // If exception has been caught, ensure status is booted, so next `boot()` will not fail
             if ($this->status->isRegistering()) {
                 $this->status = $this->status->next($this);
