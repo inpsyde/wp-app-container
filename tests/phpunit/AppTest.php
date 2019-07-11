@@ -17,9 +17,6 @@ use Inpsyde\App\Provider\ServiceProvider;
 use Inpsyde\App\Provider\ServiceProviders;
 use Psr\Container\NotFoundExceptionInterface;
 
-/**
- * @runTestsInSeparateProcesses
- */
 class AppTest extends TestCase
 {
     /**
@@ -88,6 +85,9 @@ class AppTest extends TestCase
         App::make('foo');
     }
 
+    /**
+     * @runInSeparateProcess
+     */
     public function testMakeFailsIfNothingInTheContainer()
     {
         $this->expectException(NotFoundExceptionInterface::class);
@@ -98,6 +98,9 @@ class AppTest extends TestCase
         App::make('foo');
     }
 
+    /**
+     * @runInSeparateProcess
+     */
     public function testMakeGetContainer()
     {
         $psr11 = new \Pimple\Psr11\Container(new \Pimple\Container(['foo' => 'bar']));
@@ -311,5 +314,75 @@ class AppTest extends TestCase
         $this->expectExceptionMessageRegExp('/already booting/');
 
         $app->addProvider(self::stubProvider('p1'));
+    }
+
+    public function testDependantProviderOnLastBootIsBooted()
+    {
+        /** @var callable|null $onPluginsLoaded */
+        $onPluginsLoaded = null;
+
+        /** @var callable|null $onInit */
+        $onInit = null;
+
+        $dependency = new ConfigurableProvider(
+            'dependency',
+            function () {
+                return true;
+            },
+            null,
+            ConfigurableProvider::REGISTER_LATER
+        );
+
+        $dependant = new ConfigurableProvider(
+            'dependant',
+            function () {
+                echo "I have been registered!\n";
+
+                return true;
+            },
+            function () {
+                echo "I have been booted!";
+
+                return true;
+            }
+        );
+
+        Actions\expectAdded('plugins_loaded')
+            ->once()
+            ->whenHappen(function (callable $callable) use (&$onPluginsLoaded) {
+                $onPluginsLoaded = $callable;
+            });
+
+        Actions\expectAdded('init')
+            ->once()
+            ->whenHappen(function (callable $callable) use (&$onInit) {
+                $onInit = $callable;
+            });
+
+        Actions\expectDone(App::ACTION_REGISTERED_PROVIDER)
+            ->with($dependency->id(), \Mockery::type(App::class))
+            ->once()
+            ->whenHappen(function (string $providerId, App $app) use ($dependant) {
+                static::assertTrue($app->status()->isThemesStep());
+                $app->addProvider($dependant);
+            });
+
+        Actions\expectDone(App::ACTION_REGISTERED_PROVIDER)
+            ->with($dependant->id(), \Mockery::type(App::class))
+            ->once();
+
+        Actions\expectDone(App::ACTION_BOOTED_PROVIDER)
+            ->with($dependant->id())
+            ->once();
+
+        $this->expectOutputString("I have been registered!\nI have been booted!");
+
+        $app = App::new();
+        $app->addProvider($dependency)->boot();
+
+        $onPluginsLoaded();
+        $onInit();
+
+        static::assertTrue($app->hasProviders($dependency->id()));
     }
 }
