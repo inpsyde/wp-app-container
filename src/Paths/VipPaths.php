@@ -9,16 +9,21 @@ class VipPaths extends BasePaths
     public const CONFIG_DIR = 'vip-config';
     public const IMAGES_DIR = 'images';
     public const PRIVATE_DIR = 'private';
+    /**
+     * {@inheritDoc}
+     */
+    public function vendorPackageDir(string $vendor, string $package): ?string
+    {
+        return $this->muPluginsDir("/vendor/{$vendor}/{$package}");
+    }
 
     /**
-     * @var string
+     * {@inheritDoc}
      */
-    protected $basePath;
-
-    /**
-     * @var string
-     */
-    protected $baseUrl;
+    public function vendorPackageUrl(string $vendor, string $package): ?string
+    {
+        return $this->muPluginsUrl("/vendor/{$vendor}/{$package}");
+    }
 
     /**
      * @return string

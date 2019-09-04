@@ -24,7 +24,7 @@ class BasePaths implements Paths
     {
         $this->basePath = untrailingslashit(WP_CONTENT_DIR);
         $this->baseUrl = content_url('/');
-        $this->vendorRootDir =  wp_normalize_path(realpath(__DIR__.'/../../../../'));
+        $this->vendorRootDir = wp_normalize_path(dirname(__DIR__, 4));
     }
 
     /**
@@ -96,7 +96,7 @@ class BasePaths implements Paths
      */
     public function vendorPackageDir(string $vendor, string $package): string
     {
-        return $this->muPluginsDir("{$this->vendorRootDir}/{$vendor}/{$package}");
+        return "{$this->vendorRootDir}/{$vendor}/{$package}";
     }
 
     /**
@@ -104,11 +104,7 @@ class BasePaths implements Paths
      */
     public function vendorPackageUrl(string $vendor, string $package): ?string
     {
-        if (! strstr($this->vendorPackageDir($vendor, $package), ABSPATH)) {
-            return null;
-        }
-
-        return $this->muPluginsUrl("/vendor/{$vendor}/{$package}");
+        return null;
     }
 
     /**
