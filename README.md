@@ -162,6 +162,33 @@ Note that `EnvConfig::get()` accepts an optional second `$default` parameter to 
 $container->config()->get('SOMETHING_NOT_DEFINED', 3); // 3
 ```
 
+### Hosting Provider
+`EnvConfig::hosting()` returns the current Hosting provider. Currently we're automatically detecting following:
+
+- `EnvConfig::HOSTING_VIP` - WordPress VIP Go
+- `EnvConfig::HOSTING_WPE` - WPEngine
+- `EnvConfig::HOSTING_SPACES` - Mittwald Spaces
+- `EnvConfig::HOSTING_OTHER` - If none of those above is detected.
+
+To change this value manually, you can define in your `.env`-file a constant called `HOSTING`.
+
+Additionally, to check, if you're on a specific hosting solution, you can use `EnvConfig::hostingIs(string $hosting): bool`.
+
+### Accessing Paths
+`EnvConfig::paths()` returns an instance of `Inpsyde\App\Paths\Paths` which allows you to resolve following `directories` and `urls`:
+
+- mu-plugins
+- plugins
+- themes
+- languages
+- vendorPackage
+ 
+If you're in a `EnvConfig::HOSTING_VIP`, you'll additionally have access to following directories:
+
+- private
+- config
+- vip-config
+- images
 
 
 ## Usage at package level

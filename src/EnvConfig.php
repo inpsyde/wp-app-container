@@ -4,11 +4,19 @@ namespace Inpsyde\App;
 
 class EnvConfig implements SiteConfig
 {
+    // hosting solutions
+    public const HOSTING_VIP = 'vip';
+    public const HOSTING_WPE = 'wpe';
+    public const HOSTING_SPACES = 'spaces';
+    public const HOSTING_OTHER = 'other';
+
+    public const FILTER_ENV_NAME = 'wp-app.environment';
+
+    // environments
     public const DEVELOPMENT = 'development';
     public const PRODUCTION = 'production';
     public const STAGING = 'staging';
 
-    public const FILTER_ENV_NAME = 'wp-app.environment';
 
     private const ENV_ALIASES = [
         'dev' => self::DEVELOPMENT,
@@ -39,14 +47,95 @@ class EnvConfig implements SiteConfig
     private $namespaces = [];
 
     /**
+     * @var Paths
+     */
+    private $paths;
+
+    /**
+     * @var string
+     */
+    private $hosting;
+
+    /**
      * @param string ...$namespaces
      */
     public function __construct(string ...$namespaces)
     {
         foreach ($namespaces as $namespace) {
-            $trimmed = $namespace ? trim($namespace, '\\') : null;
+            $trimmed = $namespace
+                ? trim($namespace, '\\')
+                : null;
             $trimmed and $this->namespaces[] = $trimmed;
         }
+    }
+
+    /**
+     * @param Paths $paths
+     *
+     * @return EnvConfig
+     */
+    public function withPaths(Paths $paths): self
+    {
+        $this->paths = $paths;
+
+        return $this;
+    }
+
+    /**
+     * @return Paths
+     */
+    public function paths(): Paths
+    {
+        if (! $this->paths) {
+            $this->paths = $this->hostingIs(self::HOSTING_VIP)
+                ? new VipPaths()
+                : new BasePaths();
+        }
+
+        return $this->paths;
+    }
+
+    /**
+     * @return string
+     */
+    public function hosting(): string
+    {
+        if ($this->hosting) {
+            return $this->hosting;
+        }
+
+        if ($this->get('VIP_GO_ENV')) {
+            $this->hosting = self::HOSTING_VIP;
+
+            return $this->hosting;
+        }
+
+        if (function_exists('is_wpe')) {
+            $this->hosting = self::HOSTING_WPE;
+
+            return $this->hosting;
+        }
+
+        if ($this->get('SPACES_SPACE_ID')) {
+            $this->hosting = self::HOSTING_SPACES;
+
+            return $this->hosting;
+        }
+
+        $this->hosting = $this->get('HOSTING')
+            ?? self::HOSTING_OTHER;
+
+        return $this->hosting;
+    }
+
+    /**
+     * @param string $hosting
+     *
+     * @return bool
+     */
+    public function hostingIs(string $hosting): bool
+    {
+        return $this->hosting() === $hosting;
     }
 
     /**
@@ -63,27 +152,32 @@ class EnvConfig implements SiteConfig
             ?? $this->readEnvVarOrConstant('VIP_GO_ENV');   // VIP Go
 
         if ($env) {
-            $this->env = $this->filterEnv((string)$env);
+            $this->env = $this->filterEnv((string) $env);
 
             return $this->env;
         }
 
         if (function_exists('is_wpe')) {   // WP Engine legacy
             // @phan-suppress-next-line PhanUndeclaredFunction
-            $env = (int)is_wpe() > 0 ? self::PRODUCTION : self::STAGING;
-            $this->env = $this->filterEnv((string)$env);
+            $env = (int) is_wpe() > 0
+                ? self::PRODUCTION
+                : self::STAGING;
+            $this->env = $this->filterEnv((string) $env);
 
             return $this->env;
         }
 
-        $env = (defined('WP_DEBUG') && WP_DEBUG) ? self::DEVELOPMENT : self::PRODUCTION;
-        $this->env = $this->filterEnv((string)$env);
+        $env = (defined('WP_DEBUG') && WP_DEBUG)
+            ? self::DEVELOPMENT
+            : self::PRODUCTION;
+        $this->env = $this->filterEnv((string) $env);
 
         return $this->env;
     }
 
     /**
      * @param string $env
+     *
      * @return bool
      */
     public function envIs(string $env): bool
@@ -99,6 +193,7 @@ class EnvConfig implements SiteConfig
     /**
      * @param string $name
      * @param null $default
+     *
      * @return mixed|null
      *
      * phpcs:disable Inpsyde.CodeQuality.ReturnTypeDeclaration
@@ -109,7 +204,7 @@ class EnvConfig implements SiteConfig
         // phpcs:enable Inpsyde.CodeQuality.ReturnTypeDeclaration
         // phpcs:enable Inpsyde.CodeQuality.ArgumentTypeDeclaration
 
-        if (!$name) {
+        if (! $name) {
             return $default;
         }
 
@@ -141,6 +236,7 @@ class EnvConfig implements SiteConfig
 
     /**
      * @param string $name
+     *
      * @return mixed
      *
      * phpcs:disable Inpsyde.CodeQuality.ReturnTypeDeclaration
@@ -159,7 +255,8 @@ class EnvConfig implements SiteConfig
         }
 
         if ($value === null && (PHP_SAPI === 'cli' || PHP_SAPI === 'cli-server')) {
-            $value = getenv($name) ?: null;
+            $value = getenv($name)
+                ?: null;
         }
 
         return $value;
@@ -167,6 +264,7 @@ class EnvConfig implements SiteConfig
 
     /**
      * @param string $env
+     *
      * @return string
      */
     private function filterEnv(string $env): string

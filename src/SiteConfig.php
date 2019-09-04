@@ -4,6 +4,24 @@ namespace Inpsyde\App;
 
 interface SiteConfig
 {
+
+    /**
+     * @return Paths
+     */
+    public function paths(): Paths;
+
+    /**
+     * @return string
+     */
+    public function hosting(): string;
+
+    /**
+     * @param string $hosting
+     *
+     * @return bool
+     */
+    public function hostingIs(string $hosting): bool;
+
     /**
      * @return string
      */
