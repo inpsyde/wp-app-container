@@ -2,15 +2,23 @@
 
 namespace Inpsyde\App;
 
+use Inpsyde\App\Location\Locations;
+
 interface SiteConfig
 {
+    // hosting solutions
+    public const HOSTING_VIP = 'vip';
+    public const HOSTING_WPE = 'wpe';
+    public const HOSTING_SPACES = 'spaces';
+    public const HOSTING_OTHER = 'other';
 
     /**
-     * @return Paths
+     * @return Locations
      */
-    public function paths(): Paths;
+    public function locations(): Locations;
 
     /**
+     * Returns a string which contains the name of the hosting provider. See also constants HOSTING_*
      * @return string
      */
     public function hosting(): string;

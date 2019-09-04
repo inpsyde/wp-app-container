@@ -1,8 +1,8 @@
 <?php declare(strict_types=1); # -*- coding: utf-8 -*-
 
-namespace Inpsyde\App;
+namespace Inpsyde\App\Location;
 
-class VipPaths extends BasePaths
+class VipLocations extends BaseLocations
 {
 
     public const MU_PLUGINS_DIR = 'client-mu-plugins';

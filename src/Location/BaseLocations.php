@@ -1,8 +1,8 @@
 <?php declare(strict_types=1); # -*- coding: utf-8 -*-
 
-namespace Inpsyde\App;
+namespace Inpsyde\App\Location;
 
-class BasePaths implements Paths
+class BaseLocations implements Locations
 {
 
     /**

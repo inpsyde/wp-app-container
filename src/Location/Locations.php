@@ -1,8 +1,8 @@
 <?php declare(strict_types=1); # -*- coding: utf-8 -*-
 
-namespace Inpsyde\App;
+namespace Inpsyde\App\Location;
 
-interface Paths
+interface Locations
 {
 
     public const MU_PLUGINS_DIR = 'mu-plugins';

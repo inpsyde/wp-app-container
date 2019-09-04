@@ -174,8 +174,8 @@ To change this value manually, you can define in your `.env`-file a constant cal
 
 Additionally, to check, if you're on a specific hosting solution, you can use `EnvConfig::hostingIs(string $hosting): bool`.
 
-### Accessing Paths
-`EnvConfig::paths()` returns an instance of `Inpsyde\App\Paths\Paths` which allows you to resolve following `directories` and `urls`:
+### Accessing Locations
+`EnvConfig::locations()` returns an instance of `Inpsyde\App\Location\Locations` which allows you to resolve following `directories` and `urls`:
 
 - mu-plugins
 - plugins

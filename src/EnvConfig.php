@@ -2,13 +2,13 @@
 
 namespace Inpsyde\App;
 
+
+use Inpsyde\App\Location\Locations;
+use Inpsyde\App\Location\VipLocations;
+use Inpsyde\App\Location\BaseLocations;
+
 class EnvConfig implements SiteConfig
 {
-    // hosting solutions
-    public const HOSTING_VIP = 'vip';
-    public const HOSTING_WPE = 'wpe';
-    public const HOSTING_SPACES = 'spaces';
-    public const HOSTING_OTHER = 'other';
 
     public const FILTER_ENV_NAME = 'wp-app.environment';
 
@@ -47,7 +47,7 @@ class EnvConfig implements SiteConfig
     private $namespaces = [];
 
     /**
-     * @var Paths
+     * @var Locations
      */
     private $paths;
 
@@ -70,26 +70,14 @@ class EnvConfig implements SiteConfig
     }
 
     /**
-     * @param Paths $paths
-     *
-     * @return EnvConfig
+     * @return Locations
      */
-    public function withPaths(Paths $paths): self
-    {
-        $this->paths = $paths;
-
-        return $this;
-    }
-
-    /**
-     * @return Paths
-     */
-    public function paths(): Paths
+    public function locations(): Locations
     {
         if (! $this->paths) {
             $this->paths = $this->hostingIs(self::HOSTING_VIP)
-                ? new VipPaths()
-                : new BasePaths();
+                ? new VipLocations()
+                : new BaseLocations();
         }
 
         return $this->paths;
