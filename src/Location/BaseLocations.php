@@ -38,7 +38,7 @@ class BaseLocations implements Locations
      */
     public function pluginsDir(string $plugin = ''): string
     {
-        return $this->contentDir(self::PLUGINS_DIR, $plugin);
+        return $this->contentDir(self::PLUGINS, $plugin);
     }
 
     /**
@@ -46,7 +46,7 @@ class BaseLocations implements Locations
      */
     public function pluginsUrl(string $plugin = ''): string
     {
-        return $this->contentUrl(self::PLUGINS_DIR, $plugin);
+        return $this->contentUrl(self::PLUGINS, $plugin);
     }
 
     /**
@@ -54,7 +54,7 @@ class BaseLocations implements Locations
      */
     public function muPluginsDir(string $muPlugin = ''): string
     {
-        return $this->contentDir(self::MU_PLUGINS_DIR, $muPlugin);
+        return $this->contentDir(self::MU_PLUGINS, $muPlugin);
     }
 
     /**
@@ -62,7 +62,7 @@ class BaseLocations implements Locations
      */
     public function muPluginsUrl(string $muPlugin = ''): string
     {
-        return $this->contentUrl(self::MU_PLUGINS_DIR, $muPlugin);
+        return $this->contentUrl(self::MU_PLUGINS, $muPlugin);
     }
 
     /**
@@ -70,7 +70,7 @@ class BaseLocations implements Locations
      */
     public function themesDir(string $theme = ''): string
     {
-        return $this->contentDir(self::THEMES_DIR, $theme);
+        return $this->contentDir(self::THEMES, $theme);
     }
 
     /**
@@ -78,7 +78,7 @@ class BaseLocations implements Locations
      */
     public function themesUrl(string $theme = ''): string
     {
-        return $this->contentUrl(self::THEMES_DIR, $theme);
+        return $this->contentUrl(self::THEMES, $theme);
     }
 
     /**
@@ -86,7 +86,7 @@ class BaseLocations implements Locations
      */
     public function languagesDir(): string
     {
-        return $this->contentDir(self::LANGUAGES_DIR);
+        return $this->contentDir(self::LANGUAGES);
     }
 
     /**
@@ -94,7 +94,7 @@ class BaseLocations implements Locations
      */
     public function languagesUrl(): string
     {
-        return $this->contentUrl(self::THEMES_DIR);
+        return $this->contentUrl(self::LANGUAGES);
     }
 
     /**
@@ -121,9 +121,16 @@ class BaseLocations implements Locations
      */
     protected function contentDir(string $which, string $subDir = ''): string
     {
-        $path = realpath("{$this->contentPath}/".$which);
+        $key = "{$which}:{$subDir}";
+        $path = wp_cache_get($key, __CLASS__);
 
-        return trailingslashit(trailingslashit($path).ltrim($subDir, '\\/'));
+        if (! $path) {
+            $path = realpath("{$this->contentPath}/".$which);
+            $path = trailingslashit(trailingslashit($path).ltrim($subDir, '\\/'));
+            wp_cache_set($key, $path, __CLASS__);
+        }
+
+        return $path;
     }
 
     /**
@@ -134,6 +141,13 @@ class BaseLocations implements Locations
      */
     protected function contentUrl(string $which, string $subDir = ''): string
     {
-        return trailingslashit(trailingslashit($this->contentUrl.$which).ltrim($subDir, '/'));
+        $key = "{$which}:{$subDir}";
+        $path = wp_cache_get($key, __CLASS__);
+        if (! $path) {
+            $path = trailingslashit(trailingslashit($this->contentUrl.$which).ltrim($subDir, '/'));
+            wp_cache_set($key, $path, __CLASS__);
+        }
+
+        return $path;
     }
 }
