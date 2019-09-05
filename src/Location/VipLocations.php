@@ -27,6 +27,8 @@ class VipLocations extends BaseLocations
     }
 
     /**
+     * For custom configuration changes, and additional sunrise.php code.
+     *
      * @return string
      */
     public function configDir(): string
@@ -35,6 +37,9 @@ class VipLocations extends BaseLocations
     }
 
     /**
+     * The "private"-folder in your repo, if used, will provide access to files that are not web accessible, but can be
+     * accessed by your theme or plugins.
+     *
      * @param string $subDir
      *
      * @return string
@@ -45,6 +50,8 @@ class VipLocations extends BaseLocations
     }
 
     /**
+     * For favicon.ico and apple-touch-icon*.png images.
+     *
      * @return string
      */
     public function imagesDir(): string
