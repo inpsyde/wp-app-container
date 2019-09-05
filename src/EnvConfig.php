@@ -93,6 +93,12 @@ class EnvConfig implements SiteConfig
             return $this->hosting;
         }
 
+        if ($this->get('HOSTING')) {
+            $this->hosting = $this->get('HOSTING');
+
+            return $this->hosting;
+        }
+
         if ($this->get('VIP_GO_ENV')) {
             $this->hosting = self::HOSTING_VIP;
 
@@ -111,8 +117,7 @@ class EnvConfig implements SiteConfig
             return $this->hosting;
         }
 
-        $this->hosting = $this->get('HOSTING')
-            ?? self::HOSTING_OTHER;
+        $this->hosting = self::HOSTING_OTHER;
 
         return $this->hosting;
     }
