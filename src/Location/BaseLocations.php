@@ -114,20 +114,32 @@ class BaseLocations implements Locations
     }
 
     /**
+     * @return string
+     */
+    public function rootDir(): string
+    {
+        return $this->rootPath;
+    }
+
+    /**
      * @param string $which
      * @param string $subDir
      *
      * @return string
      */
-    protected function contentDir(string $which, string $subDir = ''): string
+    public function contentDir(string $which = '', string $subDir = ''): string
     {
+        if ($which === '') {
+            return $this->contentPath;
+        }
+
         $key = "{$which}:{$subDir}";
-        $path = wp_cache_get($key, __CLASS__);
+        $path = wp_cache_get($key, __METHOD__);
 
         if (! $path) {
             $path = realpath("{$this->contentPath}/".$which);
             $path = trailingslashit(trailingslashit($path).ltrim($subDir, '\\/'));
-            wp_cache_set($key, $path, __CLASS__);
+            wp_cache_set($key, $path, __METHOD__);
         }
 
         return $path;
@@ -139,13 +151,17 @@ class BaseLocations implements Locations
      *
      * @return string
      */
-    protected function contentUrl(string $which, string $subDir = ''): string
+    public function contentUrl(string $which = '', string $subDir = ''): string
     {
+        if ($which === '') {
+            return $this->contentUrl;
+        }
+
         $key = "{$which}:{$subDir}";
-        $path = wp_cache_get($key, __CLASS__);
+        $path = wp_cache_get($key, __METHOD__);
         if (! $path) {
             $path = trailingslashit(trailingslashit($this->contentUrl.$which).ltrim($subDir, '/'));
-            wp_cache_set($key, $path, __CLASS__);
+            wp_cache_set($key, $path, __METHOD__);
         }
 
         return $path;
