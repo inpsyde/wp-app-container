@@ -5,10 +5,10 @@ namespace Inpsyde\App\Location;
 interface Locations
 {
 
-    public const MU_PLUGINS_DIR = 'mu-plugins';
-    public const LANGUAGES_DIR = 'languages';
-    public const PLUGINS_DIR = 'plugins';
-    public const THEMES_DIR = 'themes';
+    public const MU_PLUGINS = 'mu-plugins';
+    public const LANGUAGES = 'languages';
+    public const PLUGINS = 'plugins';
+    public const THEMES = 'themes';
 
     /**
      * @param string $plugin

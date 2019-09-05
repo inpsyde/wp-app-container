@@ -5,10 +5,11 @@ namespace Inpsyde\App\Location;
 class VipLocations extends BaseLocations
 {
 
-    public const MU_PLUGINS_DIR = 'client-mu-plugins';
-    public const CONFIG_DIR = 'vip-config';
-    public const IMAGES_DIR = 'images';
-    public const PRIVATE_DIR = 'private';
+    public const MU_PLUGINS = 'client-mu-plugins';
+    public const VIP_CONFIG = 'vip-config';
+    public const IMAGES = 'images';
+    public const PRIVATE = 'private';
+
     /**
      * {@inheritDoc}
      */
@@ -30,7 +31,7 @@ class VipLocations extends BaseLocations
      */
     public function configDir(): string
     {
-        return $this->dir(self::CONFIG_DIR);
+        return $this->contentDir(self::VIP_CONFIG);
     }
 
     /**
@@ -40,7 +41,7 @@ class VipLocations extends BaseLocations
      */
     public function privateDir(string $subDir = ''): string
     {
-        return $this->dir(self::PRIVATE_DIR, $subDir);
+        return $this->contentDir(self::PRIVATE, $subDir);
     }
 
     /**
@@ -48,7 +49,7 @@ class VipLocations extends BaseLocations
      */
     public function imagesDir(): string
     {
-        return $this->dir(self::IMAGES_DIR);
+        return $this->contentDir(self::IMAGES);
     }
 
     /**
@@ -56,6 +57,6 @@ class VipLocations extends BaseLocations
      */
     public function imagesUrl(): string
     {
-        return $this->url(self::IMAGES_DIR);
+        return $this->contentUrl(self::IMAGES);
     }
 }

@@ -8,22 +8,28 @@ class BaseLocations implements Locations
     /**
      * @var string
      */
-    protected $basePath;
+    protected $contentPath;
 
     /**
      * @var string
      */
-    protected $baseUrl;
+    protected $contentUrl;
 
     /**
      * @var string
      */
     protected $vendorRootDir;
 
+    /**
+     * @var string
+     */
+    protected $rootPath;
+
     public function __construct()
     {
-        $this->basePath = untrailingslashit(WP_CONTENT_DIR);
-        $this->baseUrl = content_url('/');
+        $this->rootPath = trailingslashit(ABSPATH);
+        $this->contentPath = untrailingslashit(WP_CONTENT_DIR);
+        $this->contentUrl = content_url('/');
         $this->vendorRootDir = wp_normalize_path(dirname(__DIR__, 4));
     }
 
@@ -32,7 +38,7 @@ class BaseLocations implements Locations
      */
     public function pluginsDir(string $plugin = ''): string
     {
-        return $this->dir(self::PLUGINS_DIR, $plugin);
+        return $this->contentDir(self::PLUGINS_DIR, $plugin);
     }
 
     /**
@@ -40,7 +46,7 @@ class BaseLocations implements Locations
      */
     public function pluginsUrl(string $plugin = ''): string
     {
-        return $this->url(self::PLUGINS_DIR, $plugin);
+        return $this->contentUrl(self::PLUGINS_DIR, $plugin);
     }
 
     /**
@@ -48,7 +54,7 @@ class BaseLocations implements Locations
      */
     public function muPluginsDir(string $muPlugin = ''): string
     {
-        return $this->dir(self::MU_PLUGINS_DIR, $muPlugin);
+        return $this->contentDir(self::MU_PLUGINS_DIR, $muPlugin);
     }
 
     /**
@@ -56,7 +62,7 @@ class BaseLocations implements Locations
      */
     public function muPluginsUrl(string $muPlugin = ''): string
     {
-        return $this->url(self::MU_PLUGINS_DIR, $muPlugin);
+        return $this->contentUrl(self::MU_PLUGINS_DIR, $muPlugin);
     }
 
     /**
@@ -64,7 +70,7 @@ class BaseLocations implements Locations
      */
     public function themesDir(string $theme = ''): string
     {
-        return $this->dir(self::THEMES_DIR, $theme);
+        return $this->contentDir(self::THEMES_DIR, $theme);
     }
 
     /**
@@ -72,7 +78,7 @@ class BaseLocations implements Locations
      */
     public function themesUrl(string $theme = ''): string
     {
-        return $this->url(self::THEMES_DIR, $theme);
+        return $this->contentUrl(self::THEMES_DIR, $theme);
     }
 
     /**
@@ -80,7 +86,7 @@ class BaseLocations implements Locations
      */
     public function languagesDir(): string
     {
-        return $this->dir(self::LANGUAGES_DIR);
+        return $this->contentDir(self::LANGUAGES_DIR);
     }
 
     /**
@@ -88,7 +94,7 @@ class BaseLocations implements Locations
      */
     public function languagesUrl(): string
     {
-        return $this->url(self::THEMES_DIR);
+        return $this->contentUrl(self::THEMES_DIR);
     }
 
     /**
@@ -113,9 +119,9 @@ class BaseLocations implements Locations
      *
      * @return string
      */
-    protected function dir(string $which, string $subDir = ''): string
+    protected function contentDir(string $which, string $subDir = ''): string
     {
-        $path = realpath("{$this->basePath}/".$which);
+        $path = realpath("{$this->contentPath}/".$which);
 
         return trailingslashit(trailingslashit($path).ltrim($subDir, '\\/'));
     }
@@ -126,8 +132,8 @@ class BaseLocations implements Locations
      *
      * @return string
      */
-    protected function url(string $which, string $subDir = ''): string
+    protected function contentUrl(string $which, string $subDir = ''): string
     {
-        return trailingslashit(trailingslashit($this->baseUrl.$which).ltrim($subDir, '/'));
+        return trailingslashit(trailingslashit($this->contentUrl.$which).ltrim($subDir, '/'));
     }
 }

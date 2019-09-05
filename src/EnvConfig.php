@@ -2,22 +2,19 @@
 
 namespace Inpsyde\App;
 
-
+use Inpsyde\App\Location\BaseLocations;
 use Inpsyde\App\Location\Locations;
 use Inpsyde\App\Location\VipLocations;
-use Inpsyde\App\Location\BaseLocations;
+use Inpsyde\App\Location\WpEngineLocations;
 
 class EnvConfig implements SiteConfig
 {
 
     public const FILTER_ENV_NAME = 'wp-app.environment';
-
     // environments
     public const DEVELOPMENT = 'development';
     public const PRODUCTION = 'production';
     public const STAGING = 'staging';
-
-
     private const ENV_ALIASES = [
         'dev' => self::DEVELOPMENT,
         'develop' => self::DEVELOPMENT,
@@ -75,9 +72,13 @@ class EnvConfig implements SiteConfig
     public function locations(): Locations
     {
         if (! $this->paths) {
-            $this->paths = $this->hostingIs(self::HOSTING_VIP)
-                ? new VipLocations()
-                : new BaseLocations();
+            if ($this->hostingIs(self::HOSTING_VIP)) {
+                $this->paths = new VipLocations();
+            } elseif ($this->hostingIs(self::HOSTING_WPE)) {
+                $this->paths = new WpEngineLocations();
+            } else {
+                $this->paths = new BaseLocations();
+            }
         }
 
         return $this->paths;
