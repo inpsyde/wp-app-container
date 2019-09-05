@@ -77,4 +77,27 @@ interface Locations
      * @return string|null  if vendor-directory is outside of web-root, null is returned.
      */
     public function vendorPackageUrl(string $vendor, string $package): ?string;
+
+    /**
+     * Returns the website root directory path.
+     *
+     * @return string
+     */
+    public function rootDir(): string;
+
+    /**
+     * @param string $which
+     * @param string $subDir
+     *
+     * @return string
+     */
+    public function contentDir(string $which = '', string $subDir = ''): string;
+
+    /**
+     * @param string $which
+     * @param string $subDir
+     *
+     * @return string
+     */
+    public function contentUrl(string $which = '', string $subDir = ''): string;
 }

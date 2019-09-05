@@ -114,7 +114,7 @@ class BaseLocations implements Locations
     }
 
     /**
-     * @return string
+     * {@inheritDoc}
      */
     public function rootDir(): string
     {
@@ -122,10 +122,7 @@ class BaseLocations implements Locations
     }
 
     /**
-     * @param string $which
-     * @param string $subDir
-     *
-     * @return string
+     * {@inheritDoc}
      */
     public function contentDir(string $which = '', string $subDir = ''): string
     {
@@ -146,10 +143,7 @@ class BaseLocations implements Locations
     }
 
     /**
-     * @param string $which
-     * @param string $subDir
-     *
-     * @return string
+     * {@inheritDoc}
      */
     public function contentUrl(string $which = '', string $subDir = ''): string
     {
