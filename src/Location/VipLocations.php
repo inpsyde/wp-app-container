@@ -13,7 +13,7 @@ class VipLocations extends BaseLocations
     /**
      * {@inheritDoc}
      */
-    public function vendorPackageDir(string $vendor, string $package): ?string
+    public function vendorPackageDir(string $vendor, string $package): string
     {
         return $this->muPluginsDir("/vendor/{$vendor}/{$package}");
     }
