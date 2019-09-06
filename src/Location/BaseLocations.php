@@ -180,8 +180,10 @@ class BaseLocations implements Locations
         }
 
         $path = $type === self::TYPE_DIR
-            ? trailingslashit(realpath($this->contentPath.$which))
-            : trailingslashit($this->contentUrl.$which);
+            ? realpath($this->contentPath.$which)
+            : $this->contentUrl.$which;
+
+        $path = trailingslashit($path);
 
         $this->locations[$type][$which] = $path;
 
