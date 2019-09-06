@@ -25,12 +25,30 @@ class BaseLocations implements Locations
      */
     protected $rootPath;
 
-    public function __construct()
+    /**
+     * @var array
+     */
+    protected $locations;
+
+    public function __construct(array $locations = [])
     {
-        $this->rootPath = trailingslashit(ABSPATH);
         $this->contentPath = untrailingslashit(WP_CONTENT_DIR);
         $this->contentUrl = content_url('/');
-        $this->vendorRootDir = wp_normalize_path(dirname(__DIR__, 4));
+        $this->locations = array_replace($this->defaultLocations(), $locations);
+    }
+
+    protected function defaultLocations(): array
+    {
+        return [
+            self::TYPE_DIR => [
+                self::ROOT => trailingslashit(ABSPATH),
+                self::VENDOR => wp_normalize_path(dirname(__DIR__, 4)),
+            ],
+            self::TYPE_URL => [
+                self::ROOT => site_url('/'),
+                self::VENDOR => null,
+            ],
+        ];
     }
 
     /**
@@ -102,7 +120,7 @@ class BaseLocations implements Locations
      */
     public function vendorPackageDir(string $vendor, string $package): string
     {
-        return "{$this->vendorRootDir}/{$vendor}/{$package}";
+        return $this->locations[self::TYPE_DIR][self::VENDOR]."/{$vendor}/{$package}/";
     }
 
     /**
@@ -110,7 +128,7 @@ class BaseLocations implements Locations
      */
     public function vendorPackageUrl(string $vendor, string $package): ?string
     {
-        return null;
+        return $this->locations[self::TYPE_DIR][self::VENDOR] . "/{$vendor}/{$package}/" ?? null;
     }
 
     /**
@@ -118,7 +136,15 @@ class BaseLocations implements Locations
      */
     public function rootDir(): string
     {
-        return $this->rootPath;
+        return $this->locations[self::TYPE_DIR][self::ROOT];
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function rootUrl(): string
+    {
+        return $this->locations[self::TYPE_URL][self::ROOT];
     }
 
     /**
@@ -126,20 +152,7 @@ class BaseLocations implements Locations
      */
     public function contentDir(string $which = '', string $subDir = ''): string
     {
-        if ($which === '') {
-            return $this->contentPath;
-        }
-
-        $key = "{$which}:{$subDir}";
-        $path = wp_cache_get($key, __METHOD__);
-
-        if (! $path) {
-            $path = realpath("{$this->contentPath}/".$which);
-            $path = trailingslashit(trailingslashit($path).ltrim($subDir, '\\/'));
-            wp_cache_set($key, $path, __METHOD__);
-        }
-
-        return $path;
+        return $this->resolve(self::TYPE_DIR, $which, $subDir);
     }
 
     /**
@@ -147,16 +160,39 @@ class BaseLocations implements Locations
      */
     public function contentUrl(string $which = '', string $subDir = ''): string
     {
-        if ($which === '') {
-            return $this->contentUrl;
+        return $this->resolve(self::TYPE_URL, $which, $subDir);
+    }
+
+    protected function resolve(string $type, string $which = '', string $subDir = ''): ?string
+    {
+        $args = array_filter(func_get_args());
+        $key = __CLASS__."::".implode("_", $args);
+
+        if ($path = wp_cache_get($key)) {
+            return (string) $path;
         }
 
-        $key = "{$which}:{$subDir}";
-        $path = wp_cache_get($key, __METHOD__);
-        if (! $path) {
-            $path = trailingslashit(trailingslashit($this->contentUrl.$which).ltrim($subDir, '/'));
-            wp_cache_set($key, $path, __METHOD__);
+        if (isset($this->locations[$type][$which])) {
+            $path = trailingslashit(trailingslashit($this->locations[$type][$which]).$subDir);
+
+            return $path;
         }
+
+        if ($which === '') {
+            $path = $type === self::TYPE_DIR
+                ? $this->contentPath
+                : $this->contentUrl;
+            wp_cache_set($key, $path);
+
+            return $path;
+        }
+
+        $path = $type === self::TYPE_DIR
+            ? trailingslashit(realpath("{$this->contentPath}/".$which)).ltrim($subDir, '\\/')
+            : trailingslashit($this->contentUrl.$which).ltrim($subDir, '/');
+        $path = trailingslashit($path);
+
+        wp_cache_set($key, $path);
 
         return $path;
     }

@@ -5,10 +5,14 @@ namespace Inpsyde\App\Location;
 interface Locations
 {
 
+    const TYPE_URL = 'url';
+    const TYPE_DIR = 'dir';
     public const MU_PLUGINS = 'mu-plugins';
     public const LANGUAGES = 'languages';
     public const PLUGINS = 'plugins';
     public const THEMES = 'themes';
+    public const ROOT = 'root';
+    public const VENDOR = 'vendor';
 
     /**
      * @param string $plugin
@@ -84,6 +88,13 @@ interface Locations
      * @return string
      */
     public function rootDir(): string;
+
+    /**
+     * Returns the website root url.
+     *
+     * @return string
+     */
+    public function rootUrl(): string;
 
     /**
      * @param string $which

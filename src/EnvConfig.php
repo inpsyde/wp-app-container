@@ -27,6 +27,10 @@ class EnvConfig implements SiteConfig
         'preprod' => self::STAGING,
         'pre-prod' => self::STAGING,
     ];
+    private const HOSTING_LOCATIONS = [
+        self::HOSTING_WPE => WpEngineLocations::class,
+        self::HOSTING_VIP => VipLocations::class,
+    ];
 
     /**
      * @var string
@@ -46,7 +50,7 @@ class EnvConfig implements SiteConfig
     /**
      * @var Locations
      */
-    private $paths;
+    private $locations;
 
     /**
      * @var string
@@ -71,17 +75,14 @@ class EnvConfig implements SiteConfig
      */
     public function locations(): Locations
     {
-        if (! $this->paths) {
-            if ($this->hostingIs(self::HOSTING_VIP)) {
-                $this->paths = new VipLocations();
-            } elseif ($this->hostingIs(self::HOSTING_WPE)) {
-                $this->paths = new WpEngineLocations();
-            } else {
-                $this->paths = new BaseLocations();
-            }
+        if (! $this->locations) {
+            $locations = (array) $this->get('LOCATIONS');
+            $hosting = $this->hosting();
+            $location = self::HOSTING_LOCATIONS[$hosting] ?? BaseLocations::class;
+            $this->locations = new $location($locations);
         }
 
-        return $this->paths;
+        return $this->locations;
     }
 
     /**
