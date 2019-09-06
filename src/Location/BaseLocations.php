@@ -32,7 +32,7 @@ class BaseLocations implements Locations
 
     public function __construct(array $locations = [])
     {
-        $this->contentPath = untrailingslashit(WP_CONTENT_DIR);
+        $this->contentPath = trailingslashit(WP_CONTENT_DIR);
         $this->contentUrl = content_url('/');
         $this->locations = array_replace($this->defaultLocations(), $locations);
     }
@@ -180,7 +180,7 @@ class BaseLocations implements Locations
         }
 
         $path = $type === self::TYPE_DIR
-            ? trailingslashit(realpath("{$this->contentPath}/".$which))
+            ? trailingslashit(realpath($this->contentPath.$which))
             : trailingslashit($this->contentUrl.$which);
 
         $this->locations[$type][$which] = $path;
