@@ -128,7 +128,7 @@ class BaseLocations implements Locations
      */
     public function vendorPackageUrl(string $vendor, string $package): ?string
     {
-        return $this->locations[self::TYPE_DIR][self::VENDOR] . "/{$vendor}/{$package}/" ?? null;
+        return $this->locations[self::TYPE_DIR][self::VENDOR]."/{$vendor}/{$package}/" ?? null;
     }
 
     /**
@@ -165,34 +165,27 @@ class BaseLocations implements Locations
 
     protected function resolve(string $type, string $which = '', string $subDir = ''): ?string
     {
-        $args = array_filter(func_get_args());
-        $key = __CLASS__."::".implode("_", $args);
-
-        if ($path = wp_cache_get($key)) {
-            return (string) $path;
-        }
-
-        if (isset($this->locations[$type][$which])) {
-            $path = trailingslashit(trailingslashit($this->locations[$type][$which]).$subDir);
-
-            return $path;
-        }
-
         if ($which === '') {
             $path = $type === self::TYPE_DIR
                 ? $this->contentPath
                 : $this->contentUrl;
-            wp_cache_set($key, $path);
+
+            return $path;
+        }
+
+        if (isset($this->locations[$type][$which])) {
+            $path = trailingslashit(trailingslashit($this->locations[$type][$which]).ltrim($subDir, '\\/'));
 
             return $path;
         }
 
         $path = $type === self::TYPE_DIR
-            ? trailingslashit(realpath("{$this->contentPath}/".$which)).ltrim($subDir, '\\/')
-            : trailingslashit($this->contentUrl.$which).ltrim($subDir, '/');
-        $path = trailingslashit($path);
+            ? trailingslashit(realpath("{$this->contentPath}/".$which))
+            : trailingslashit($this->contentUrl.$which);
 
-        wp_cache_set($key, $path);
+        $this->locations[$type][$which] = $path;
+
+        $path = trailingslashit($path.ltrim($subDir, '\\/'));
 
         return $path;
     }
