@@ -56,6 +56,7 @@ final class AppLogger
             return;
         }
 
+        /** @var ProviderStatus $status */
         $status = $this->providers[$provider->id()] ?? ProviderStatus::new($appStatus);
         $this->providers[$provider->id()] = $status->nowSkipped($appStatus);
     }
@@ -71,6 +72,7 @@ final class AppLogger
             return;
         }
 
+        /** @var ProviderStatus $status */
         $status = $this->providers[$provider->id()] ?? ProviderStatus::new($appStatus);
         $this->providers[$provider->id()] = $status->nowAdded($appStatus);
     }
@@ -86,6 +88,7 @@ final class AppLogger
             return;
         }
 
+        /** @var ProviderStatus $status */
         $status = $this->providers[$provider->id()] ?? ProviderStatus::new($appStatus);
 
         $this->providers[$provider->id()] = $status->nowRegistered(
@@ -103,6 +106,7 @@ final class AppLogger
             return;
         }
 
+        /** @var ProviderStatus $status */
         $status = $this->providers[$provider->id()] ?? ProviderStatus::new($appStatus);
         $this->providers[$provider->id()] = $status->nowBooted($appStatus);
     }

@@ -6,7 +6,6 @@ use Inpsyde\App\Location\Locations;
 
 interface SiteConfig
 {
-    // hosting solutions
     public const HOSTING_VIP = 'vip';
     public const HOSTING_WPE = 'wpe';
     public const HOSTING_SPACES = 'spaces';
@@ -18,7 +17,9 @@ interface SiteConfig
     public function locations(): Locations;
 
     /**
-     * Returns a string which contains the name of the hosting provider. See also constants HOSTING_*
+     * Returns either one of the HOSTING_* constants or a different hosting name.
+     * HOSTING_OTHER should be used as fallback.
+     *
      * @return string
      */
     public function hosting(): string;
@@ -48,6 +49,8 @@ interface SiteConfig
      *
      * phpcs:disable Inpsyde.CodeQuality.ReturnTypeDeclaration
      * phpcs:disable Inpsyde.CodeQuality.ArgumentTypeDeclaration
+     * @psalm-suppress MissingReturnType
+     * @psalm-suppress MissingParamType
      */
     public function get(string $name, $default = null);
 }

@@ -73,6 +73,7 @@ final class App
      * @return mixed
      *
      * phpcs:disable Inpsyde.CodeQuality.ReturnTypeDeclaration
+     * @psalm-suppress MissingReturnType
      */
     public static function make(string $id)
     {
@@ -232,7 +233,7 @@ final class App
                 return $this;
             }
 
-            // @phan-suppress-next-line PhanPossiblyNonClassMethodCall
+            /** @psalm-suppress PossiblyNullReference */
             if ($contexts && !$this->container->context()->is(...$contexts)) {
                 $this->logger->providerSkipped($provider, $this->status);
 
@@ -243,12 +244,12 @@ final class App
             $this->logger->providerAdded($provider, $this->status);
             $this->fireBootingHook(self::ACTION_ADDED_PROVIDER, $providerId);
 
+            /** @psalm-suppress PossiblyNullReference */
             $provider->registerLater()
-                // @phan-suppress-next-line PhanPossiblyNonClassMethodCall
                 ? $this->delayed->enqueue($provider)
                 : $this->registerProvider($provider);
 
-            // @phan-suppress-next-line PhanPossiblyNonClassMethodCall
+            /** @psalm-suppress PossiblyNullReference */
             $this->bootable->enqueue($provider);
         } catch (\Throwable $throwable) {
             static::handleThrowable($throwable);
@@ -275,6 +276,8 @@ final class App
      *
      * phpcs:disable Inpsyde.CodeQuality.ArgumentTypeDeclaration
      * phpcs:disable Inpsyde.CodeQuality.ReturnTypeDeclaration
+     * @psalm-suppress MissingReturnType
+     * @psalm-suppress MissingParamType
      */
     public function resolve(string $id, $default = null)
     {
@@ -289,7 +292,7 @@ final class App
 
             $this->initializeContainer();
 
-            // @phan-suppress-next-line PhanPossiblyNonClassMethodCall
+            /** @psalm-suppress PossiblyNullReference */
             if (!$this->container->has($id)) {
                 do_action(
                     self::ACTION_ERROR,
@@ -299,9 +302,7 @@ final class App
                 return $default;
             }
 
-            // @phan-suppress-next-line PhanPossiblyNonClassMethodCall
             $value = $this->container->get($id);
-            //
         } catch (\Throwable $throwable) {
             static::handleThrowable($throwable);
         }
@@ -364,10 +365,8 @@ final class App
         $lastRun = $this->status->isThemesStep();
         $toRegisterLater = $lastRun ? null : new \SplQueue();
 
-        // @phan-suppress-next-line PhanPossiblyNonClassMethodCall
         while ($this->delayed->count()) {
             /** @var ServiceProvider $delayed */
-            // @phan-suppress-next-line PhanPossiblyNonClassMethodCall
             $delayed = $this->delayed->dequeue();
             $toRegisterNow = $lastRun || $delayed->bootEarly();
             $toRegisterNow and $this->registerProvider($delayed);
@@ -393,10 +392,8 @@ final class App
 
         $toBootLater = $lastRun ? null : new \SplQueue();
 
-        // @phan-suppress-next-line PhanPossiblyNonClassMethodCall
         while ($this->bootable->count()) {
             /** @var ServiceProvider $bootable */
-            // @phan-suppress-next-line PhanPossiblyNonClassMethodCall
             $bootable = $this->bootable->dequeue();
 
             if ($lastRun || $bootable->bootEarly()) {
@@ -420,8 +417,7 @@ final class App
     {
         try {
             $this->initializeContainer();
-
-            // @phan-suppress-next-line PhanPossiblyNullTypeArgument
+            /** @psalm-suppress PossiblyNullArgument */
             if ($provider->register($this->container)) {
                 $this->fireBootingHook(self::ACTION_REGISTERED_PROVIDER, $provider->id());
                 $this->logger->providerRegistered($provider, $this->status);
@@ -438,8 +434,7 @@ final class App
     private function bootProvider(ServiceProvider $provider): void
     {
         $this->initializeContainer();
-
-        // @phan-suppress-next-line PhanPossiblyNullTypeArgument
+        /** @psalm-suppress PossiblyNullArgument */
         if (!$provider->boot($this->container)) {
             return;
         }

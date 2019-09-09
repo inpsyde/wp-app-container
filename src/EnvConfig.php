@@ -2,19 +2,19 @@
 
 namespace Inpsyde\App;
 
-use Inpsyde\App\Location\BaseLocations;
+use Inpsyde\App\Location\GenericLocations;
 use Inpsyde\App\Location\Locations;
 use Inpsyde\App\Location\VipLocations;
 use Inpsyde\App\Location\WpEngineLocations;
 
 class EnvConfig implements SiteConfig
 {
-
     public const FILTER_ENV_NAME = 'wp-app.environment';
-    // environments
+
     public const DEVELOPMENT = 'development';
     public const PRODUCTION = 'production';
     public const STAGING = 'staging';
+
     private const ENV_ALIASES = [
         'dev' => self::DEVELOPMENT,
         'develop' => self::DEVELOPMENT,
@@ -27,15 +27,18 @@ class EnvConfig implements SiteConfig
         'preprod' => self::STAGING,
         'pre-prod' => self::STAGING,
     ];
-    private const HOSTING_LOCATIONS = [
+
+    private const HOSTING_LOCATIONS_CLASS_MAP = [
         self::HOSTING_WPE => WpEngineLocations::class,
         self::HOSTING_VIP => VipLocations::class,
+        self::HOSTING_SPACES => GenericLocations::class,
+        self::HOSTING_OTHER => GenericLocations::class,
     ];
 
     /**
      * @var string
      */
-    private $env;
+    private $env = '';
 
     /**
      * @var array
@@ -48,14 +51,14 @@ class EnvConfig implements SiteConfig
     private $namespaces = [];
 
     /**
-     * @var Locations
+     * @var Locations|null
      */
     private $locations;
 
     /**
      * @var string
      */
-    private $hosting;
+    private $hosting = '';
 
     /**
      * @param string ...$namespaces
@@ -63,9 +66,7 @@ class EnvConfig implements SiteConfig
     public function __construct(string ...$namespaces)
     {
         foreach ($namespaces as $namespace) {
-            $trimmed = $namespace
-                ? trim($namespace, '\\')
-                : null;
+            $trimmed = $namespace ? trim($namespace, '\\') : null;
             $trimmed and $this->namespaces[] = $trimmed;
         }
     }
@@ -75,12 +76,24 @@ class EnvConfig implements SiteConfig
      */
     public function locations(): Locations
     {
-        if (! $this->locations) {
-            $locations = (array) $this->get('LOCATIONS');
-            $hosting = $this->hosting();
-            $location = self::HOSTING_LOCATIONS[$hosting] ?? BaseLocations::class;
-            $this->locations = new $location($locations);
+        if ($this->locations instanceof Locations) {
+            return $this->locations;
         }
+
+        $locationClassName = self::HOSTING_LOCATIONS_CLASS_MAP[$this->hosting()] ?? '';
+        if (!$locationClassName
+            || !class_exists($locationClassName)
+            || !is_subclass_of($locationClassName, Locations::class)
+        ) {
+            $locationClassName = GenericLocations::class;
+        }
+
+        /** @var callable $factory */
+        $factory = [$locationClassName, 'createFromConfig'];
+        /** @var Locations $locations */
+        $locations = $factory($this);
+
+        $this->locations = $locations;
 
         return $this->locations;
     }
@@ -94,13 +107,14 @@ class EnvConfig implements SiteConfig
             return $this->hosting;
         }
 
-        if ($this->get('HOSTING')) {
-            $this->hosting = $this->get('HOSTING');
+        $hosting = $this->get('HOSTING');
+        if ($hosting && is_string($hosting)) {
+            $this->hosting = $hosting;
 
             return $this->hosting;
         }
 
-        if ($this->get('VIP_GO_ENV')) {
+        if ($this->get('VIP_GO_ENV') !== null) {
             $this->hosting = self::HOSTING_VIP;
 
             return $this->hosting;
@@ -125,12 +139,11 @@ class EnvConfig implements SiteConfig
 
     /**
      * @param string $hosting
-     *
      * @return bool
      */
     public function hostingIs(string $hosting): bool
     {
-        return $this->hosting() === $hosting;
+        return strtolower($this->hosting()) === strtolower($hosting);
     }
 
     /**
@@ -147,32 +160,26 @@ class EnvConfig implements SiteConfig
             ?? $this->readEnvVarOrConstant('VIP_GO_ENV');   // VIP Go
 
         if ($env) {
-            $this->env = $this->filterEnv((string) $env);
+            $this->env = $this->filterEnv((string)$env);
 
             return $this->env;
         }
 
         if (function_exists('is_wpe')) {   // WP Engine legacy
-            // @phan-suppress-next-line PhanUndeclaredFunction
-            $env = (int) is_wpe() > 0
-                ? self::PRODUCTION
-                : self::STAGING;
-            $this->env = $this->filterEnv((string) $env);
+            $env = ((int)is_wpe()) > 0 ? self::PRODUCTION : self::STAGING;
+            $this->env = $this->filterEnv((string)$env);
 
             return $this->env;
         }
 
-        $env = (defined('WP_DEBUG') && WP_DEBUG)
-            ? self::DEVELOPMENT
-            : self::PRODUCTION;
-        $this->env = $this->filterEnv((string) $env);
+        $env = (defined('WP_DEBUG') && WP_DEBUG) ? self::DEVELOPMENT : self::PRODUCTION;
+        $this->env = $this->filterEnv((string)$env);
 
         return $this->env;
     }
 
     /**
      * @param string $env
-     *
      * @return bool
      */
     public function envIs(string $env): bool
@@ -188,18 +195,19 @@ class EnvConfig implements SiteConfig
     /**
      * @param string $name
      * @param null $default
-     *
      * @return mixed|null
      *
      * phpcs:disable Inpsyde.CodeQuality.ReturnTypeDeclaration
      * phpcs:disable Inpsyde.CodeQuality.ArgumentTypeDeclaration
+     * @psalm-suppress MissingReturnType
+     * @psalm-suppress MissingParamType
      */
     public function get(string $name, $default = null)
     {
         // phpcs:enable Inpsyde.CodeQuality.ReturnTypeDeclaration
         // phpcs:enable Inpsyde.CodeQuality.ArgumentTypeDeclaration
 
-        if (! $name) {
+        if (!$name) {
             return $default;
         }
 
@@ -231,10 +239,10 @@ class EnvConfig implements SiteConfig
 
     /**
      * @param string $name
-     *
      * @return mixed
      *
      * phpcs:disable Inpsyde.CodeQuality.ReturnTypeDeclaration
+     * @psalm-suppress MissingReturnType
      */
     private function readEnvVarOrConstant(string $name)
     {
@@ -250,8 +258,7 @@ class EnvConfig implements SiteConfig
         }
 
         if ($value === null && (PHP_SAPI === 'cli' || PHP_SAPI === 'cli-server')) {
-            $value = getenv($name)
-                ?: null;
+            $value = getenv($name) ?: null;
         }
 
         return $value;
@@ -259,15 +266,12 @@ class EnvConfig implements SiteConfig
 
     /**
      * @param string $env
-     *
      * @return string
      */
     private function filterEnv(string $env): string
     {
         $lower = strtolower($env);
         $env = self::ENV_ALIASES[$lower] ?? $lower;
-
-        // @phan-suppress-next-line PhanTypeVoidAssignment
         $filtered = apply_filters(self::FILTER_ENV_NAME, $env);
 
         if (($filtered !== $env) && is_string($filtered)) {

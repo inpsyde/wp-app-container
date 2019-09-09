@@ -82,8 +82,8 @@ final class Context implements \JsonSerializable
             $GLOBALS['wp_rewrite'] = new \WP_Rewrite();
         }
 
-        $currentUrl = rtrim(set_url_scheme(add_query_arg([])), '/');
-        $restUrl = rtrim(set_url_scheme(get_rest_url()), '/');
+        $currentUrl = rtrim((string)set_url_scheme(add_query_arg([])), '/');
+        $restUrl = rtrim((string)set_url_scheme(get_rest_url()), '/');
 
         return strpos($currentUrl, $restUrl) === 0;
     }
@@ -97,7 +97,7 @@ final class Context implements \JsonSerializable
             return true;
         }
 
-        $pageNow = $GLOBALS['pagenow'] ?? '';
+        $pageNow = (string)($GLOBALS['pagenow'] ?? '');
 
         return $pageNow && (basename($pageNow) === 'wp-login.php');
     }
@@ -111,9 +111,6 @@ final class Context implements \JsonSerializable
 
         add_action(
             'login_init',
-            /**
-             * @suppress PhanUnreferencedClosure
-             */
             function () {
                 $this->data[self::LOGIN] = true;
                 $this->data[self::FRONTOFFICE] = false;
@@ -122,9 +119,6 @@ final class Context implements \JsonSerializable
 
         add_action(
             'rest_api_init',
-            /**
-             * @suppress PhanUnreferencedClosure
-             */
             function () {
                 $this->data[self::REST] = true;
                 $this->data[self::FRONTOFFICE] = false;

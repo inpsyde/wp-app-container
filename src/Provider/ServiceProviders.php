@@ -26,9 +26,10 @@ class ServiceProviders
      */
     public function add(ServiceProvider $provider, string ...$contexts): ServiceProviders
     {
-        $this->providers or $this->providers = new \SplObjectStorage();
+        if (!$this->providers) {
+            $this->providers = new \SplObjectStorage();
+        }
 
-        // @phan-suppress-next-line PhanPossiblyNonClassMethodCall
         $this->providers->attach($provider, $contexts);
 
         return $this;
@@ -43,7 +44,6 @@ class ServiceProviders
             return;
         }
 
-        // @phan-suppress-next-line PhanPossiblyNullTypeArgument
         $this->addProvidersToApp($app, $this->providers);
         $this->providers = null;
     }

@@ -1,60 +1,60 @@
-<?php declare(strict_types=1); # -*- coding: utf-8 -*-
+<?php # -*- coding: utf-8 -*-
 
 namespace Inpsyde\App\Location;
 
+use Inpsyde\App\EnvConfig;
+
 interface Locations
 {
-
-    const TYPE_URL = 'url';
-    const TYPE_DIR = 'dir';
-    public const MU_PLUGINS = 'mu-plugins';
-    public const LANGUAGES = 'languages';
+    public const CONTENT = 'content';
+    public const VENDOR = 'vendor';
+    public const ROOT = 'root';
     public const PLUGINS = 'plugins';
     public const THEMES = 'themes';
-    public const ROOT = 'root';
-    public const VENDOR = 'vendor';
+    public const MU_PLUGINS = 'mu-plugins';
+    public const LANGUAGES = 'languages';
 
     /**
-     * @param string $plugin
-     *
+     * @param string $path
      * @return string
      */
-    public function pluginsDir(string $plugin = ''): string;
+    public static function createFromConfig(EnvConfig $config): Locations;
 
     /**
-     * @param string $plugin
-     *
+     * @param string $path
      * @return string
      */
-    public function pluginsUrl(string $plugin = ''): string;
+    public function pluginsDir(string $path = '/'): string;
 
     /**
-     * @param string $muPlugin
-     *
+     * @param string $path
      * @return string
      */
-    public function muPluginsDir(string $muPlugin = ''): string;
+    public function pluginsUrl(string $path = '/'): string;
 
     /**
-     * @param string $muPlugin
-     *
+     * @param string $path
      * @return string
      */
-    public function muPluginsUrl(string $muPlugin = ''): string;
+    public function muPluginsDir(string $path = '/'): string;
 
     /**
-     * @param string $theme
-     *
+     * @param string $path
      * @return string
      */
-    public function themesDir(string $theme = ''): string;
+    public function muPluginsUrl(string $path = '/'): string;
 
     /**
-     * @param string $theme
-     *
+     * @param string $path
      * @return string
      */
-    public function themesUrl(string $theme = ''): string;
+    public function themesDir(string $path = '/'): string;
+
+    /**
+     * @param string $path
+     * @return string
+     */
+    public function themesUrl(string $path = '/'): string;
 
     /**
      * @return string
@@ -67,20 +67,28 @@ interface Locations
     public function languagesUrl(): string;
 
     /**
-     * @param string $vendor
-     * @param string $package
-     *
+     * @param string $path
      * @return string
      */
-    public function vendorPackageDir(string $vendor, string $package): string;
+    public function contentDir(string $path = '/'): string;
 
     /**
-     * @param string $vendor
-     * @param string $package
-     *
-     * @return string|null  if vendor-directory is outside of web-root, null is returned.
+     * @param string $path
+     * @return string
      */
-    public function vendorPackageUrl(string $vendor, string $package): ?string;
+    public function contentUrl(string $path = '/'): string;
+
+    /**
+     * @param string $path
+     * @return string|null
+     */
+    public function vendorDir(string $path = '/'): string;
+
+    /**
+     * @param string $path
+     * @return string|null It is expected to be null if vendor folder is outside web-root.
+     */
+    public function vendorUrl(string $path = '/'): ?string;
 
     /**
      * Returns the website root directory path.
@@ -95,20 +103,4 @@ interface Locations
      * @return string
      */
     public function rootUrl(): string;
-
-    /**
-     * @param string $which
-     * @param string $subDir
-     *
-     * @return string
-     */
-    public function contentDir(string $which = '', string $subDir = ''): string;
-
-    /**
-     * @param string $which
-     * @param string $subDir
-     *
-     * @return string
-     */
-    public function contentUrl(string $which = '', string $subDir = ''): string;
 }

@@ -6,22 +6,26 @@ trait AutoDiscoverIdTrait
 {
     /**
      * @return string
-     *
-     * @suppress PhanUndeclaredProperty
      */
     public function id(): string
     {
-        if (isset($this->id)) {
+        if (isset($this->id) && is_string($this->id)) {
             return $this->id;
         }
 
         $class = get_called_class();
 
         if (defined("{$class}::ID")) {
-            return constant("{$class}::ID");
+            $byConstant = constant("{$class}::ID");
+            if (is_string($byConstant)) {
+                return $byConstant;
+            }
         }
 
+        /** @var array<string, int> $classes */
         static $classes = [];
+
+        /** @var array<string, string> $hashes */
         static $hashes = [];
 
         isset($classes[$class]) or $classes[$class] = 0;

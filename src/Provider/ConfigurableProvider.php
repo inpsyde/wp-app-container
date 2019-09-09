@@ -80,7 +80,6 @@ class ConfigurableProvider implements ServiceProvider
     public function register(Container $container): bool
     {
         try {
-            // @phan-suppress-next-line PhanTypePossiblyInvalidCallable
             return $this->register ? (bool)(($this->register)($container)) : false;
         } catch (\Throwable $throwable) {
             App::handleThrowable($throwable);
@@ -96,7 +95,6 @@ class ConfigurableProvider implements ServiceProvider
     public function boot(Container $container): bool
     {
         try {
-            // @phan-suppress-next-line PhanTypePossiblyInvalidCallable
             return $this->boot ? (bool)(($this->boot)($container)) : false;
         } catch (\Throwable $throwable) {
             App::handleThrowable($throwable);

@@ -27,8 +27,6 @@ abstract class RegisteredOnly implements ServiceProvider
     /**
      * @param Container $container
      * @return bool
-     *
-     * @suppress PhanUnusedPublicFinalMethodParameter
      */
     final public function boot(Container $container): bool
     {

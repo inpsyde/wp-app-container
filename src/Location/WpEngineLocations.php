@@ -2,34 +2,54 @@
 
 namespace Inpsyde\App\Location;
 
-class WpEngineLocations extends BaseLocations
+use Inpsyde\App\EnvConfig;
+
+class WpEngineLocations implements Locations
 {
+    public const PRIVATE = 'private';
 
-    public const WPEPRIVATE = '_wpeprivate';
-
-    /**
-     * {@inheritDoc}
-     */
-    public function vendorPackageDir(string $vendor, string $package): string
-    {
-        return $this->muPluginsDir("/vendor/{$vendor}/{$package}");
-    }
+    use ResolverTrait;
 
     /**
-     * {@inheritDoc}
-     */
-    public function vendorPackageUrl(string $vendor, string $package): ?string
-    {
-        return $this->muPluginsUrl("/vendor/{$vendor}/{$package}");
-    }
-
-    /**
-     * A place were you can store files temporary until you want to put them in their correct location.
-     *
+     * @param string $path
      * @return string
      */
-    public function wpePrivateDir(): string
+    public static function createFromConfig(EnvConfig $config): Locations
     {
-        return trailingslashit($this->rootPath.self::WPEPRIVATE);
+        return new static($config);
+    }
+
+    /**
+     * @param EnvConfig $config
+     */
+    private function __construct(EnvConfig $config)
+    {
+        $muDir = wp_normalize_path(trailingslashit(WP_CONTENT_DIR) . 'mu-plugins');
+
+        $this->injectResolver(
+            new LocationResolver(
+                $config,
+                [
+                    LocationResolver::DIR => [
+                        self::PRIVATE => wp_normalize_path(ABSPATH) . '_wpeprivate/',
+                        self::VENDOR => "{$muDir}/vendor/",
+                    ],
+                    LocationResolver::URL => [
+                        self::VENDOR => content_url('/mu-plugins/vendor/'),
+                    ],
+                ]
+            )
+        );
+    }
+
+    /**
+     * Temporary writable folder.
+     *
+     * @param string $path
+     * @return string
+     */
+    public function privateDir(string $path = '/'): string
+    {
+        return $this->resolver()->resolveDir(self::PRIVATE, $path) ?? '';
     }
 }

@@ -2,68 +2,123 @@
 
 namespace Inpsyde\App\Location;
 
-class VipLocations extends BaseLocations
-{
+use Inpsyde\App\EnvConfig;
 
-    public const MU_PLUGINS = 'client-mu-plugins';
+class VipLocations implements Locations
+{
+    public const CLIENT_MU_PLUGINS = 'client-mu-plugins';
     public const VIP_CONFIG = 'vip-config';
     public const IMAGES = 'images';
     public const PRIVATE = 'private';
 
-    /**
-     * {@inheritDoc}
-     */
-    public function vendorPackageDir(string $vendor, string $package): string
-    {
-        return $this->muPluginsDir("/vendor/{$vendor}/{$package}");
-    }
+    use ResolverTrait;
 
     /**
-     * {@inheritDoc}
-     */
-    public function vendorPackageUrl(string $vendor, string $package): ?string
-    {
-        return $this->muPluginsUrl("/vendor/{$vendor}/{$package}");
-    }
-
-    /**
-     * For custom configuration changes, and additional sunrise.php code.
-     *
+     * @param string $path
      * @return string
      */
-    public function configDir(): string
+    public static function createFromConfig(EnvConfig $config): Locations
     {
-        return $this->contentDir(self::VIP_CONFIG);
+        return new static($config);
     }
 
     /**
-     * The "private"-folder in your repo, if used, will provide access to files that are not web accessible, but can be
-     * accessed by your theme or plugins.
-     *
-     * @param string $subDir
-     *
-     * @return string
+     * @param EnvConfig $config
      */
-    public function privateDir(string $subDir = ''): string
+    private function __construct(EnvConfig $config)
     {
-        return $this->contentDir(self::PRIVATE, $subDir);
+        $privateDir = defined('WPCOM_VIP_PRIVATE_DIR')
+            ? trailingslashit(wp_normalize_path(WPCOM_VIP_PRIVATE_DIR))
+            : null;
+
+        $muDir = defined('WPCOM_VIP_CLIENT_MU_PLUGIN_DIR')
+            ? trailingslashit(wp_normalize_path(WPCOM_VIP_CLIENT_MU_PLUGIN_DIR))
+            : null;
+
+        /**
+         * TODO: verify if we can use "private" folder assuming there's a way to "publish" assets
+         *      that are inside vendor.
+         *      Right now, "client-mu-plugins" is the only folder that allow us to access assets
+         *      when stored in vendor.
+         */
+
+        $this->injectResolver(
+            new LocationResolver(
+                $config,
+                [
+                    LocationResolver::DIR => [
+                        self::CLIENT_MU_PLUGINS => $muDir,
+                        self::IMAGES => trailingslashit(WP_CONTENT_DIR) . '/images/',
+                        self::PRIVATE => $privateDir,
+                        self::VIP_CONFIG => null,
+                        self::VENDOR => $muDir ? "{$muDir}/client-mu-plugins/vendor/" : null,
+                    ],
+                    LocationResolver::URL => [
+                        self::CLIENT_MU_PLUGINS => content_url('/client-mu-plugins/'),
+                        self::IMAGES => content_url('/images/'),
+                    ],
+                ]
+            )
+        );
     }
 
     /**
-     * For favicon.ico and apple-touch-icon*.png images.
+     * Regular MU plugins folder is not usable for custom-developed MU plugins on VIP environments,
+     * the "client-mu-plugins" foldr has to be used instead.
      *
+     * @param string $path
      * @return string
      */
-    public function imagesDir(): string
+    public function clientMuPluginsDir(string $path = '/'): string
     {
-        return $this->contentDir(self::IMAGES);
+        return $this->resolver()->resolveDir(self::CLIENT_MU_PLUGINS, $path) ?? '';
     }
 
     /**
+     * Regular MU plugins folder is not usable for custom-developed MU plugins on VIP environments,
+     * the "client-mu-plugins" foldr has to be used instead.
+     *
+     * @param string $path
      * @return string
      */
-    public function imagesUrl(): string
+    public function clientMuPluginsUrl(string $path = '/'): string
     {
-        return $this->contentUrl(self::IMAGES);
+        return $this->resolver()->resolveUrl(self::CLIENT_MU_PLUGINS, $path) ?? '';
+    }
+
+    /**
+     * Kind-of-legacy folder. Can still be used to store images relevant site-wide, like favicons
+     * or Apple touch icons.
+     *
+     * @param string $path
+     * @return string
+     */
+    public function imagesDir(string $path = '/'): string
+    {
+        return $this->resolver()->resolveDir(self::IMAGES, $path) ?? '';
+    }
+
+    /**
+     * Kind-of-legacy folder. Can still be used to store images relevant site-wide, like favicons
+     * or Apple touch icons.
+     *
+     * @param string $path
+     * @return string
+     */
+    public function imagesUrl(string $path = '/'): string
+    {
+        return $this->resolver()->resolveUrl(self::IMAGES, $path) ?? '';
+    }
+
+    /**
+     * The "private" folder in VIP Go repo can be used to read files from PHP, without making them
+     * web-accessible.
+     *
+     * @param string $path
+     * @return string
+     */
+    public function privateDir(string $path = '/'): string
+    {
+        return $this->resolver()->resolveDir(self::PRIVATE, $path) ?? '';
     }
 }

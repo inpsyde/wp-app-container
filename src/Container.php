@@ -97,10 +97,11 @@ final class Container implements ContainerInterface
      * @param callable $factory
      * @return void
      */
-    public function addService(string $id, callable $factory)
+    public function addService(string $id, callable $factory): void
     {
         try {
             $this->ensurePimple();
+            /** @psalm-suppress PossiblyNullReference */
             $this->pimple[$id] = $this->wrapCallback($factory);
         } catch (\Throwable $throwable) {
             do_action(App::ACTION_ERROR, $throwable);
@@ -114,15 +115,19 @@ final class Container implements ContainerInterface
      * @param callable $extender
      * @return void
      */
-    public function extendService(string $id, callable $extender)
+    public function extendService(string $id, callable $extender): void
     {
         try {
             $this->ensurePimple();
-            // @phan-suppress-next-line PhanPossiblyNonClassMethodCall
+            /** @psalm-suppress PossiblyNullReference */
             $this->pimple->extend(
                 $id,
-                function ($service) use (&$extender) {
-                    return $extender($service, $this);
+                /**
+                 * @psalm-suppress MissingClosureParamType
+                 * @psalm-suppress MixedFunctionCall
+                 */
+                function ($service) use (&$extender): void {
+                    $extender($service, $this);
                 }
             );
         } catch (\Throwable $throwable) {
@@ -140,7 +145,7 @@ final class Container implements ContainerInterface
     {
         try {
             $this->ensurePimple();
-            // @phan-suppress-next-line PhanPossiblyNonClassMethodCall
+            /** @psalm-suppress PossiblyNullReference */
             $this->pimple[$id] = $this->pimple->factory($this->wrapCallback($callable));
         } catch (\Throwable $throwable) {
             do_action(App::ACTION_ERROR, $throwable);
@@ -154,6 +159,8 @@ final class Container implements ContainerInterface
      * @return mixed
      *
      * phpcs:disable Generic.Metrics.NestingLevel
+     * @psalm-suppress MissingReturnType
+     * @psalm-suppress MissingParamType
      */
     public function get($id)
     {
@@ -180,8 +187,9 @@ final class Container implements ContainerInterface
      * @return bool
      *
      * phpcs:disable Generic.Metrics.NestingLevel
+     * @psalm-suppress MissingParamType
      */
-    public function has($id)
+    public function has($id): bool
     {
         // phpcs:enable Generic.Metrics.NestingLevel
         $this->assertString($id, __METHOD__);
@@ -218,8 +226,11 @@ final class Container implements ContainerInterface
      *
      * @param mixed $value Should be string
      * @param string $method
+     * @return void
+     *
+     * @psalm-suppress MissingParamType
      */
-    private function assertString($value, string $method)
+    private function assertString($value, string $method): void
     {
         if (!is_string($value)) {
             throw new \TypeError(
@@ -233,12 +244,15 @@ final class Container implements ContainerInterface
     }
 
     /**
-     * @param \callable $factory
+     * @param callable $factory
      * @return \Closure
      */
     private function wrapCallback(callable $factory): \Closure
     {
-        // @phan-suppress-next-line PhanUnreferencedClosure
+        /**
+         * @psalm-suppress MissingClosureReturnType
+         * @psalm-suppress MixedFunctionCall
+         */
         return function () use (&$factory) {
             return $factory($this);
         };
