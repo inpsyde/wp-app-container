@@ -67,11 +67,11 @@ class VipLocations implements Locations
      * the "client-mu-plugins" foldr has to be used instead.
      *
      * @param string $path
-     * @return string
+     * @return string|null
      */
-    public function clientMuPluginsDir(string $path = '/'): string
+    public function clientMuPluginsDir(string $path = '/'): ?string
     {
-        return $this->resolver()->resolveDir(self::CLIENT_MU_PLUGINS, $path) ?? '';
+        return $this->resolver()->resolveDir(self::CLIENT_MU_PLUGINS, $path);
     }
 
     /**
@@ -79,11 +79,11 @@ class VipLocations implements Locations
      * the "client-mu-plugins" foldr has to be used instead.
      *
      * @param string $path
-     * @return string
+     * @return string|null
      */
-    public function clientMuPluginsUrl(string $path = '/'): string
+    public function clientMuPluginsUrl(string $path = '/'): ?string
     {
-        return $this->resolver()->resolveUrl(self::CLIENT_MU_PLUGINS, $path) ?? '';
+        return $this->resolver()->resolveUrl(self::CLIENT_MU_PLUGINS, $path);
     }
 
     /**
@@ -91,11 +91,11 @@ class VipLocations implements Locations
      * or Apple touch icons.
      *
      * @param string $path
-     * @return string
+     * @return string|null
      */
-    public function imagesDir(string $path = '/'): string
+    public function imagesDir(string $path = '/'): ?string
     {
-        return $this->resolver()->resolveDir(self::IMAGES, $path) ?? '';
+        return $this->resolver()->resolveDir(self::IMAGES, $path);
     }
 
     /**
@@ -103,11 +103,11 @@ class VipLocations implements Locations
      * or Apple touch icons.
      *
      * @param string $path
-     * @return string
+     * @return string|null
      */
-    public function imagesUrl(string $path = '/'): string
+    public function imagesUrl(string $path = '/'): ?string
     {
-        return $this->resolver()->resolveUrl(self::IMAGES, $path) ?? '';
+        return $this->resolver()->resolveUrl(self::IMAGES, $path);
     }
 
     /**
@@ -115,10 +115,10 @@ class VipLocations implements Locations
      * web-accessible.
      *
      * @param string $path
-     * @return string
+     * @return string|null
      */
-    public function privateDir(string $path = '/'): string
+    public function privateDir(string $path = '/'): ?string
     {
-        return $this->resolver()->resolveDir(self::PRIVATE, $path) ?? '';
+        return $this->resolver()->resolveDir(self::PRIVATE, $path);
     }
 }

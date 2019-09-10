@@ -16,91 +16,96 @@ interface Locations
 
     /**
      * @param string $path
-     * @return string
+     * @return string|null
      */
     public static function createFromConfig(EnvConfig $config): Locations;
 
     /**
-     * @param string $path
-     * @return string
+     * @return LocationResolver
      */
-    public function pluginsDir(string $path = '/'): string;
-
-    /**
-     * @param string $path
-     * @return string
-     */
-    public function pluginsUrl(string $path = '/'): string;
-
-    /**
-     * @param string $path
-     * @return string
-     */
-    public function muPluginsDir(string $path = '/'): string;
-
-    /**
-     * @param string $path
-     * @return string
-     */
-    public function muPluginsUrl(string $path = '/'): string;
-
-    /**
-     * @param string $path
-     * @return string
-     */
-    public function themesDir(string $path = '/'): string;
-
-    /**
-     * @param string $path
-     * @return string
-     */
-    public function themesUrl(string $path = '/'): string;
-
-    /**
-     * @return string
-     */
-    public function languagesDir(): string;
-
-    /**
-     * @return string
-     */
-    public function languagesUrl(): string;
-
-    /**
-     * @param string $path
-     * @return string
-     */
-    public function contentDir(string $path = '/'): string;
-
-    /**
-     * @param string $path
-     * @return string
-     */
-    public function contentUrl(string $path = '/'): string;
+    public function resolver(): LocationResolver;
 
     /**
      * @param string $path
      * @return string|null
      */
-    public function vendorDir(string $path = '/'): string;
+    public function pluginsDir(string $path = '/'): ?string;
 
     /**
      * @param string $path
-     * @return string|null It is expected to be null if vendor folder is outside web-root.
+     * @return string|null
+     */
+    public function pluginsUrl(string $path = '/'): ?string;
+
+    /**
+     * @param string $path
+     * @return string|null
+     */
+    public function muPluginsDir(string $path = '/'): ?string;
+
+    /**
+     * @param string $path
+     * @return string|null
+     */
+    public function muPluginsUrl(string $path = '/'): ?string;
+
+    /**
+     * @param string $path
+     * @return string|null
+     */
+    public function themesDir(string $path = '/'): ?string;
+
+    /**
+     * @param string $path
+     * @return string|null
+     */
+    public function themesUrl(string $path = '/'): ?string;
+
+    /**
+     * @return string|null
+     */
+    public function languagesDir(): ?string;
+
+    /**
+     * @return string|null
+     */
+    public function languagesUrl(): ?string;
+
+    /**
+     * @param string $path
+     * @return string|null
+     */
+    public function contentDir(string $path = '/'): ?string;
+
+    /**
+     * @param string $path
+     * @return string|null
+     */
+    public function contentUrl(string $path = '/'): ?string;
+
+    /**
+     * @param string $path
+     * @return string|null|null
+     */
+    public function vendorDir(string $path = '/'): ?string;
+
+    /**
+     * @param string $path
+     * @return string|null|null It is expected to be null if vendor folder is outside web-root.
      */
     public function vendorUrl(string $path = '/'): ?string;
 
     /**
      * Returns the website root directory path.
      *
-     * @return string
+     * @return string|null
      */
-    public function rootDir(): string;
+    public function rootDir(): ?string;
 
     /**
      * Returns the website root url.
      *
-     * @return string
+     * @return string|null
      */
-    public function rootUrl(): string;
+    public function rootUrl(): ?string;
 }
