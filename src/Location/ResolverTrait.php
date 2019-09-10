@@ -28,6 +28,26 @@ trait ResolverTrait
 
         return $this->resolver;
     }
+
+    /**
+     * @param string $name
+     * @param string $path
+     * @return string|null
+     */
+    public function resolveDir(string $name, string $path = '/'): ?string
+    {
+        return $this->resolver()->resolveDir($name, $path);
+    }
+
+    /**
+     * @param string $name
+     * @param string $path
+     * @return string|null
+     */
+    public function resolveUrl(string $name, string $path = '/'): ?string
+    {
+        return $this->resolver()->resolveUrl($name, $path);
+    }
     
     /**
      * @param string $path
@@ -35,7 +55,7 @@ trait ResolverTrait
      */
     public function pluginsDir(string $path = '/'): ?string
     {
-        return $this->resolver()->resolveDir(Locations::PLUGINS, $path);
+        return $this->resolveDir(Locations::PLUGINS, $path);
     }
 
     /**
@@ -44,7 +64,7 @@ trait ResolverTrait
      */
     public function pluginsUrl(string $path = '/'): ?string
     {
-        return $this->resolver()->resolveUrl(Locations::PLUGINS, $path);
+        return $this->resolveUrl(Locations::PLUGINS, $path);
     }
 
     /**
@@ -53,7 +73,7 @@ trait ResolverTrait
      */
     public function muPluginsDir(string $path = '/'): ?string
     {
-        return $this->resolver()->resolveDir(Locations::MU_PLUGINS, $path);
+        return $this->resolveDir(Locations::MU_PLUGINS, $path);
     }
 
     /**
@@ -62,7 +82,7 @@ trait ResolverTrait
      */
     public function muPluginsUrl(string $path = '/'): ?string
     {
-        return $this->resolver()->resolveUrl(Locations::MU_PLUGINS, $path);
+        return $this->resolveUrl(Locations::MU_PLUGINS, $path);
     }
 
     /**
@@ -71,7 +91,7 @@ trait ResolverTrait
      */
     public function themesDir(string $path = '/'): ?string
     {
-        return $this->resolver()->resolveDir(Locations::THEMES, $path);
+        return $this->resolveDir(Locations::THEMES, $path);
     }
 
     /**
@@ -80,7 +100,7 @@ trait ResolverTrait
      */
     public function themesUrl(string $path = '/'): ?string
     {
-        return $this->resolver()->resolveUrl(Locations::THEMES, $path);
+        return $this->resolveUrl(Locations::THEMES, $path);
     }
 
     /**
@@ -88,7 +108,7 @@ trait ResolverTrait
      */
     public function languagesDir(): ?string
     {
-        return $this->resolver()->resolveDir(Locations::LANGUAGES, '/');
+        return $this->resolveDir(Locations::LANGUAGES, '/');
     }
 
     /**
@@ -96,7 +116,7 @@ trait ResolverTrait
      */
     public function languagesUrl(): ?string
     {
-        return $this->resolver()->resolveUrl(Locations::LANGUAGES, '/');
+        return $this->resolveUrl(Locations::LANGUAGES, '/');
     }
 
     /**
@@ -105,7 +125,7 @@ trait ResolverTrait
      */
     public function contentDir(string $path = '/'): ?string
     {
-        return $this->resolver()->resolveDir(Locations::CONTENT, $path);
+        return $this->resolveDir(Locations::CONTENT, $path);
     }
 
     /**
@@ -114,7 +134,7 @@ trait ResolverTrait
      */
     public function contentUrl(string $path = '/'): ?string
     {
-        return $this->resolver()->resolveUrl(Locations::CONTENT, $path);
+        return $this->resolveUrl(Locations::CONTENT, $path);
     }
 
     /**
@@ -123,7 +143,7 @@ trait ResolverTrait
      */
     public function vendorDir(string $path = '/'): ?string
     {
-        return $this->resolver()->resolveDir(Locations::VENDOR, $path);
+        return $this->resolveDir(Locations::VENDOR, $path);
     }
 
     /**
@@ -131,7 +151,7 @@ trait ResolverTrait
      */
     public function vendorUrl(string $path = '/'): ?string
     {
-        return $this->resolver()->resolveUrl(Locations::VENDOR, $path);
+        return $this->resolveUrl(Locations::VENDOR, $path);
     }
 
     /**
@@ -139,7 +159,7 @@ trait ResolverTrait
      */
     public function rootDir(): ?string
     {
-        return $this->resolver()->resolveDir(Locations::VENDOR, '/');
+        return $this->resolveDir(Locations::ROOT, '/');
     }
 
     /**
@@ -147,6 +167,6 @@ trait ResolverTrait
      */
     public function rootUrl(): ?string
     {
-        return $this->resolver()->resolveUrl(Locations::VENDOR, '/');
+        return $this->resolveUrl(Locations::ROOT, '/');
     }
 }

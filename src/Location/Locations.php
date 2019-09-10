@@ -21,9 +21,18 @@ interface Locations
     public static function createFromConfig(EnvConfig $config): Locations;
 
     /**
-     * @return LocationResolver
+     * @param string $name
+     * @param string $path
+     * @return string|null
      */
-    public function resolver(): LocationResolver;
+    public function resolveDir(string $name, string $path = '/'): ?string;
+
+    /**
+     * @param string $name
+     * @param string $path
+     * @return string|null
+     */
+    public function resolveUrl(string $name, string $path = '/'): ?string;
 
     /**
      * @param string $path

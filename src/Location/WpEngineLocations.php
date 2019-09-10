@@ -46,10 +46,10 @@ class WpEngineLocations implements Locations
      * Temporary writable folder.
      *
      * @param string $path
-     * @return string
+     * @return string|null
      */
-    public function privateDir(string $path = '/'): string
+    public function privateDir(string $path = '/'): ?string
     {
-        return $this->resolver()->resolveDir(self::PRIVATE, $path) ?? '';
+        return $this->resolveDir(self::PRIVATE, $path);
     }
 }

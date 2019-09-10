@@ -35,13 +35,6 @@ class VipLocations implements Locations
             ? trailingslashit(wp_normalize_path(WPCOM_VIP_CLIENT_MU_PLUGIN_DIR))
             : null;
 
-        /**
-         * TODO: verify if we can use "private" folder assuming there's a way to "publish" assets
-         *      that are inside vendor.
-         *      Right now, "client-mu-plugins" is the only folder that allow us to access assets
-         *      when stored in vendor.
-         */
-
         $this->injectResolver(
             new LocationResolver(
                 $config,
@@ -71,7 +64,7 @@ class VipLocations implements Locations
      */
     public function clientMuPluginsDir(string $path = '/'): ?string
     {
-        return $this->resolver()->resolveDir(self::CLIENT_MU_PLUGINS, $path);
+        return $this->resolveDir(self::CLIENT_MU_PLUGINS, $path);
     }
 
     /**
@@ -83,7 +76,7 @@ class VipLocations implements Locations
      */
     public function clientMuPluginsUrl(string $path = '/'): ?string
     {
-        return $this->resolver()->resolveUrl(self::CLIENT_MU_PLUGINS, $path);
+        return $this->resolveUrl(self::CLIENT_MU_PLUGINS, $path);
     }
 
     /**
@@ -95,7 +88,7 @@ class VipLocations implements Locations
      */
     public function imagesDir(string $path = '/'): ?string
     {
-        return $this->resolver()->resolveDir(self::IMAGES, $path);
+        return $this->resolveDir(self::IMAGES, $path);
     }
 
     /**
@@ -107,7 +100,7 @@ class VipLocations implements Locations
      */
     public function imagesUrl(string $path = '/'): ?string
     {
-        return $this->resolver()->resolveUrl(self::IMAGES, $path);
+        return $this->resolveUrl(self::IMAGES, $path);
     }
 
     /**
@@ -119,6 +112,6 @@ class VipLocations implements Locations
      */
     public function privateDir(string $path = '/'): ?string
     {
-        return $this->resolver()->resolveDir(self::PRIVATE, $path);
+        return $this->resolveDir(self::PRIVATE, $path);
     }
 }

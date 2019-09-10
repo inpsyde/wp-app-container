@@ -256,7 +256,7 @@ The config provided is merged with defaults that can be fine-tuned depending on 
 #### Custom locations
 
 Besides the `Locations` constants, it is also possible to use custom keys, and retrieve them using 
-the `LocationResolver` instance that can be obtained via the `Locations::resolver()` method.
+the `Locations::resolveDir()` and `Locations::resolveUrl()` methods.
 
 For example:
 
@@ -279,12 +279,12 @@ and then:
 /** @var Inpsyde\App\Location\Locations $locations */
 $locations = $envConfig->locations();
 
-echo $locations->resolver()->resolveDir('logs', '2019/10/08.log');
+echo $locations->resolveDir('logs', '2019/10/08.log');
 
 "/var/www/logs/2019/10/08.log"
 ```
 
-In the example above, calling `$locations->resolver()->resolveUrl('logs')` will return `null` because
+In the example above, calling `$locations->resolveUrl('logs')` will return `null` because
 no URL was set for the key `'logs'` in the `LOCATIONS` constant.
 
 #### Set locations via environment variables
@@ -320,8 +320,8 @@ echo $locations->vendorDir('inpsyde/wp-app-container');
 "/var/www/shared/vendor/inpsyde/wp-app-container"
 
 
-echo $locations->resolver()->resolveDir('logs');
-"/var/www/logs/"
+echo $locations->resolveDir('logs', '2019/10');
+"/var/www/logs/2019/10"
 ```
 
 Please note that if _both_ `WP_APP_`* env variable and value in `LOCATIONS` constant are set for the 
@@ -495,10 +495,10 @@ The service provider ID can also be passed to the `Container::hasProvider()` met
 All the abstract service provider classes shipped with the package use a trait which, in order:
 
 - checks for the existence of a `$id` public property in the class, and use it if so.
-- in case no  `$id` public property, checks for the existence of a public `ID` constant in the class, and use it if so.
-- if nonce of the previous apply, uses the class name as ID.
+- in case no `$id` public property, checks for the existence of a public `ID` constant in the class, and use it if so.
+- if none of the previous apply, uses the class fully qualified name as ID.
 
-So by just extending one of the abstract classes and doing nothing else there's already an ID defined, which is the class name.
+So by extending one of the abstract classes and doing nothing else there's already an ID defined, which is the class name.
 
 In case this is not fine for some reason, e.g. the same service provider class is used for several providers, it is possible to define the property, or just override the `id()` method.
 
@@ -544,7 +544,7 @@ final class Provider extends Booted {
    
     public function register(Container $container): bool
     {
-        // classs names are used as service ids...
+        // class names are used as service ids...
       
         $container->addService(
             Config::class,
@@ -581,7 +581,7 @@ final class Provider extends Booted {
 
 ### Service provider example using any PSR-11 container
 
-In the following example I will use [PHP-DI](http://php-di.org) but really any PSR-11-compatible container will do.
+In the following example I will use [PHP-DI](http://php-di.org), but any PSR-11-compatible container will do.
 
 ```php
 <?php
@@ -712,7 +712,7 @@ namespace AcmeInc;
     ->boot();
 ```
 
-Please not that `App::runLastBootAt()` must be called **before** `App::boot()` is called for first time, or an exception will be thrown.
+Please note that `App::runLastBootAt()` must be called **before** `App::boot()` is called for first time, or an exception will be thrown.
 
 
 
@@ -852,5 +852,5 @@ Before sending a PR make sure that `composer run qa` will output no errors.
 It will run, in turn:
 
 - [PHPCS](https://github.com/squizlabs/PHP_CodeSniffer) checks
-- [Phan](https://github.com/phan/phan) checks
+- [Psalm](https://psalm.dev/) checks
 - [PHPUnit](https://phpunit.de/) tests
