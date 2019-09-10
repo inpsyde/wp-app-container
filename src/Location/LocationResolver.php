@@ -22,11 +22,18 @@ class LocationResolver
     private $locations;
 
     /**
+     * @var EnvConfig
+     */
+    private $config;
+
+    /**
      * @param EnvConfig $config
      * @param array $extendedDefaults
      */
     public function __construct(EnvConfig $config, array $extendedDefaults = [])
     {
+        $this->config = $config;
+
         $dirParts = explode('/vendor/inpsyde/', (string)wp_normalize_path(__FILE__), 2);
 
         // when package is installed as root (e.g. unit tests) vendor folder is inside the package
@@ -94,7 +101,9 @@ class LocationResolver
      */
     private function resolve(string $location, string $dirOrUrl, ?string $subDir = null): ?string
     {
-        $base = $this->locations[$dirOrUrl][$location] ?? null;
+        $base = $this->config->get('WP_APP_' . strtoupper("{$location}_{$dirOrUrl}"))
+            ?? $this->locations[$dirOrUrl][$location]
+            ?? null;
 
         if ($base === null && array_key_exists($location, self::CONTENT_LOCATIONS)) {
             $base = $this->locations[$dirOrUrl][Locations::CONTENT] ?? null;
