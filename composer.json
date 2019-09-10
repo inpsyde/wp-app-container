@@ -42,7 +42,7 @@
     "scripts": {
         "qa": [
             "sh ./vendor/bin/phpcs",
-            "sh ./vendor/bin/phan",
+            "sh ./vendor/bin/psalm",
             "sh ./vendor/bin/phpunit"
         ]
     },
