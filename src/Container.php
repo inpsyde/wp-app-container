@@ -124,10 +124,11 @@ final class Container implements ContainerInterface
                 $id,
                 /**
                  * @psalm-suppress MissingClosureParamType
+                 * @psalm-suppress MissingClosureReturnType
                  * @psalm-suppress MixedFunctionCall
                  */
-                function ($service) use (&$extender): void {
-                    $extender($service, $this);
+                function ($service) use (&$extender) {
+                    return $extender($service, $this);
                 }
             );
         } catch (\Throwable $throwable) {
