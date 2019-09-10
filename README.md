@@ -163,33 +163,155 @@ $container->config()->get('SOMETHING_NOT_DEFINED', 3); // 3
 ```
 
 ### Hosting Provider
+
 `EnvConfig::hosting()` returns the current Hosting provider. Currently we're automatically detecting following:
 
 - `EnvConfig::HOSTING_VIP` - WordPress VIP Go
-- `EnvConfig::HOSTING_WPE` - WPEngine
+- `EnvConfig::HOSTING_WPE` - WP Engine
 - `EnvConfig::HOSTING_SPACES` - Mittwald Spaces
-- `EnvConfig::HOSTING_OTHER` - If none of those above is detected.
+- `EnvConfig::HOSTING_OTHER` - If none of those above is detected
 
-To change this value manually, you can define in your `.env`-file a constant called `HOSTING`.
+Custom hosting can be setup via a `HOSTING` env variable or constant.
 
-Additionally, to check, if you're on a specific hosting solution, you can use `EnvConfig::hostingIs(string $hosting): bool`.
+To check in code which is the current solution, there's a  `EnvConfig::hostingIs()` method that
+accepts an hosting name string and returns true when the given hosting matches the current hosting.
 
-### Accessing Locations
-`EnvConfig::locations()` returns an instance of `Inpsyde\App\Location\Locations` which allows you to resolve following `directories` and `urls`:
+
+### Locations
+
+#### Access locations
+
+`EnvConfig::locations()` returns an instance of `Inpsyde\App\Location\Locations` which allows to 
+resolve following directories and URLs:
 
 - mu-plugins
 - plugins
 - themes
 - languages
-- vendorPackage
+- vendor
  
-If you're in a `EnvConfig::HOSTING_VIP`, you'll additionally have access to following directories:
+On VIP Go (`HOSTING` value will be `EnvConfig::HOSTING_VIP`), additional locations can be obtained:
 
 - private
 - config
 - vip-config
 - images
 
+In fact, `Locations` is an interface, and currently there are three implementation of it, one for
+"generic" hosting, one for VIP Go and one for WP Engine.
+
+An example:
+
+```php
+/** @var Inpsyde\App\EnvConfig $envConfig */
+$location = $envConfig->locations();
+
+$vendorPath = $location->vendorDir();                   // vendor directory path
+$wonologPath = $location->vendorDir('inpsyde/wonolog'); // specific package path
+
+$pluginsUrl = $location->pluginsUrl();                   // plugins directory URL
+$yoastSeoUrl = $location->pluginsUrl('/wordpress-seo/'); // specific plugin URL
+```
+
+#### Adjust locations
+
+In case of custom paths / URLs the system is not capable of discovering automatically, they can be
+customized by using a `LOCATIONS` constant that is an an array with two top-level elements, one for
+URLs and one for paths, each being a map in form of array with location name as keys and location
+URL / path as value:
+
+For example:
+
+```php
+namespace AwesomeWebsite\Config;
+ 
+use Inpsyde\App\Location\Locations;
+use Inpsyde\App\Location\LocationResolver;
+
+const LOCATIONS = [
+    LocationResolver::URL => [
+        Locations::VENDOR => 'http://example.com/wp/wp-content/composer/vendor/',
+        Locations::ROOT => __DIR__,
+        Locations::CONTENT => 'http://content.example.com/',
+    ],
+    LocationResolver::DIR => [
+        Locations::VENDOR => '/var/www/wp/wp-content/composer/vendor/',
+        Locations::ROOT => dirname(__DIR__),
+        Locations::CONTENT => '/var/www/content/',
+    ],
+];
+```
+
+As array key, besides `Locations::VENDOR`, `Locations::ROOT`, and `Locations::CONTENT`, it is also possible
+to use any other `Locations` constant, e.g. `Locations::MU_PLUGINS` or `Locations::LANGUAGES` and so on.
+
+The config provided is merged with defaults that can be fine-tuned depending on hosting.
+
+#### Custom locations
+
+Besides the `Locations` constants, it is also possible to use custom keys, and retrieve them using 
+the `LocationResolver` instance that can be obtained via the `Locations::resolver()` method.
+
+For example:
+
+```php
+namespace AwesomeWebsite\Config;
+ 
+use Inpsyde\App\Location\LocationResolver;
+
+const LOCATIONS = [
+    LocationResolver::DIR => [
+        'logs' => '/var/www/logs/',
+    ],
+];
+```
+
+and then:
+
+```php
+/** @var Inpsyde\App\EnvConfig $envConfig */
+$locations = $envConfig->locations();
+
+echo $locations->resolver()->resolveDir('logs', '2019/10/08.log');
+
+"/var/www/logs/2019/10/08.log"
+```
+
+In the example above, calling `$locations->resolver()->resolveUrl('logs')` will return `null` because
+no URL was set for the key `'logs'` in the `LOCATIONS` constant.
+
+#### Set locations via environment variables
+
+In the example above, bit default and custom locations are customized using the `LOCATIONS` constant
+that for obvious reasons can only be set in PHP configuration files.
+
+For websites that rely on environment variables to set configurations, the package provides a different approach.
+
+Environment variables in the format `WP_APP_{$location}_DIR` and `WP_APP_{$location}_URL` can be used
+to set location directories and URLs.
+
+For example vendor path can be set via `WP_APP_VENDOR_DIR` and vendor URL via `WP_APP_VENDOR_URL`,
+just like root path can be set via `WP_APP_ROOT_DIR` and root URL via `WP_APP_ROOT_URL`.
+
+This works also for custom paths. For example, by setting an environment variable like:
+
+```bash
+WP_APP_LOGS_DIR="/var/www/logs/"
+```
+
+it is then possible to:
+
+```php
+/** @var Inpsyde\App\EnvConfig $envConfig */
+$locations = $envConfig->locations();
+
+echo $locations->resolver()->resolveDir('logs');
+
+"/var/www/logs/"
+```
+
+Please note that if _both_ `WP_APP_`* env variables and `LOCATIONS` constants are set for the same location
+the env variable takes precedence.
 
 ## Usage at package level
 
