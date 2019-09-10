@@ -27,20 +27,36 @@ class LocationResolver
      */
     public function __construct(EnvConfig $config, array $extendedDefaults = [])
     {
+        $dirParts = explode('/vendor/inpsyde/', (string)wp_normalize_path(__FILE__), 2);
+
+        // when package is installed as root (e.g. unit tests) vendor folder is inside the package
+        $vendorPath = $dirParts && isset($dirParts[1])
+            ? $dirParts[0] . '/vendor/'
+            : (string)wp_normalize_path(dirname(__DIR__, 2)) . '/vendor/';
+
+        $contentPath = (string)trailingslashit(wp_normalize_path(WP_CONTENT_DIR));
+        $contentUrl = (string)content_url('/');
+
+        /** @var string $vendorPath */
+        if (strpos($vendorPath, $contentPath) === 0) {
+            // If vendor path is inside content path, then we can calculate vendor URL
+            $vendorUrl = $contentUrl . (substr($vendorPath, strlen($contentPath)) ?: '');
+        }
+
         $defaults = [
             self::DIR => [
                 Locations::ROOT => trailingslashit(ABSPATH),
-                Locations::VENDOR => dirname((string)wp_normalize_path(__DIR__), 4),
-                Locations::CONTENT => trailingslashit(WP_CONTENT_DIR),
+                Locations::VENDOR => $vendorPath ?: null,
+                Locations::CONTENT => $contentPath,
             ],
             self::URL => [
                 Locations::ROOT => network_site_url('/'),
-                Locations::VENDOR => null,
-                Locations::CONTENT => content_url('/'),
+                Locations::VENDOR => $vendorUrl ?? null,
+                Locations::CONTENT => $contentUrl,
             ],
         ];
 
-        $custom = $this->parseExtendedDefaults($extendedDefaults);
+        $custom = $extendedDefaults ? $this->parseExtendedDefaults($extendedDefaults) : [];
         $byEnv = $this->locationsByEnv($config);
 
         $merge = [];
