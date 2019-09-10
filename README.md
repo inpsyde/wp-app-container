@@ -17,6 +17,12 @@
 - [Decisions](#decisions)
 - [Usage at website level](#usage-at-website-level)
     - [Customizing site config](#customizing-site-config)
+    - [Hosting provider](#posting-provider)
+    - [Locations](#locations)
+        - [Access locations](#access-locations)
+        - [Adjust locations](#adjust-locations)
+        - [Custom locations](#custom-locations)
+        - [Set locations via environment variables](#set-locations-via-environment-variables)
 - [Usage at package level](#usage-at-package-level)
     - [Contextual registration](#contextual-registration)
     - [Package-dependant registration](#package-dependant-registration)
@@ -162,7 +168,7 @@ Note that `EnvConfig::get()` accepts an optional second `$default` parameter to 
 $container->config()->get('SOMETHING_NOT_DEFINED', 3); // 3
 ```
 
-### Hosting Provider
+### Hosting provider
 
 `EnvConfig::hosting()` returns the current Hosting provider. Currently we're automatically detecting following:
 
@@ -215,8 +221,8 @@ $yoastSeoUrl = $location->pluginsUrl('/wordpress-seo/'); // specific plugin URL
 
 #### Adjust locations
 
-In case of custom paths / URLs the system is not capable of discovering automatically, they can be
-customized by using a `LOCATIONS` constant that is an an array with two top-level elements, one for
+In case the package is not capable of discovering paths and URLs automatically (e.g. because a very custom setup)
+they can be set by using a `LOCATIONS` constant that is an an array with two top-level elements, one for
 URLs and one for paths, each being a map in form of array with location name as keys and location
 URL / path as value:
 
@@ -270,6 +276,7 @@ and then:
 
 ```php
 /** @var Inpsyde\App\EnvConfig $envConfig */
+/** @var Inpsyde\App\Location\Locations $locations */
 $locations = $envConfig->locations();
 
 echo $locations->resolver()->resolveDir('logs', '2019/10/08.log');
@@ -282,36 +289,43 @@ no URL was set for the key `'logs'` in the `LOCATIONS` constant.
 
 #### Set locations via environment variables
 
-In the example above, bit default and custom locations are customized using the `LOCATIONS` constant
-that for obvious reasons can only be set in PHP configuration files.
+In the examples above, both default and custom locations are customized using the `LOCATIONS` constant
+that, for obvious reasons, can only be set in PHP configuration files.
 
-For websites that rely on environment variables to set configurations, the package provides a different approach.
+For websites that rely on environment variables to set configuration, the package provides a different approach.
 
 Environment variables in the format `WP_APP_{$location}_DIR` and `WP_APP_{$location}_URL` can be used
 to set location directories and URLs.
 
-For example vendor path can be set via `WP_APP_VENDOR_DIR` and vendor URL via `WP_APP_VENDOR_URL`,
+For example, vendor path can be set via `WP_APP_VENDOR_DIR` and vendor URL via `WP_APP_VENDOR_URL`,
 just like root path can be set via `WP_APP_ROOT_DIR` and root URL via `WP_APP_ROOT_URL`.
 
-This works also for custom paths. For example, by setting an environment variable like:
+This works also for custom paths.
+
+For example, by setting environment variables like this:
 
 ```bash
+WP_APP_VENDOR_DIR="/var/www/shared/vendor/"
 WP_APP_LOGS_DIR="/var/www/logs/"
 ```
 
-it is then possible to:
+it is then possible to retrieve them like this:
 
 ```php
 /** @var Inpsyde\App\EnvConfig $envConfig */
+/** @var Inpsyde\App\Location\Locations $locations */
 $locations = $envConfig->locations();
 
-echo $locations->resolver()->resolveDir('logs');
+echo $locations->vendorDir('inpsyde/wp-app-container');
+"/var/www/shared/vendor/inpsyde/wp-app-container"
 
+
+echo $locations->resolver()->resolveDir('logs');
 "/var/www/logs/"
 ```
 
-Please note that if _both_ `WP_APP_`* env variables and `LOCATIONS` constants are set for the same location
-the env variable takes precedence.
+Please note that if _both_ `WP_APP_`* env variable and value in `LOCATIONS` constant are set for the 
+same location, the env variable takes precedence.
 
 ## Usage at package level
 
