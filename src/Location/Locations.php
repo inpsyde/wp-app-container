@@ -16,7 +16,7 @@ interface Locations
 
     /**
      * @param string $path
-     * @return string|null
+     * @return Locations|null
      */
     public static function createFromConfig(EnvConfig $config): Locations;
 

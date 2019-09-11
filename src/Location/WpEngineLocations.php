@@ -12,7 +12,7 @@ class WpEngineLocations implements Locations
 
     /**
      * @param string $path
-     * @return string
+     * @return WpEngineLocations
      */
     public static function createFromConfig(EnvConfig $config): Locations
     {

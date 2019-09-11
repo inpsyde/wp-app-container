@@ -7,9 +7,29 @@ namespace Inpsyde\App\Tests;
 use Brain\Monkey\Filters;
 use Brain\Monkey\Functions;
 use Inpsyde\App\EnvConfig;
+use Inpsyde\App\Location\GenericLocations;
+use Inpsyde\App\Location\VipLocations;
+use Inpsyde\App\Location\WpEngineLocations;
 
 class EnvConfigTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Functions\when('network_site_url')->alias(function (string $path = '/'): string {
+            return 'http://example.com/' . ltrim($path, '/');
+        });
+
+        Functions\when('content_url')->alias(function (string $path = '/'): string {
+            return 'http://example.com/wp-content/' . ltrim($path, '/');
+        });
+
+        Functions\when('wp_normalize_path')->alias(function (string $path): string {
+            return str_replace('\\', '/', $path);
+        });
+    }
+
     protected function tearDown(): void
     {
         parent::tearDown();
@@ -107,6 +127,69 @@ class EnvConfigTest extends TestCase
 
         static::assertSame(EnvConfig::STAGING, $env->env());
         static::assertTrue($env->envIs(EnvConfig::STAGING));
+    }
+
+    /**
+     * @runInSeparateProcess
+     */
+    public function testHostingOther()
+    {
+        define('ABSPATH', __DIR__);
+        define('WP_CONTENT_DIR', __DIR__);
+
+        $env = new EnvConfig();
+
+        static::assertSame(EnvConfig::HOSTING_OTHER, $env->hosting());
+        static::assertTrue($env->hostingIs(EnvConfig::HOSTING_OTHER));
+        static::assertInstanceOf(GenericLocations::class, $env->locations());
+    }
+
+    /**
+     * @runInSeparateProcess
+     */
+    public function testHostingVip()
+    {
+        define('ABSPATH', __DIR__);
+        define('WP_CONTENT_DIR', __DIR__);
+        define('VIP_GO_ENV', 'prod');
+
+        $env = new EnvConfig();
+
+        static::assertSame(EnvConfig::HOSTING_VIP, $env->hosting());
+        static::assertTrue($env->hostingIs(EnvConfig::HOSTING_VIP));
+        static::assertInstanceOf(VipLocations::class, $env->locations());
+    }
+
+    /**
+     * @runInSeparateProcess
+     */
+    public function testHostingWpe()
+    {
+        define('ABSPATH', __DIR__);
+        define('WP_CONTENT_DIR', __DIR__);
+        define('HOSTING', EnvConfig::HOSTING_WPE);
+
+        $env = new EnvConfig();
+
+        static::assertSame(EnvConfig::HOSTING_WPE, $env->hosting());
+        static::assertTrue($env->hostingIs(EnvConfig::HOSTING_WPE));
+        static::assertInstanceOf(WpEngineLocations::class, $env->locations());
+    }
+
+    /**
+     * @runInSeparateProcess
+     */
+    public function testHostingSpaces()
+    {
+        define('ABSPATH', __DIR__);
+        define('WP_CONTENT_DIR', __DIR__);
+        define('SPACES_SPACE_ID', '123456789');
+
+        $env = new EnvConfig();
+
+        static::assertSame(EnvConfig::HOSTING_SPACES, $env->hosting());
+        static::assertTrue($env->hostingIs(EnvConfig::HOSTING_SPACES));
+        static::assertInstanceOf(GenericLocations::class, $env->locations());
     }
 
     /**

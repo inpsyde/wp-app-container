@@ -50,7 +50,7 @@ class LocationResolver
             $vendorUrl = $contentUrl . (substr($vendorPath, strlen($contentPath)) ?: '');
         }
 
-        $defaults = [
+        $locations = [
             self::DIR => [
                 Locations::ROOT => trailingslashit(ABSPATH),
                 Locations::VENDOR => $vendorPath ?: null,
@@ -64,13 +64,22 @@ class LocationResolver
         ];
 
         $custom = $extendedDefaults ? $this->parseExtendedDefaults($extendedDefaults) : [];
-        $byEnv = $this->locationsByEnv($config);
+        if ($custom[self::DIR] ?? null) {
+            $locations[self::DIR] = array_merge($locations[self::DIR], $custom[self::DIR]);
+        }
+        if ($custom[self::URL] ?? null) {
+            $locations[self::URL] = array_merge($locations[self::URL], $custom[self::URL]);
+        }
 
-        $merge = [];
-        $custom and $merge[] = $custom;
-        $byEnv and $merge[] = $byEnv;
+        $byConfig = $this->locationsByConfig($config);
+        if ($byConfig[self::DIR] ?? null) {
+            $locations[self::DIR] = array_merge($locations[self::DIR], $byConfig[self::DIR]);
+        }
+        if ($byConfig[self::URL] ?? null) {
+            $locations[self::URL] = array_merge($locations[self::URL], $byConfig[self::URL]);
+        }
 
-        $this->locations = $merge ? array_replace($defaults, ...$merge) : $defaults;
+        $this->locations = $locations;
     }
 
     /**
@@ -101,14 +110,16 @@ class LocationResolver
      */
     private function resolve(string $location, string $dirOrUrl, ?string $subDir = null): ?string
     {
-        $base = $this->config->get('WP_APP_' . strtoupper("{$location}_{$dirOrUrl}"))
-            ?? $this->locations[$dirOrUrl][$location]
-            ?? null;
+        $envBase = $this->config->get('WP_APP_' . strtoupper("{$location}_{$dirOrUrl}"));
+
+        $base = $envBase
+            ? ($dirOrUrl === self::DIR ? wp_normalize_path($envBase) : $envBase)
+            : ($this->locations[$dirOrUrl][$location] ?? null);
 
         if ($base === null && array_key_exists($location, self::CONTENT_LOCATIONS)) {
-            $base = $this->locations[$dirOrUrl][Locations::CONTENT] ?? null;
-            if (is_string($base)) {
-                $base .= self::CONTENT_LOCATIONS[$location];
+            $contentBase = $this->resolve(Locations::CONTENT, $dirOrUrl);
+            if ($contentBase && is_string($contentBase)) {
+                $base = $contentBase . self::CONTENT_LOCATIONS[$location];
             }
         }
 
@@ -116,20 +127,22 @@ class LocationResolver
             return null;
         }
 
+        $base = (string)trailingslashit($base);
+
         if (!$subDir) {
-            return (string)$base;
+            return $base;
         }
 
         ($dirOrUrl === self::DIR) and $subDir = wp_normalize_path($subDir);
 
-        return (string)$base . ltrim((string)$subDir, '\\/');
+        return $base . ltrim((string)$subDir, '\\/');
     }
 
     /**
      * @param EnvConfig $config
      * @return array<string, array<string, string>>
      */
-    private function locationsByEnv(EnvConfig $config): array
+    private function locationsByConfig(EnvConfig $config): array
     {
         $locations = $config->get('LOCATIONS');
         if (!$locations || !is_array($locations)) {
@@ -153,19 +166,15 @@ class LocationResolver
         is_array($customUrls) or $customUrls = [];
 
         foreach ($customDirs as $key => $customDir) {
-            if (!$key || !$customDir || !is_string($key) || !is_string($customDir)) {
-                continue;
+            if ($key && $customDir && is_string($key) && is_string($customDir)) {
+                $custom[self::DIR][$key] = trailingslashit(wp_normalize_path($customDir));
             }
-
-            $custom[self::DIR][$key] = trailingslashit(wp_normalize_path($customDir));
         }
 
         foreach ($customUrls as $key => $customUrl) {
-            if (!$key || !$customUrl || !is_string($key) || !is_string($customUrl)) {
-                continue;
+            if ($key && $customUrl && is_string($key) && is_string($customUrl)) {
+                $custom[self::URL][$key] = trailingslashit($customUrl);
             }
-
-            $custom[self::URL][$key] = trailingslashit($customUrl);
         }
 
         return array_filter($custom);

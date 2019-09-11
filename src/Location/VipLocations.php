@@ -15,7 +15,7 @@ class VipLocations implements Locations
 
     /**
      * @param string $path
-     * @return string
+     * @return VipLocations
      */
     public static function createFromConfig(EnvConfig $config): Locations
     {
@@ -27,28 +27,37 @@ class VipLocations implements Locations
      */
     private function __construct(EnvConfig $config)
     {
+        $baseResolver = new LocationResolver($config);
+        $contentUrl = $baseResolver->resolveUrl(self::CONTENT);
+        $contentDir = $baseResolver->resolveDir(self::CONTENT);
+
         $privateDir = defined('WPCOM_VIP_PRIVATE_DIR')
             ? trailingslashit(wp_normalize_path(WPCOM_VIP_PRIVATE_DIR))
             : null;
 
-        $muDir = defined('WPCOM_VIP_CLIENT_MU_PLUGIN_DIR')
+        $clientMuDir = defined('WPCOM_VIP_CLIENT_MU_PLUGIN_DIR')
             ? trailingslashit(wp_normalize_path(WPCOM_VIP_CLIENT_MU_PLUGIN_DIR))
-            : null;
+            : "{$contentDir}client-mu-plugins/";
+
+        $clientMuUrl = "{$contentUrl}client-mu-plugins/";
+
+        $abspath = trailingslashit(wp_normalize_path(ABSPATH));
 
         $this->injectResolver(
             new LocationResolver(
                 $config,
                 [
                     LocationResolver::DIR => [
-                        self::CLIENT_MU_PLUGINS => $muDir,
-                        self::IMAGES => trailingslashit(WP_CONTENT_DIR) . '/images/',
+                        self::IMAGES => "{$contentDir}images/",
+                        self::CLIENT_MU_PLUGINS => $clientMuDir,
+                        self::VENDOR => "{$clientMuDir}vendor/",
                         self::PRIVATE => $privateDir,
-                        self::VIP_CONFIG => null,
-                        self::VENDOR => $muDir ? "{$muDir}/client-mu-plugins/vendor/" : null,
+                        self::VIP_CONFIG => "{$abspath}vip-config/",
                     ],
                     LocationResolver::URL => [
-                        self::CLIENT_MU_PLUGINS => content_url('/client-mu-plugins/'),
-                        self::IMAGES => content_url('/images/'),
+                        self::IMAGES => "{$contentUrl}images",
+                        self::CLIENT_MU_PLUGINS => $clientMuUrl,
+                        self::VENDOR => "{$clientMuUrl}vendor/",
                     ],
                 ]
             )
@@ -113,5 +122,16 @@ class VipLocations implements Locations
     public function privateDir(string $path = '/'): ?string
     {
         return $this->resolveDir(self::PRIVATE, $path);
+    }
+
+    /**
+     * Path where to put `vip-config.php` and optionally `client-sunrise.php`
+     *
+     * @param string $path
+     * @return string|null
+     */
+    public function vipConfigDir(string $path = '/'): ?string
+    {
+        return $this->resolveDir(self::VIP_CONFIG, $path);
     }
 }
