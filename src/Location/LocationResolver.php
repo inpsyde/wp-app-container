@@ -34,18 +34,12 @@ class LocationResolver
     {
         $this->config = $config;
 
-        $dirParts = explode('/vendor/inpsyde/', (string)wp_normalize_path(__FILE__), 2);
-
-        // when package is installed as root (e.g. unit tests) vendor folder is inside the package
-        $vendorPath = $dirParts && isset($dirParts[1])
-            ? $dirParts[0] . '/vendor/'
-            : (string)wp_normalize_path(dirname(__DIR__, 2)) . '/vendor/';
-
+        $vendorPath = $this->discoverVendorPath();
         $contentPath = (string)trailingslashit(wp_normalize_path(WP_CONTENT_DIR));
         $contentUrl = (string)content_url('/');
 
-        /** @var string $vendorPath */
-        if (strpos($vendorPath, $contentPath) === 0) {
+        /** @var string|null $vendorPath */
+        if ($vendorPath && strpos((string)$vendorPath, $contentPath) === 0) {
             // If vendor path is inside content path, then we can calculate vendor URL
             $vendorUrl = $contentUrl . (substr($vendorPath, strlen($contentPath)) ?: '');
         }
@@ -100,6 +94,36 @@ class LocationResolver
     public function resolveDir(string $location, ?string $subDir = null): ?string
     {
         return $this->resolve($location, self::DIR, $subDir);
+    }
+
+    /**
+     * @return string|null
+     */
+    private function discoverVendorPath(): ?string
+    {
+        $baseDir = (string)wp_normalize_path(dirname(__DIR__, 2));
+        $dependency = 'psr/container/composer.json';
+
+        $dirParts = explode('/', $baseDir);
+        $countParts = count($dirParts);
+        $vendorName = $countParts > 3 ? array_slice($dirParts, -3, 1)[0] : '';
+        $vendorPath = trim($vendorName, '/')
+            ? implode('/', array_slice($dirParts, 0, $countParts - 3)) . "/{$vendorName}"
+            : null;
+
+        // if vendor dir is found, but our dependency in it, then what's found is wrong or Composer
+        // dependencies not installed. In both cases we want to disable vendor path.
+        if ($vendorPath && !is_file("{$vendorPath}/{$dependency}")) {
+            $vendorPath = null;
+        }
+
+        // if no vendor dir found, but our dependency inside base dir, package is installed as root,
+        // e.g. during unit tests, so we can calculate vendor
+        if (!$vendorPath && is_file("{$baseDir}/vendor/{$dependency}")) {
+            $vendorPath = "{$baseDir}/vendor/";
+        }
+
+        return $vendorPath ?: null;
     }
 
     /**
