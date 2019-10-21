@@ -43,15 +43,12 @@ final class Container implements ContainerInterface
         ContainerInterface ...$containers
     ) {
 
-        if (!$containers) {
-            $pimple = new Pimple\Container();
-            $containers = [new Pimple\Psr11\Container($pimple)];
-            $this->pimple = $pimple;
-        }
-
         $this->config = $config ?? new EnvConfig();
         $this->context = $context ?? Context::create();
         $this->containers = $containers;
+        if (!$containers) {
+            $this->ensurePimple();
+        }
     }
 
     /**
