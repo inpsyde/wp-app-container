@@ -2,7 +2,7 @@
     "name": "inpsyde/wp-app-container",
     "type": "library",
     "description": "DI Container and related tools to be used at website level.",
-    "license": "MIT",
+    "license": "General Inpsyde License V1.0",
     "authors": [
         {
             "name": "Inpsyde GmbH",

@@ -1,21 +1,151 @@
-The MIT License (MIT)
+License Agreement “General Inpsyde License V1.0”
 
-Copyright (c) 2019 Inpsyde GmbH
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
 
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
+hereinafter referred to as „GIL“
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
+
+
+between
+
+Software recipient on the part of the provider
+
+Hereinafter referred to as „Customer“
+
+and
+
+Inpsyde GmbH
+Mutzer Heide 3
+51467 Bergisch Gladbach
+Germany
+
+hereinafter referred to as „Provider“
+
+
+hereinafter jointly referred to as „Parties“
+
+
+Preamble
+
+The provider develops software solutions for its customers within the scope of contract development. In order to make the results of the order development usable, the provider provides the customer with individually developed software components (hereinafter: "software"). Accordingly, the customer acquires a license to use the software. The following contract regulates the conditions for the acquisition of the license and the scope of the permitted use.
+§ 1 Object of performance
+
+Within the scope of the development of the order, the customer or their vendors receives from the Provider software.
+
+The source code of the software is also part of the service.
+
+The software serves the sole purpose of making the results developed within the framework of the development order usable for the customer.
+
+As far as employees of the Provider give guarantees before conclusion of the license, these are only effective if they are confirmed in writing by the management or a partner of the Provider.
+
+§ 2 Scope of use
+
+The provider grants the customer a simple, temporally and spatially unrestricted right to use the software for the intended use.
+
+The customer may use the software only for use in his own business operations.
+
+In particular
+
+a computer centre operation for external third parties, or
+
+the temporary provision of the Software (e.g. as "Software as a Service" or "Application Service Providing") to external third parties
+
+is only permitted with the prior written consent of the provider. The customer may also not use the software to use the functions of the software for the benefit of third parties. Further distribution and/or publication, whether commercial or non-commercial, is generally prohibited.
+
+Reproductions of the software are only permitted to the extent that this is necessary for use in accordance with the license. The customer may make backup copies of the software according to the rules of technology to the necessary extent.
+
+The customer is authorised to make changes, extensions and other modifications to the software. However, the customer shall not be entitled to any rights of use and exploitation of such modifications beyond the rights of use granted under this license. In particular, the customer is not permitted to publish the adaptations or pass them on to third parties.
+
+If the Provider provides the Customer with additional software or supplements or a new edition of existing software to replace the previously provided software ("old software") within the scope of the development of the order, these are also subject to the regulations of this Agreement.
+If the Provider makes available a new edition of software, the Customer's rights under this Agreement with respect to the old software shall expire as soon as the Customer uses the new software productively, even without an express request for return by the Provider. The Provider shall constantly update the list of the Software covered by this Agreement in Appendix 1 and provide the Customer with the latest version of the list annually
+
+
+§ 3 Protection of software
+
+Unless the customer has been expressly granted rights under this license, all rights to the software (and all copies made by the customer) - in particular copyright, rights to or in inventions and technical property rights - are the exclusive property of the provider. This also applies to any processing of the software by the Provider, unless otherwise agreed in a separate agreement. The customer's ownership of the respective data carriers of copies remains unaffected.
+
+The customer shall protect the provided software from unauthorized access in order to exclude misuse. He will only make the software (whether unchanged or reworked) accessible to third parties with the exception of a case of § 6 only with the prior written consent of the Provider. Employees of the customer as well as other persons who are staying at the customer's premises to use the software in accordance with the license are not considered third parties. If these are other external service providers who ensure the operation at the customer's site, the provider will not refuse his consent, provided that the customer has expressly pointed out the copyright protection of the software in advance.
+
+The customer is not permitted to change or remove copyright notices, marks and/or control numbers or symbols of the provider. If the customer changes or edits the software, these notices and marks must be incorporated into the amended version of the subject matter of the license.
+
+If the customer transfers data carriers, memory or other hardware on which software (in whole or in part, unchanged or modified) is stored (i) to third parties without passing it on in accordance with § 4 or (ii) if he gives up direct possession of it, he shall ensure that the stored software is completely and permanently deleted beforehand.
+
+§ 4 Passing on
+
+The customer may only transfer the software to a third party in a uniform manner and under complete and final discontinuation of the customer's own use of the software and under the obligation of the third party to these terms and conditions of business to the third party. The temporary or partial transfer of the Software to third parties, whether for payment or free of charge, is prohibited.
+
+The transfer of the software requires the written consent of the provider. The latter grants consent if (i) the customer assures the provider in writing that he has passed on all original copies of the software to the third party and has deleted all copies he has made himself, and (ii) the third party declares his agreement to the provider in writing with these terms and conditions.
+
+§ 5 Duties of the customer to cooperate and provide information
+
+The customer has informed himself about the essential functional features of the software and bears the risk that the software corresponds to his wishes and needs; in case of doubt, he has obtained advice about the suitability of the software from employees of the provider or from competent third parties before the conclusion of the license.
+
+The customer is solely responsible for setting up a functional hardware and software environment for the software, which is sufficiently dimensioned - also taking into account the additional load caused by the software.
+
+Before using the Software, the Customer shall thoroughly test the Software for freedom from defects and for usability in a test environment with comparable hardware and software configuration. This also applies to versions of software which he receives under warranty and maintenance.
+
+The customer shall observe the instructions given by the provider for the operation of the software.
+
+Insofar as the Provider has further performance obligations beyond the provision of the software, the Customer shall cooperate free of charge to the necessary extent, e.g. by providing employees, work spaces, hardware and software, data and telecommunication facilities.
+
+The customer shall grant the provider access to the software for the purpose of troubleshooting and error correction, at the customer's option directly and/or by means of remote maintenance. If the customer wishes to have the error correction on site, which could also be carried out by remote maintenance, he must reimburse the Provider for travel costs and expenses.
+
+The customer shall take reasonable precautions in the event that the software does not work properly in whole or in part (e.g. by daily data backups, fault diagnosis, regular checking of data processing results).
+
+As far as the customer does not expressly point this out in advance, the provider may assume that all customer data with which the provider may come into contact are backed up.
+
+The customer bears disadvantages and additional costs resulting from a violation of these obligations.
+
+§ 6 Delivery and performance time; force majeure
+
+The software is supplied in the version current at the time of delivery.
+
+The provider effects the delivery by making the software available for retrieval via the Internet and informing the customer accordingly.
+
+The time at which the software is made available for download and the customer is informed of this is decisive for compliance with delivery dates and the transfer of risk.
+
+As long as the provider (i) waits for the cooperation or information of the customer or (ii) by strikes or lockouts in third party companies or in the provider's company (in the latter case, however, only if the industrial action is lawful), official intervention, is hindered in its services by legal prohibitions or other circumstances beyond its control ("force majeure"), delivery and service deadlines shall be deemed extended by the duration of the hindrance and by a reasonable start-up time after the end of the hindrance ("downtime") and there shall be no breach of duty for the duration of the downtime. The Provider shall notify the Customer of such hindrances and their expected duration without delay. If the force majeure continues uninterruptedly for more than 3 months, both parties have the right to withdraw from the license immediately.
+
+§ 7 Duty to inspect and give notice of defects
+
+The customer has a duty of inspection and notification of defects in accordance with § 377 HGB (German Commercial Code) with regard to all deliveries and services of the provider in execution of this license.
+
+§ 8 Liability
+
+In all cases of contractual and non-contractual liability, the provider shall pay damages exclusively in accordance with the following limits:
+
+unlimited in case of intent and gross negligence, as well as in the absence of a quality for which the provider has assumed a guarantee;
+
+in the case of slight negligence, only for breach of a material contractual obligation in the amount of the foreseeable damage typical of the license;
+
+The limitations of liability according to No. 1 do not apply to liability for personal injury and liability under the Product Liability Act.
+
+§ 9 Confidentiality and data protection
+
+The customer undertakes to treat all confidential information that has become accessible to him in the course of using the software as strictly confidential and not to make it available to any third party, unless this is expressly permitted under this license or it is absolutely necessary for the contractual use of the software. The Customer shall treat the Confidential Information with the same care as it would apply to its own equally Confidential Information, but at least with the care of a prudent businessman.
+
+All information concerning the technical structure of the software is considered "confidential".
+
+Information is not confidential,
+
+which the customer has demonstrably received or is receiving from third parties who are not subject to restrictions on the use and disclosure of this information;
+
+
+which were demonstrably already in the public domain at the time of acquisition or which subsequently became in the public domain without the customer breaching this confidentiality obligation;
+
+
+which can be proven to have been independently developed prior to the acquisition of knowledge; or
+
+The customer undertakes to take all appropriate precautions to ensure confidentiality. In particular, he undertakes to obligate his employees and other persons or third parties (in particular service providers) authorized to use the software in writing to maintain confidentiality. The obligation agreement must offer at least the same level of protection as the present confidentiality obligation. The employees will only make confidential information within the meaning of this agreement available to other employees if they need to know about it for the cooperation ("need-to-know"). The customer is responsible for any violation of the confidentiality obligation by its employees and all persons and third parties authorized to use the information for proper cooperation.
+
+The confidentiality obligation shall remain in force indefinitely.
+
+§ 10 Final regulations
+
+This Agreement conclusively and exclusively governs the relationship between the parties in connection with the acquisition of the Software. Other regulations, in particular the general terms and conditions of the parties, shall not apply to the use of the software.
+
+The invalidity of a contractual clause shall not affect the validity of the remaining license and do need to be in written form.
+
+German law shall apply exclusively, excluding the UN Convention on Contracts for the International Sale of Goods (CISG).
+
+Exclusive place of jurisdiction for all legal disputes arising from or in connection with this license is Bergisch Gladbach, Germany. If the customer brings an action, he is also entitled to choose the place of jurisdiction at the registered office of the provider. The right of both parties to seek interim legal protection before the competent courts in accordance with the statutory provisions remains unaffected.
