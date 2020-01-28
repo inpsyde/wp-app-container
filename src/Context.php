@@ -87,7 +87,7 @@ final class Context implements \JsonSerializable
         $currentPath = trim((string)parse_url((string)$currentUrl, PHP_URL_PATH), '/') . '/';
         $restPath = trim((string)parse_url((string)$restUrl, PHP_URL_PATH), '/') . '/';
 
-        return strpos($currentUrl, $restUrl) === 0;
+        return strpos($currentPath, $restPath) === 0;
     }
 
     /**
