@@ -82,8 +82,10 @@ final class Context implements \JsonSerializable
             $GLOBALS['wp_rewrite'] = new \WP_Rewrite();
         }
 
-        $currentUrl = rtrim((string)set_url_scheme(add_query_arg([])), '/');
-        $restUrl = rtrim((string)set_url_scheme(get_rest_url()), '/');
+        $currentUrl = set_url_scheme(add_query_arg([]));
+        $restUrl = set_url_scheme(get_rest_url());
+        $currentPath = trim((string)parse_url((string)$currentUrl, PHP_URL_PATH), '/') . '/';
+        $restPath = trim((string)parse_url((string)$restUrl, PHP_URL_PATH), '/') . '/';
 
         return strpos($currentUrl, $restUrl) === 0;
     }
