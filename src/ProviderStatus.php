@@ -141,6 +141,21 @@ final class ProviderStatus
     }
 
     /**
+     * @return string
+     */
+    public function status(): string
+    {
+        return $this->status;
+    }
+
+    /**
+     * @return array|string[]
+     */
+    public function appStatuses(): array {
+        return $this->appStatuses;
+    }
+
+    /**
      * @param string $desired
      * @return void
      */

@@ -120,6 +120,6 @@ final class AppLogger
             return null;
         }
 
-        return array_map('strval', $this->providers);
+        return $this->providers;
     }
 }

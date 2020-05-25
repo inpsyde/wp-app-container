@@ -157,6 +157,8 @@ final class App
         return [
             'status' => (string)$this->status,
             'providers' => $providers,
+            'context' => $this->container->context(),
+            'config' => $this->container->config()
         ];
     }
 
