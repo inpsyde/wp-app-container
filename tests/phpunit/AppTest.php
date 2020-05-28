@@ -66,18 +66,24 @@ class AppTest extends TestCase
         };
     }
 
+    /**
+     * @runInSeparateProcess
+     */
     public function testMakeFailsIfNoAppCreated()
     {
         $this->expectException(\Exception::class);
-        $this->expectExceptionMessageRegExp('/no valid app/i');
+        $this->expectExceptionMessageMatches('/no valid app/i');
 
         App::make('foo');
     }
 
+    /**
+     * @runInSeparateProcess
+     */
     public function testMakeFailsIfAppIdle()
     {
         $this->expectException(\DomainException::class);
-        $this->expectExceptionMessageRegExp('/uninitialised/i');
+        $this->expectExceptionMessageMatches('/uninitialised/i');
 
         $container = new Container(new EnvConfig(), Context::create());
         App::new($container);
@@ -311,7 +317,7 @@ class AppTest extends TestCase
             });
 
         $this->expectException(\DomainException::class);
-        $this->expectExceptionMessageRegExp('/already booting/');
+        $this->expectExceptionMessageMatches('/already booting/i');
 
         $app->addProvider(self::stubProvider('p1'));
     }

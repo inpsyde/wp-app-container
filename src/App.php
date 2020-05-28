@@ -154,12 +154,19 @@ final class App
             return null;
         }
 
-        return [
+        $data = [
             'status' => (string)$this->status,
             'providers' => $providers,
-            'context' => $this->container->context(),
-            'config' => $this->container->config()
+            'context' => null,
+            'config' => null,
         ];
+
+        if ($this->container) {
+            $data['context'] = $this->container->context()->jsonSerialize();
+            $data['config'] = $this->container->config()->jsonSerialize();
+        }
+
+        return $data;
     }
 
     /**

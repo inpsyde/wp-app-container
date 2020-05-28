@@ -238,6 +238,18 @@ class EnvConfig implements SiteConfig
     }
 
     /**
+     * @return array{env:string, hosting:string, keys:array<string>}
+     */
+    public function jsonSerialize()
+    {
+        return [
+            'env' => $this->env(),
+            'hosting' => $this->hosting(),
+            'keys' => array_keys($this->data),
+        ];
+    }
+
+    /**
      * @param string $name
      * @return mixed
      *

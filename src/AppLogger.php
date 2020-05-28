@@ -12,7 +12,7 @@ final class AppLogger
     private $debugEnabled;
 
     /**
-     * @var array
+     * @var array<string, ProviderStatus>
      */
     private $providers = [];
 
@@ -112,7 +112,7 @@ final class AppLogger
     }
 
     /**
-     * @return array|null
+     * @return array<string, array<string, string>>|null
      */
     public function dump(): ?array
     {
@@ -120,6 +120,15 @@ final class AppLogger
             return null;
         }
 
-        return $this->providers;
+        $data = [];
+
+        /**
+         * @var ProviderStatus $providerStatus
+         */
+        foreach ($this->providers as $id => $providerStatus) {
+            $data[$id] = $providerStatus->jsonSerialize();
+        }
+
+        return $data;
     }
 }

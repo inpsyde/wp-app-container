@@ -2,7 +2,7 @@
 
 namespace Inpsyde\App;
 
-final class ProviderStatus
+final class ProviderStatus implements \JsonSerializable
 {
     public const IDLE = 'None';
     public const ADDED = 'Added';
@@ -141,17 +141,10 @@ final class ProviderStatus
     }
 
     /**
-     * @return string
+     * @return array<string, string>
      */
-    public function status(): string
+    public function jsonSerialize()
     {
-        return $this->status;
-    }
-
-    /**
-     * @return array|string[]
-     */
-    public function appStatuses(): array {
         return $this->appStatuses;
     }
 
