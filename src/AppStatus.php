@@ -1,6 +1,6 @@
-<?php declare(strict_types=1); # -*- coding: utf-8 -*-
+<?php
 
-namespace Inpsyde\App;
+declare(strict_types=1);
 
 namespace Inpsyde\App;
 

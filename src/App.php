@@ -1,4 +1,6 @@
-<?php declare(strict_types=1); # -*- coding: utf-8 -*-
+<?php
+
+declare(strict_types=1);
 
 namespace Inpsyde\App;
 
@@ -17,7 +19,7 @@ final class App
     public const ACTION_ERROR = 'wp-app.error';
 
     /**
-     * @var App
+     * @var App|null
      */
     private static $app;
 

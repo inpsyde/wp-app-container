@@ -1,4 +1,6 @@
-<?php declare(strict_types=1); # -*- coding: utf-8 -*-
+<?php
+
+declare(strict_types=1);
 
 namespace Inpsyde\App;
 
@@ -22,7 +24,7 @@ final class ProviderStatus implements \JsonSerializable
     private $appStatus;
 
     /**
-     * @var string[]
+     * @var array<string, string>
      */
     private $appStatuses = [];
 
@@ -125,13 +127,9 @@ final class ProviderStatus implements \JsonSerializable
 
     /**
      * @return string
-     *
-     * phpcs:disable Inpsyde.CodeQuality.ReturnTypeDeclaration
      */
     public function __toString()
     {
-        // phpcs:enable Inpsyde.CodeQuality.ReturnTypeDeclaration
-
         $status = "{$this->status} (";
         foreach ($this->appStatuses as $which => $when) {
             $status .= "{$which} when {$when}, ";

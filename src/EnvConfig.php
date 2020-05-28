@@ -1,4 +1,6 @@
-<?php declare(strict_types=1); # -*- coding: utf-8 -*-
+<?php
+
+declare(strict_types=1);
 
 namespace Inpsyde\App;
 
@@ -41,7 +43,7 @@ class EnvConfig implements SiteConfig
     private $env = '';
 
     /**
-     * @var array
+     * @var array<string, mixed>
      */
     private $data = [];
 
@@ -81,7 +83,8 @@ class EnvConfig implements SiteConfig
         }
 
         $locationClassName = self::HOSTING_LOCATIONS_CLASS_MAP[$this->hosting()] ?? '';
-        if (!$locationClassName
+        if (
+            !$locationClassName
             || !class_exists($locationClassName)
             || !is_subclass_of($locationClassName, Locations::class)
         ) {

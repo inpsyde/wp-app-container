@@ -1,4 +1,6 @@
-<?php declare(strict_types=1); # -*- coding: utf-8 -*-
+<?php
+
+declare(strict_types=1);
 
 namespace Inpsyde\App\Location;
 
@@ -6,12 +8,12 @@ use Inpsyde\App\EnvConfig;
 
 class VipLocations implements Locations
 {
+    use ResolverTrait;
+
     public const CLIENT_MU_PLUGINS = 'client-mu-plugins';
     public const VIP_CONFIG = 'vip-config';
     public const IMAGES = 'images';
     public const PRIVATE = 'private';
-
-    use ResolverTrait;
 
     /**
      * @param string $path

@@ -17,12 +17,12 @@
         }
     ],
     "require": {
+        "php": "^7.2.5",
         "pimple/pimple": "^3"
     },
     "require-dev": {
         "phpunit/phpunit": "^8",
-        "squizlabs/php_codesniffer": "3.4.*",
-        "inpsyde/php-coding-standards": "0.*",
+        "inpsyde/php-coding-standards": "^1",
         "vimeo/psalm": "@stable",
         "brain/monkey": "^2",
         "roots/wordpress": "@stable"
@@ -40,10 +40,14 @@
     "minimum-stability": "dev",
     "prefer-stable": true,
     "scripts": {
+        "cs": "@php ./vendor/squizlabs/php_codesniffer/bin/phpcs",
+        "psalm": "@php ./vendor/vimeo/psalm/psalm",
+        "tests": "@php ./vendor/phpunit/phpunit/phpunit",
+        "tests:no-cov": "@php ./vendor/phpunit/phpunit/phpunit --no-coverage",
         "qa": [
-            "sh ./vendor/bin/phpcs",
-            "sh ./vendor/bin/psalm",
-            "sh ./vendor/bin/phpunit"
+            "@cs",
+            "@psalm",
+            "@tests:no-cov"
         ]
     },
     "extra": {
