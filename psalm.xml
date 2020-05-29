@@ -2,7 +2,7 @@
 <psalm
     autoloader="./.psalm/autoloader.php"
     totallyTyped="true"
-    useDocblockTypes="false"
+    useDocblockTypes="true"
     useDocblockPropertyTypes="true"
     usePhpDocMethodsWithoutMagicCall="true"
     strictBinaryOperands="true"

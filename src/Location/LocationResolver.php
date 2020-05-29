@@ -1,4 +1,6 @@
-<?php declare(strict_types=1); # -*- coding: utf-8 -*-
+<?php
+
+declare(strict_types=1);
 
 namespace Inpsyde\App\Location;
 
@@ -41,7 +43,8 @@ class LocationResolver
         /** @var string|null $vendorPath */
         if ($vendorPath && strpos((string)$vendorPath, $contentPath) === 0) {
             // If vendor path is inside content path, then we can calculate vendor URL
-            $vendorUrl = $contentUrl . (substr($vendorPath, strlen($contentPath)) ?: '');
+            $subFolder = substr($vendorPath, strlen($contentPath));
+            $vendorUrl = $contentUrl . (string)$subFolder;
         }
 
         $locations = [
@@ -142,9 +145,7 @@ class LocationResolver
 
         if ($base === null && array_key_exists($location, self::CONTENT_LOCATIONS)) {
             $contentBase = $this->resolve(Locations::CONTENT, $dirOrUrl);
-            if ($contentBase && is_string($contentBase)) {
-                $base = $contentBase . self::CONTENT_LOCATIONS[$location];
-            }
+            $contentBase and $base = $contentBase . self::CONTENT_LOCATIONS[$location];
         }
 
         if ($base === null) {
@@ -201,6 +202,9 @@ class LocationResolver
             }
         }
 
-        return array_filter($custom);
+        /** @var  array<string, array<string, string>> $custom */
+        $custom = array_filter($custom);
+
+        return $custom;
     }
 }

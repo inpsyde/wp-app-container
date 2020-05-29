@@ -1,4 +1,6 @@
-<?php declare(strict_types=1); # -*- coding: utf-8 -*-
+<?php
+
+declare(strict_types=1);
 
 namespace Inpsyde\App;
 
@@ -17,7 +19,7 @@ final class App
     public const ACTION_ERROR = 'wp-app.error';
 
     /**
-     * @var App
+     * @var App|null
      */
     private static $app;
 
@@ -154,10 +156,19 @@ final class App
             return null;
         }
 
-        return [
+        $data = [
             'status' => (string)$this->status,
             'providers' => $providers,
+            'context' => null,
+            'config' => null,
         ];
+
+        if ($this->container) {
+            $data['context'] = $this->container->context()->jsonSerialize();
+            $data['config'] = $this->container->config()->jsonSerialize();
+        }
+
+        return $data;
     }
 
     /**

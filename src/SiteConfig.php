@@ -1,10 +1,10 @@
-<?php # -*- coding: utf-8 -*-
+<?php
 
 namespace Inpsyde\App;
 
 use Inpsyde\App\Location\Locations;
 
-interface SiteConfig
+interface SiteConfig extends \JsonSerializable
 {
     public const HOSTING_VIP = 'vip';
     public const HOSTING_WPE = 'wpe';

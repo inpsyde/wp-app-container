@@ -1,4 +1,6 @@
-<?php declare(strict_types=1); # -*- coding: utf-8 -*-
+<?php
+
+declare(strict_types=1);
 
 namespace Inpsyde\App;
 
@@ -153,16 +155,15 @@ final class Container implements ContainerInterface
     }
 
     /**
-     * @param string $id
+     * @param $id
      * @return mixed
      *
-     * phpcs:disable Generic.Metrics.NestingLevel
      * @psalm-suppress MissingReturnType
      * @psalm-suppress MissingParamType
+     * @psalm-suppress RedundantConditionGivenDocblockType
      */
     public function get($id)
     {
-        // phpcs:enable Generic.Metrics.NestingLevel
         $this->assertString($id, __METHOD__);
 
         try {
@@ -181,15 +182,14 @@ final class Container implements ContainerInterface
     }
 
     /**
-     * @param string $id
+     * @param $id
      * @return bool
      *
-     * phpcs:disable Generic.Metrics.NestingLevel
      * @psalm-suppress MissingParamType
+     * @psalm-suppress RedundantConditionGivenDocblockType
      */
     public function has($id): bool
     {
-        // phpcs:enable Generic.Metrics.NestingLevel
         $this->assertString($id, __METHOD__);
 
         try {
@@ -227,6 +227,7 @@ final class Container implements ContainerInterface
      * @return void
      *
      * @psalm-suppress MissingParamType
+     * @psalm-assert string $value
      */
     private function assertString($value, string $method): void
     {

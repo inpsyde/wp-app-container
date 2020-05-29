@@ -1,4 +1,6 @@
-<?php # -*- coding: utf-8 -*-
+<?php
+
+declare(strict_types=1);
 
 namespace Inpsyde\App\Location;
 
@@ -16,7 +18,7 @@ interface Locations
 
     /**
      * @param string $path
-     * @return Locations|null
+     * @return Locations
      */
     public static function createFromConfig(EnvConfig $config): Locations;
 

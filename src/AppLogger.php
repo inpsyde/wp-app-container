@@ -1,4 +1,6 @@
-<?php declare(strict_types=1); # -*- coding: utf-8 -*-
+<?php
+
+declare(strict_types=1);
 
 namespace Inpsyde\App;
 
@@ -12,7 +14,7 @@ final class AppLogger
     private $debugEnabled;
 
     /**
-     * @var array
+     * @var array<string, ProviderStatus>
      */
     private $providers = [];
 
@@ -112,7 +114,7 @@ final class AppLogger
     }
 
     /**
-     * @return array|null
+     * @return array<string, array<string, string>>|null
      */
     public function dump(): ?array
     {
@@ -120,6 +122,15 @@ final class AppLogger
             return null;
         }
 
-        return array_map('strval', $this->providers);
+        $data = [];
+
+        /**
+         * @var ProviderStatus $providerStatus
+         */
+        foreach ($this->providers as $id => $providerStatus) {
+            $data[$id] = $providerStatus->jsonSerialize();
+        }
+
+        return $data;
     }
 }
