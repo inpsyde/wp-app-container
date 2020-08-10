@@ -839,7 +839,7 @@ The team at [Inpsyde](https://inpsyde.com) is engineering the Web since 2006.
 
 Copyright (c) 2019 Inpsyde GmbH
 
-Good news, this library is free for everyone! Since it's released under the [MIT License](LICENSE) you can use it free of charge on your personal or commercial website.
+This library is released under ["GPL 2.0 or later" License](LICENSE).
 
 
 
