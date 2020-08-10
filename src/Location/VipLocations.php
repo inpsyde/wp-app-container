@@ -33,10 +33,12 @@ class VipLocations implements Locations
         $contentUrl = $baseResolver->resolveUrl(self::CONTENT);
         $contentDir = $baseResolver->resolveDir(self::CONTENT);
 
+        /** @psalm-suppress MixedArgument */
         $privateDir = defined('WPCOM_VIP_PRIVATE_DIR')
             ? trailingslashit(wp_normalize_path(WPCOM_VIP_PRIVATE_DIR))
             : null;
 
+        /** @psalm-suppress MixedArgument */
         $clientMuDir = defined('WPCOM_VIP_CLIENT_MU_PLUGIN_DIR')
             ? trailingslashit(wp_normalize_path(WPCOM_VIP_CLIENT_MU_PLUGIN_DIR))
             : "{$contentDir}client-mu-plugins/";

@@ -130,14 +130,14 @@ class LocationResolver
     }
 
     /**
+     * @param string $location
      * @param string $dirOrUrl
-     * @param string $name
      * @param string|null $subDir
      * @return string|null
      */
     private function resolve(string $location, string $dirOrUrl, ?string $subDir = null): ?string
     {
-        $envBase = $this->config->get('WP_APP_' . strtoupper("{$location}_{$dirOrUrl}"));
+        $envBase = (string)$this->config->get('WP_APP_' . strtoupper("{$location}_{$dirOrUrl}"));
 
         $base = $envBase
             ? ($dirOrUrl === self::DIR ? wp_normalize_path($envBase) : $envBase)
