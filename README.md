@@ -1,6 +1,8 @@
 # WP App Container
 
-> DI Container and related tools to be used at website level.
+_DI Container and related tools to be used at website level_.
+
+![PHP Quality Assurance](https://github.com/inpsyde/wp-app-container/workflows/PHP%20Quality%20Assurance/badge.svg)
 
 ---
 
