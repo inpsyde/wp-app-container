@@ -13,21 +13,26 @@ class EnvConfig implements SiteConfig
 {
     public const FILTER_ENV_NAME = 'wp-app.environment';
 
+    public const LOCAL = 'local';
     public const DEVELOPMENT = 'development';
     public const PRODUCTION = 'production';
     public const STAGING = 'staging';
 
     private const ENV_ALIASES = [
+        'local' => self::LOCAL,
+        'development' => self::DEVELOPMENT,
         'dev' => self::DEVELOPMENT,
         'develop' => self::DEVELOPMENT,
-        'development' => self::DEVELOPMENT,
-        'prod' => self::PRODUCTION,
-        'production' => self::PRODUCTION,
-        'live' => self::PRODUCTION,
-        'stage' => self::STAGING,
         'staging' => self::STAGING,
+        'stage' => self::STAGING,
         'preprod' => self::STAGING,
         'pre-prod' => self::STAGING,
+        'pre-production' => self::STAGING,
+        'test' => self::STAGING,
+        'uat' => self::STAGING,
+        'production' => self::PRODUCTION,
+        'prod' => self::PRODUCTION,
+        'live' =>  self::PRODUCTION,
     ];
 
     private const HOSTING_LOCATIONS_CLASS_MAP = [
@@ -158,25 +163,27 @@ class EnvConfig implements SiteConfig
             return $this->env;
         }
 
-        $env = $this->readEnvVarOrConstant('WP_ENV')        // WP Starter 3 or Bedrock
-            ?? $this->readEnvVarOrConstant('WORDPRESS_ENV') // WP Starter 2
-            ?? $this->readEnvVarOrConstant('VIP_GO_ENV');   // VIP Go
+        // Use WP function if we can (WP 5.5+).
+        $env = function_exists('wp_get_environment_type') ? wp_get_environment_type() : null;
+        $env = $env
+            ?? $this->readEnvVarOrConstant('WP_ENVIRONMENT_TYPE') // WP core
+            ?? $this->readEnvVarOrConstant('WP_ENV')              // WP Starter or Bedrock
+            ?? $this->readEnvVarOrConstant('WORDPRESS_ENV')       // WP Starter legacy
+            ?? $this->readEnvVarOrConstant('VIP_GO_ENV');         // VIP Go
 
         if ($env) {
-            $this->env = $this->filterEnv((string)$env);
-
-            return $this->env;
+            return $this->normalizeEnv((string)$env, false);
         }
 
         if (function_exists('is_wpe')) {   // WP Engine legacy
             $env = ((int)is_wpe()) > 0 ? self::PRODUCTION : self::STAGING;
-            $this->env = $this->filterEnv((string)$env);
+            $this->env = $this->normalizeEnv((string)$env, true);
 
             return $this->env;
         }
 
         $env = (defined('WP_DEBUG') && WP_DEBUG) ? self::DEVELOPMENT : self::PRODUCTION;
-        $this->env = $this->filterEnv((string)$env);
+        $this->env = $this->normalizeEnv((string)$env, true);
 
         return $this->env;
     }
@@ -280,20 +287,34 @@ class EnvConfig implements SiteConfig
     }
 
     /**
+     * Ensures the environment is one of the four supported, to ensure it matches what
+     * `wp_get_environment_type()` will return.
+     * When we were not able to determine environment unequivocally we use `apply_filters` to that
+     * There's one more chance for developers to define the env.
+     * Even in that case the environment will be normalized ot one of the supported environments,
+     * in the worst case with a fallback to production, just like WP 5.5+ does.
+     *
      * @param string $env
+     * @param bool $applyFilters
      * @return string
      */
-    private function filterEnv(string $env): string
+    private function normalizeEnv(string $env, bool $applyFilters): string
     {
         $lower = strtolower($env);
-        $env = self::ENV_ALIASES[$lower] ?? $lower;
-        $filtered = apply_filters(self::FILTER_ENV_NAME, $env);
 
-        if (($filtered !== $env) && is_string($filtered)) {
-            $filteredLower = strtolower($filtered);
-            $env = self::ENV_ALIASES[$filteredLower] ?? $filteredLower;
+        // When we are going to apply_filters we don't want to fallback to production already,
+        // we'll do later, if needed.
+        $default = $applyFilters ? $lower : self::PRODUCTION;
+        $env = self::ENV_ALIASES[$lower] ?? $default;
+        if (!$applyFilters) {
+            return $env;
         }
 
-        return $env;
+        $filtered = apply_filters(self::FILTER_ENV_NAME, $env);
+        if ($filtered && is_string($filtered)) {
+            $env = strtolower($filtered);
+        }
+
+        return self::ENV_ALIASES[$env] ?? self::PRODUCTION;
     }
 }
