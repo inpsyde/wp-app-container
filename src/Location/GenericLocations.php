@@ -11,12 +11,12 @@ class GenericLocations implements Locations
     use ResolverTrait;
 
     /**
-     * @param string $path
+     * @param EnvConfig $config
      * @return Locations
      */
     public static function createFromConfig(EnvConfig $config): Locations
     {
-        return new static($config);
+        return new self($config);
     }
 
     /**

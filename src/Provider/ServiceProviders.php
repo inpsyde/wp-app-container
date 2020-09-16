@@ -9,7 +9,7 @@ use Inpsyde\App\App;
 class ServiceProviders
 {
     /**
-     * @var \SplObjectStorage|null
+     * @var \SplObjectStorage<ServiceProvider, array<string>>|null
      */
     private $providers;
 
@@ -18,7 +18,7 @@ class ServiceProviders
      */
     public static function new(): ServiceProviders
     {
-        return new static();
+        return new self();
     }
 
     /**

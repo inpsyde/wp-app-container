@@ -13,12 +13,12 @@ class WpEngineLocations implements Locations
     public const PRIVATE = 'private';
 
     /**
-     * @param string $path
-     * @return WpEngineLocations
+     * @param EnvConfig $config
+     * @return Locations
      */
     public static function createFromConfig(EnvConfig $config): Locations
     {
-        return new static($config);
+        return new self($config);
     }
 
     /**
