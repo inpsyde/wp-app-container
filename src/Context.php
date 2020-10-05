@@ -30,23 +30,18 @@ final class Context implements \JsonSerializable
         $installing = defined('WP_INSTALLING') && WP_INSTALLING;
         $xmlRpc = defined('XMLRPC_REQUEST') && XMLRPC_REQUEST;
         $isCore = defined('ABSPATH');
+        $isCli = defined('WP_CLI');
         $notInstalling = $isCore && !$installing;
         $isAjax = $notInstalling ? wp_doing_ajax() : false;
         $isAdmin = $notInstalling ? is_admin() && !$isAjax : false;
         $isCron = $notInstalling ? wp_doing_cron() : false;
-        $isRest = $notInstalling ? static::isRestRequest() : false;
-        $isLogin = $notInstalling ? static::isLoginRequest() : false;
-        $isCli = defined('WP_CLI');
 
-        $isFront = $isCore
-            && !$isAdmin
-            && !$isAjax
-            && !$isRest
-            && !$isCron
-            && !$isLogin
-            && !$isCli
-            && !$xmlRpc
-            && !$installing;
+        $undetermined = $notInstalling && !$isAdmin && !$isCron && !$isCli && !$xmlRpc && !$isAjax;
+
+        $isRest = $undetermined ? static::isRestRequest() : false;
+        $isLogin = ($undetermined && !$isRest) ? static::isLoginRequest() : false;
+
+        $isFront = $undetermined && !$isRest && !$isLogin;
 
         // Note that when installing **only** `INSTALLING` will be true, not even `CORE`.
         // This is done to do as less as possible during installation, when most of WP does not act
@@ -97,13 +92,18 @@ final class Context implements \JsonSerializable
      */
     private static function isLoginRequest(): bool
     {
-        if (isset($_REQUEST['interim-login'])) { // phpcs:ignore
+        if (!empty($_REQUEST['interim-login'])) { // phpcs:ignore
             return true;
         }
 
         $pageNow = (string)($GLOBALS['pagenow'] ?? '');
+        if ($pageNow && (basename($pageNow) === 'wp-login.php')) {
+            return true;
+        }
 
-        return $pageNow && (basename($pageNow) === 'wp-login.php');
+        $url = home_url((string)parse_url(add_query_arg([]), PHP_URL_PATH));
+
+        return rtrim($url, '/') === rtrim(wp_login_url(), '/');
     }
 
     /**
@@ -117,6 +117,7 @@ final class Context implements \JsonSerializable
             'login_init',
             function () {
                 $this->data[self::LOGIN] = true;
+                $this->data[self::REST] = false;
                 $this->data[self::FRONTOFFICE] = false;
             }
         );
@@ -125,6 +126,7 @@ final class Context implements \JsonSerializable
             'rest_api_init',
             function () {
                 $this->data[self::REST] = true;
+                $this->data[self::LOGIN] = false;
                 $this->data[self::FRONTOFFICE] = false;
             }
         );

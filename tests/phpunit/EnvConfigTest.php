@@ -49,37 +49,31 @@ class EnvConfigTest extends TestCase
         static::assertTrue($env->envIs(EnvConfig::STAGING));
     }
 
-    public function testEnvFromEnvVarFiltered()
+    public function testEnvFromEnvVarIsNotFiltered()
     {
         $_ENV['VIP_GO_ENV'] = 'preprod';
 
-        Filters\expectApplied(EnvConfig::FILTER_ENV_NAME)
-            ->once()
-            ->with(EnvConfig::STAGING)
-            ->andReturn('dev');
+        Filters\expectApplied(EnvConfig::FILTER_ENV_NAME)->never();
 
         $env = new EnvConfig();
 
-        static::assertSame(EnvConfig::DEVELOPMENT, $env->env());
-        static::assertTrue($env->envIs(EnvConfig::DEVELOPMENT));
+        static::assertSame(EnvConfig::STAGING, $env->env());
+        static::assertTrue($env->envIs(EnvConfig::STAGING));
     }
 
     /**
      * @runInSeparateProcess
      */
-    public function testEnvFromConstantFiltered()
+    public function testEnvFromConstantInNotFiltered()
     {
-        define('VIP_GO_ENV', 'preprod');
+        define('WP_ENVIRONMENT_TYPE', 'test');
 
-        Filters\expectApplied(EnvConfig::FILTER_ENV_NAME)
-            ->once()
-            ->with(EnvConfig::STAGING)
-            ->andReturn('dev');
+        Filters\expectApplied(EnvConfig::FILTER_ENV_NAME)->never();
 
         $env = new EnvConfig();
 
-        static::assertSame(EnvConfig::DEVELOPMENT, $env->env());
-        static::assertTrue($env->envIs(EnvConfig::DEVELOPMENT));
+        static::assertSame(EnvConfig::STAGING, $env->env());
+        static::assertTrue($env->envIs(EnvConfig::STAGING));
     }
 
     /**

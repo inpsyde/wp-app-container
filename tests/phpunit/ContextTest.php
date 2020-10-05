@@ -12,8 +12,19 @@ use Inpsyde\App\Context;
  */
 class ContextTest extends TestCase
 {
+    private $currentPath = '/';
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        Monkey\Functions\expect('add_query_arg')->with([])->andReturnUsing(function (){
+            return $this->currentPath;
+        });
+    }
+
     protected function tearDown(): void
     {
+        $this->currentPath = '/';
         unset($GLOBALS['pagenow']);
         parent::tearDown();
     }
@@ -295,11 +306,7 @@ class ContextTest extends TestCase
         Monkey\Functions\expect('get_option')->with('permalink_structure')->andReturn(false);
         Monkey\Functions\stubs(['set_url_scheme']);
         Monkey\Functions\when('get_rest_url')->justReturn('https://example.com/wp-json');
-        Monkey\Functions\expect('add_query_arg')->with([])->andReturnUsing(
-            function () use ($is): string {
-                return $is ? 'https://example.com/wp-json/foo' : 'https://example.com';
-            }
-        );
+        $is and $this->currentPath = '/wp-json/foo';
     }
 
     /**
@@ -307,6 +314,10 @@ class ContextTest extends TestCase
      */
     private function mockIsLoginRequest(bool $is)
     {
-        $GLOBALS['pagenow'] = $is ? 'wp-login.php' : '';
+        $is and $this->currentPath = '/wp-login.php';
+        Monkey\Functions\when('wp_login_url')->justReturn('https://example.com/wp-login.php');
+        Monkey\Functions\when('home_url')->alias(static function ($path = '') {
+            return 'https://example.com/' . ltrim($path, '/');
+        });
     }
 }

@@ -166,10 +166,11 @@ class EnvConfig implements SiteConfig
         // Use WP function if we can (WP 5.5+).
         $env = function_exists('wp_get_environment_type') ? wp_get_environment_type() : null;
         $env = $env
-            ?? $this->readEnvVarOrConstant('WP_ENVIRONMENT_TYPE') // WP core
-            ?? $this->readEnvVarOrConstant('WP_ENV')              // WP Starter or Bedrock
-            ?? $this->readEnvVarOrConstant('WORDPRESS_ENV')       // WP Starter legacy
-            ?? $this->readEnvVarOrConstant('VIP_GO_ENV');         // VIP Go
+            ?? $this->readEnvVarOrConstant('WP_ENVIRONMENT_TYPE')    // WP core
+            ?? $this->readEnvVarOrConstant('WP_ENV')                 // WP Starter or Bedrock
+            ?? $this->readEnvVarOrConstant('WORDPRESS_ENV')          // WP Starter legacy
+            ?? $this->readEnvVarOrConstant('VIP_GO_APP_ENVIRONMENT') // VIP Go
+            ?? $this->readEnvVarOrConstant('VIP_GO_ENV');            // VIP Go legacy
 
         if ($env) {
             return $this->normalizeEnv((string)$env, false);

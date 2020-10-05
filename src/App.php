@@ -133,7 +133,8 @@ final class App
     }
 
     /**
-     * @return App
+     * @param string $hook
+     * @return $this
      */
     public function runLastBootAt(string $hook): App
     {
@@ -236,6 +237,8 @@ final class App
     public function addProvider(ServiceProvider $provider, string ...$contexts): App
     {
         try {
+            $contexts or $contexts = [Context::CORE];
+
             $this->initializeContainer();
 
             $providerId = $provider->id();
