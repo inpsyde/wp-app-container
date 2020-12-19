@@ -9,7 +9,7 @@ use Inpsyde\App\App;
 class ServiceProviders
 {
     /**
-     * @var \SplObjectStorage<ServiceProvider, array<string>>|null
+     * @var \SplObjectStorage|null
      */
     private $providers;
 
