@@ -155,7 +155,7 @@ final class Container implements ContainerInterface
     }
 
     /**
-     * @param $id
+     * @param mixed $id
      * @return mixed
      *
      * @psalm-suppress MissingReturnType
@@ -182,7 +182,7 @@ final class Container implements ContainerInterface
     }
 
     /**
-     * @param $id
+     * @param mixed $id
      * @return bool
      *
      * @psalm-suppress MissingParamType
