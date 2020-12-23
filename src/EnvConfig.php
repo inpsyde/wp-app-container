@@ -178,13 +178,13 @@ class EnvConfig implements SiteConfig
 
         if (function_exists('is_wpe')) {   // WP Engine legacy
             $env = ((int)is_wpe()) > 0 ? self::PRODUCTION : self::STAGING;
-            $this->env = $this->normalizeEnv((string)$env, true);
+            $this->env = $this->normalizeEnv($env, true);
 
             return $this->env;
         }
 
         $env = (defined('WP_DEBUG') && WP_DEBUG) ? self::DEVELOPMENT : self::PRODUCTION;
-        $this->env = $this->normalizeEnv((string)$env, true);
+        $this->env = $this->normalizeEnv($env, true);
 
         return $this->env;
     }
