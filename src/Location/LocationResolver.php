@@ -36,11 +36,11 @@ class LocationResolver
     {
         $this->config = $config;
 
+        /** @var string|null $vendorPath */
         $vendorPath = $this->discoverVendorPath();
         $contentPath = (string)trailingslashit(wp_normalize_path(WP_CONTENT_DIR));
         $contentUrl = (string)content_url('/');
 
-        /** @var string|null $vendorPath */
         if ($vendorPath && strpos((string)$vendorPath, $contentPath) === 0) {
             // If vendor path is inside content path, then we can calculate vendor URL
             $subFolder = substr($vendorPath, strlen($contentPath));
@@ -80,8 +80,8 @@ class LocationResolver
     }
 
     /**
-     * @param string $dirOrUrl
-     * @param string $subDir
+     * @param string $location
+     * @param string|null $subDir
      * @return string|null
      */
     public function resolveUrl(string $location, ?string $subDir = null): ?string
@@ -90,8 +90,8 @@ class LocationResolver
     }
 
     /**
-     * @param string $dirOrUrl
-     * @param string $subDir
+     * @param string $location
+     * @param string|null $subDir
      * @return string|null
      */
     public function resolveDir(string $location, ?string $subDir = null): ?string
