@@ -50,7 +50,7 @@ trait ResolverTrait
     {
         return $this->resolver()->resolveUrl($name, $path);
     }
-    
+
     /**
      * @param string $path
      * @return string|null
