@@ -17,7 +17,7 @@ interface Locations
     public const LANGUAGES = 'languages';
 
     /**
-     * @param string $path
+     * @param EnvConfig $config
      * @return Locations
      */
     public static function createFromConfig(EnvConfig $config): Locations;
