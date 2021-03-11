@@ -52,7 +52,7 @@ class ServiceProviders
 
     /**
      * @param App $app
-     * @param \SplObjectStorage $providers
+     * @param \SplObjectStorage<ServiceProvider, array<string>> $providers
      */
     private function addProvidersToApp(App $app, \SplObjectStorage $providers): void
     {
