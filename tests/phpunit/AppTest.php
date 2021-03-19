@@ -141,7 +141,19 @@ class AppTest extends TestCase
         static::assertSame(['p1', 'p2'], array_keys($info['providers']));
     }
 
-    public function testBootFlow()
+    public function debugProvider(): array
+    {
+        return [
+            'debug disabled' => [false],
+            'debug enabled' => [true],
+        ];
+    }
+
+    /**
+     * @dataProvider debugProvider
+     * @param bool $isDebug
+     */
+    public function testBootFlow(bool $isDebug)
     {
         /** @var callable|null $onPluginsLoaded */
         $onPluginsLoaded = null;
@@ -242,13 +254,21 @@ class AppTest extends TestCase
 
         $this->expectOutputString('A-B-C!');
 
-        App::new(new Container(null, $this->mockContext()))->runLastBootAt('after_setup_theme')->boot();
+        $app = App::new(new Container(null, $this->mockContext()))->runLastBootAt('after_setup_theme');
+        if ($isDebug) {
+            $app->enableDebug();
+        }
+        $app->boot();
 
         $onPluginsLoaded();
         $onAfterSetupTheme();
     }
 
-    public function testNestedAddProvider()
+    /**
+     * @dataProvider debugProvider
+     * @param bool $isDebug
+     */
+    public function testNestedAddProvider(bool $isDebug)
     {
         $p1 = self::stubProvider('p1', function (Container $container) {
             $container->addService('a', function () {
@@ -275,6 +295,9 @@ class AppTest extends TestCase
         });
 
         $app = App::new(new Container(null, $this->mockContext()));
+        if ($isDebug) {
+            $app->enableDebug();
+        }
 
         Actions\expectDone(App::ACTION_ADDED_PROVIDER)
             ->times(3)
@@ -313,9 +336,16 @@ class AppTest extends TestCase
         do_action('init');
     }
 
-    public function testCallingBootFromNestedAddProviderFails()
+    /**
+     * @dataProvider debugProvider
+     * @param bool $isDebug
+     */
+    public function testCallingBootFromNestedAddProviderFails(bool $isDebug)
     {
         $app = App::new(new Container(null, $this->mockContext()));
+        if ($isDebug) {
+            $app->enableDebug();
+        }
 
         Actions\expectDone(App::ACTION_ADDED_PROVIDER)
             ->twice()
@@ -333,7 +363,11 @@ class AppTest extends TestCase
         $app->addProvider(self::stubProvider('p1'));
     }
 
-    public function testDependantProviderOnLastBootIsBooted()
+    /**
+     * @dataProvider debugProvider
+     * @param bool $isDebug
+     */
+    public function testDependantProviderOnLastBootIsBooted(bool $isDebug)
     {
         /** @var callable|null $onPluginsLoaded */
         $onPluginsLoaded = null;
@@ -379,7 +413,8 @@ class AppTest extends TestCase
         Actions\expectDone(App::ACTION_REGISTERED_PROVIDER)
             ->with($dependency->id(), \Mockery::type(App::class))
             ->once()
-            ->whenHappen(function (string $providerId, App $app) use ($dependant) {
+            ->whenHappen(function (string $providerId, App $app) use ($dependant, $dependency) {
+                static::assertSame($dependency->id(), $providerId);
                 static::assertTrue($app->status()->isThemesStep());
                 $app->addProvider($dependant);
             });
@@ -395,7 +430,11 @@ class AppTest extends TestCase
         $this->expectOutputString("I have been registered!\nI have been booted!");
 
         $app = App::new(new Container(null, $this->mockContext()));
-        $app->addProvider($dependency)->boot();
+        if ($isDebug) {
+            $app->enableDebug();
+        }
+        $app->addProvider($dependency);
+        $app->boot();
 
         $onPluginsLoaded();
         $onInit();
