@@ -6,7 +6,9 @@ namespace Inpsyde\App\Tests\Provider;
 
 use Brain\Monkey\Actions;
 use Inpsyde\App\App;
+use Inpsyde\App\Container;
 use Inpsyde\App\Context;
+use Inpsyde\App\ContextInterface;
 use Inpsyde\App\Provider\ConfigurableProvider;
 use Inpsyde\App\Provider\ServiceProvider;
 use Inpsyde\App\Provider\ServiceProviders;
@@ -24,7 +26,13 @@ class ServiceProvidersTest extends TestCase
      */
     public function testProvideApp()
     {
-        $app = App::new();
+        $contextMock = $this->createMock(ContextInterface::class);
+        $contextMock
+            ->method('is')
+            ->with(Context::CORE)
+            ->willReturn(true);
+
+        $app = App::new(new Container(null, $contextMock));
 
         Actions\expectDone(App::ACTION_REGISTERED_PROVIDER)
             ->once()

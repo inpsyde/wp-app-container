@@ -20,7 +20,7 @@ final class Container implements ContainerInterface
     private $config;
 
     /**
-     * @var Context
+     * @var ContextInterface
      */
     private $context;
 
@@ -36,12 +36,12 @@ final class Container implements ContainerInterface
 
     /**
      * @param SiteConfig|null $config
-     * @param Context|null $context
+     * @param ContextInterface|null $context
      * @param ContainerInterface ...$containers
      */
     public function __construct(
         SiteConfig $config = null,
-        Context $context = null,
+        ContextInterface $context = null,
         ContainerInterface ...$containers
     ) {
 
@@ -73,9 +73,9 @@ final class Container implements ContainerInterface
     }
 
     /**
-     * @return Context
+     * @return ContextInterface
      */
-    public function context(): Context
+    public function context(): ContextInterface
     {
         return $this->context;
     }

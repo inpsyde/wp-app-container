@@ -10,6 +10,7 @@ use Inpsyde\App\App;
 use Inpsyde\App\AppStatus;
 use Inpsyde\App\Container;
 use Inpsyde\App\Context;
+use Inpsyde\App\ContextInterface;
 use Inpsyde\App\EnvConfig;
 use Inpsyde\App\Provider\ConfigurableProvider;
 use Inpsyde\App\Provider\Package;
@@ -45,6 +46,17 @@ class AppTest extends TestCase
     private static function stubProvider($id, callable $register = null): ServiceProvider
     {
         return new ConfigurableProvider($id, $register ?? '__return_true', '__return_true');
+    }
+
+    private function mockContext(string $currentContext = Context::CORE): ContextInterface
+    {
+        $contextMock = $this->createMock(ContextInterface::class);
+        $contextMock
+            ->method('is')
+            ->with($currentContext)
+            ->willReturn(true);
+
+        return $contextMock;
     }
 
     /**
@@ -177,7 +189,6 @@ class AppTest extends TestCase
                                 return true;
                             },
                             ConfigurableProvider::REGISTER_LATER
-
                         )
                     )
                     ->add(
@@ -231,7 +242,7 @@ class AppTest extends TestCase
 
         $this->expectOutputString('A-B-C!');
 
-        App::new()->runLastBootAt('after_setup_theme')->boot();
+        App::new(new Container(null, $this->mockContext()))->runLastBootAt('after_setup_theme')->boot();
 
         $onPluginsLoaded();
         $onAfterSetupTheme();
@@ -263,7 +274,7 @@ class AppTest extends TestCase
             return true;
         });
 
-        $app = App::new();
+        $app = App::new(new Container(null, $this->mockContext()));
 
         Actions\expectDone(App::ACTION_ADDED_PROVIDER)
             ->times(3)
@@ -304,7 +315,7 @@ class AppTest extends TestCase
 
     public function testCallingBootFromNestedAddProviderFails()
     {
-        $app = App::new();
+        $app = App::new(new Container(null, $this->mockContext()));
 
         Actions\expectDone(App::ACTION_ADDED_PROVIDER)
             ->twice()
@@ -383,7 +394,7 @@ class AppTest extends TestCase
 
         $this->expectOutputString("I have been registered!\nI have been booted!");
 
-        $app = App::new();
+        $app = App::new(new Container(null, $this->mockContext()));
         $app->addProvider($dependency)->boot();
 
         $onPluginsLoaded();

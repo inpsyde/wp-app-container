@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Inpsyde\App;
 
-final class Context implements \JsonSerializable
+final class Context implements ContextInterface
 {
     public const AJAX = 'ajax';
     public const BACKOFFICE = 'backoffice';
