@@ -105,7 +105,8 @@ final class ProviderStatus implements \JsonSerializable
      */
     public function nowBooted(AppStatus $appStatus): ProviderStatus
     {
-        if ($this->status !== self::REGISTERED && $this->status !== self::ADDED) {
+        $allowedFromStatuses = [self::REGISTERED, self::REGISTERED_DELAYED, self::ADDED];
+        if (!in_array($this->status, $allowedFromStatuses, true)) {
             $this->cantMoveTo(self::BOOTED);
         }
 
