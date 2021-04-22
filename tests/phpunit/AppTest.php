@@ -17,6 +17,9 @@ use Inpsyde\App\Provider\ServiceProvider;
 use Inpsyde\App\Provider\ServiceProviders;
 use Psr\Container\NotFoundExceptionInterface;
 
+/**
+ * @runTestsInSeparateProcesses
+ */
 class AppTest extends TestCase
 {
     /**
@@ -40,6 +43,7 @@ class AppTest extends TestCase
 
     /**
      * @param $id
+     * @param callable|null $register
      * @return ServiceProvider
      */
     private static function stubProvider($id, callable $register = null): ServiceProvider
@@ -66,9 +70,6 @@ class AppTest extends TestCase
         };
     }
 
-    /**
-     * @runInSeparateProcess
-     */
     public function testMakeFailsIfNoAppCreated()
     {
         $this->expectException(\Exception::class);
@@ -77,9 +78,6 @@ class AppTest extends TestCase
         App::make('foo');
     }
 
-    /**
-     * @runInSeparateProcess
-     */
     public function testMakeFailsIfAppIdle()
     {
         $this->expectException(\DomainException::class);
@@ -91,9 +89,6 @@ class AppTest extends TestCase
         App::make('foo');
     }
 
-    /**
-     * @runInSeparateProcess
-     */
     public function testMakeFailsIfNothingInTheContainer()
     {
         $this->expectException(NotFoundExceptionInterface::class);
@@ -104,9 +99,6 @@ class AppTest extends TestCase
         App::make('foo');
     }
 
-    /**
-     * @runInSeparateProcess
-     */
     public function testMakeGetContainer()
     {
         $psr11 = new \Pimple\Psr11\Container(new \Pimple\Container(['foo' => 'bar']));
@@ -131,6 +123,8 @@ class AppTest extends TestCase
 
     public function testBootFlow()
     {
+        $this->mockContext();
+
         /** @var callable|null $onPluginsLoaded */
         $onPluginsLoaded = null;
         /** @var callable|null $onAfterSetupTheme */
@@ -173,11 +167,9 @@ class AppTest extends TestCase
                             '__return_true',
                             function (Container $c) {
                                 echo $c->get('a') . $c->get('b') . $c->get('c');
-
                                 return true;
                             },
                             ConfigurableProvider::REGISTER_LATER
-
                         )
                     )
                     ->add(
@@ -239,6 +231,8 @@ class AppTest extends TestCase
 
     public function testNestedAddProvider()
     {
+        $this->mockContext();
+
         $p1 = self::stubProvider('p1', function (Container $container) {
             $container->addService('a', function () {
                 return AppTest::stubStringObject('A-');
@@ -304,6 +298,8 @@ class AppTest extends TestCase
 
     public function testCallingBootFromNestedAddProviderFails()
     {
+        $this->mockContext();
+
         $app = App::new();
 
         Actions\expectDone(App::ACTION_ADDED_PROVIDER)
@@ -324,6 +320,8 @@ class AppTest extends TestCase
 
     public function testDependantProviderOnLastBootIsBooted()
     {
+        $this->mockContext();
+
         /** @var callable|null $onPluginsLoaded */
         $onPluginsLoaded = null;
 

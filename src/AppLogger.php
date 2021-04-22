@@ -58,7 +58,6 @@ final class AppLogger
             return;
         }
 
-        /** @var ProviderStatus $status */
         $status = $this->providers[$provider->id()] ?? ProviderStatus::new($appStatus);
         $this->providers[$provider->id()] = $status->nowSkipped($appStatus);
     }
@@ -74,7 +73,6 @@ final class AppLogger
             return;
         }
 
-        /** @var ProviderStatus $status */
         $status = $this->providers[$provider->id()] ?? ProviderStatus::new($appStatus);
         $this->providers[$provider->id()] = $status->nowAdded($appStatus);
     }
@@ -90,7 +88,6 @@ final class AppLogger
             return;
         }
 
-        /** @var ProviderStatus $status */
         $status = $this->providers[$provider->id()] ?? ProviderStatus::new($appStatus);
 
         $this->providers[$provider->id()] = $status->nowRegistered(
@@ -101,6 +98,7 @@ final class AppLogger
 
     /**
      * @param ServiceProvider $provider
+     * @param AppStatus $appStatus
      */
     public function providerBooted(ServiceProvider $provider, AppStatus $appStatus): void
     {
@@ -108,7 +106,6 @@ final class AppLogger
             return;
         }
 
-        /** @var ProviderStatus $status */
         $status = $this->providers[$provider->id()] ?? ProviderStatus::new($appStatus);
         $this->providers[$provider->id()] = $status->nowBooted($appStatus);
     }
@@ -123,10 +120,6 @@ final class AppLogger
         }
 
         $data = [];
-
-        /**
-         * @var ProviderStatus $providerStatus
-         */
         foreach ($this->providers as $id => $providerStatus) {
             $data[$id] = $providerStatus->jsonSerialize();
         }

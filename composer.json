@@ -41,7 +41,7 @@
     "prefer-stable": true,
     "scripts": {
         "cs": "@php ./vendor/squizlabs/php_codesniffer/bin/phpcs",
-        "psalm": "@php ./vendor/vimeo/psalm/psalm",
+        "psalm": "@php ./vendor/vimeo/psalm/psalm --no-cache --output-format=compact",
         "tests": "@php ./vendor/phpunit/phpunit/phpunit",
         "tests:no-cov": "@php ./vendor/phpunit/phpunit/phpunit --no-coverage",
         "qa": [

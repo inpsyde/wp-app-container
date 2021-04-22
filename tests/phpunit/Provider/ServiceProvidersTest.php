@@ -24,6 +24,8 @@ class ServiceProvidersTest extends TestCase
      */
     public function testProvideApp()
     {
+        $this->mockContext();
+
         $app = App::new();
 
         Actions\expectDone(App::ACTION_REGISTERED_PROVIDER)

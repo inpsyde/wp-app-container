@@ -35,13 +35,11 @@ class LocationResolver
     public function __construct(EnvConfig $config, array $extendedDefaults = [])
     {
         $this->config = $config;
-
-        /** @var string|null $vendorPath */
         $vendorPath = $this->discoverVendorPath();
         $contentPath = (string)trailingslashit(wp_normalize_path(WP_CONTENT_DIR));
         $contentUrl = (string)content_url('/');
 
-        if ($vendorPath && strpos((string)$vendorPath, $contentPath) === 0) {
+        if ($vendorPath && strpos($vendorPath, $contentPath) === 0) {
             // If vendor path is inside content path, then we can calculate vendor URL
             $subFolder = substr($vendorPath, strlen($contentPath));
             $vendorUrl = $contentUrl . (string)$subFolder;

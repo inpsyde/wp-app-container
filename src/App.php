@@ -248,7 +248,7 @@ final class App
             }
 
             /** @psalm-suppress PossiblyNullReference */
-            if ($contexts && !$this->container->context()->is(...$contexts)) {
+            if (!$this->container->context()->is(...$contexts)) {
                 $this->logger->providerSkipped($provider, $this->status);
 
                 return $this;

@@ -32,15 +32,14 @@ final class Context implements \JsonSerializable
         $isCore = defined('ABSPATH');
         $isCli = defined('WP_CLI');
         $notInstalling = $isCore && !$installing;
-        $isAjax = $notInstalling ? wp_doing_ajax() : false;
-        $isAdmin = $notInstalling ? is_admin() && !$isAjax : false;
-        $isCron = $notInstalling ? wp_doing_cron() : false;
+        $isAjax = $notInstalling && wp_doing_ajax();
+        $isAdmin = $notInstalling && is_admin() && !$isAjax;
+        $isCron = $notInstalling && wp_doing_cron();
 
         $undetermined = $notInstalling && !$isAdmin && !$isCron && !$isCli && !$xmlRpc && !$isAjax;
 
-        $isRest = $undetermined ? static::isRestRequest() : false;
-        $isLogin = ($undetermined && !$isRest) ? static::isLoginRequest() : false;
-
+        $isRest = $undetermined && static::isRestRequest();
+        $isLogin = $undetermined && !$isRest && static::isLoginRequest();
         $isFront = $undetermined && !$isRest && !$isLogin;
 
         // Note that when installing **only** `INSTALLING` will be true, not even `CORE`.
@@ -68,8 +67,8 @@ final class Context implements \JsonSerializable
      */
     private static function isRestRequest(): bool
     {
-        if (defined('REST_REQUEST') && REST_REQUEST) {
-            return true;
+        if (defined('REST_REQUEST')) {
+            return (bool)REST_REQUEST;
         }
 
         // This is needed because, if called early, global $wp_rewrite is not defined but required

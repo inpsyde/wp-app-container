@@ -45,7 +45,6 @@ class ServiceProviders
         if (!$this->providers) {
             return;
         }
-
         $this->addProvidersToApp($app, $this->providers);
         $this->providers = null;
     }
@@ -59,9 +58,7 @@ class ServiceProviders
         $providers->rewind();
 
         while ($providers->valid()) {
-            /** @var ServiceProvider $provider */
             $provider = $providers->current();
-            /** @var string[] $contexts */
             $contexts = $providers->getInfo();
 
             $app->addProvider($provider, ...$contexts);
