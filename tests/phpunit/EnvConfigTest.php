@@ -1,4 +1,4 @@
-<?php # -*- coding: utf-8 -*-
+<?php
 
 declare(strict_types=1);
 
@@ -13,23 +13,29 @@ use Inpsyde\App\Location\WpEngineLocations;
 
 class EnvConfigTest extends TestCase
 {
+    /**
+     * @return void
+     */
     protected function setUp(): void
     {
         parent::setUp();
 
-        Functions\when('network_site_url')->alias(function (string $path = '/'): string {
+        Functions\when('network_site_url')->alias(static function (string $path = '/'): string {
             return 'http://example.com/' . ltrim($path, '/');
         });
 
-        Functions\when('content_url')->alias(function (string $path = '/'): string {
+        Functions\when('content_url')->alias(static function (string $path = '/'): string {
             return 'http://example.com/wp-content/' . ltrim($path, '/');
         });
 
-        Functions\when('wp_normalize_path')->alias(function (string $path): string {
+        Functions\when('wp_normalize_path')->alias(static function (string $path): string {
             return str_replace('\\', '/', $path);
         });
     }
 
+    /**
+     * @return void
+     */
     protected function tearDown(): void
     {
         parent::tearDown();
@@ -39,7 +45,10 @@ class EnvConfigTest extends TestCase
         unset($_SERVER['HTTP_TEST_ME']);
     }
 
-    public function testEnvFromEnvVar()
+    /**
+     * @test
+     */
+    public function testEnvFromEnvVar(): void
     {
         $_ENV['VIP_GO_ENV'] = 'preprod';
 
@@ -49,7 +58,10 @@ class EnvConfigTest extends TestCase
         static::assertTrue($env->envIs(EnvConfig::STAGING));
     }
 
-    public function testEnvFromEnvVarIsNotFiltered()
+    /**
+     * @test
+     */
+    public function testEnvFromEnvVarIsNotFiltered(): void
     {
         $_ENV['VIP_GO_ENV'] = 'preprod';
 
@@ -62,9 +74,10 @@ class EnvConfigTest extends TestCase
     }
 
     /**
+     * @test
      * @runInSeparateProcess
      */
-    public function testEnvFromConstantInNotFiltered()
+    public function testEnvFromConstantInNotFiltered(): void
     {
         define('WP_ENVIRONMENT_TYPE', 'test');
 
@@ -77,9 +90,10 @@ class EnvConfigTest extends TestCase
     }
 
     /**
+     * @test
      * @runInSeparateProcess
      */
-    public function testEnvFromWpEngine()
+    public function testEnvFromWpEngine(): void
     {
         Functions\when('is_wpe')->justReturn(null);
 
@@ -89,7 +103,10 @@ class EnvConfigTest extends TestCase
         static::assertTrue($env->envIs(EnvConfig::STAGING));
     }
 
-    public function testEnvDefaultProduction()
+    /**
+     * @test
+     */
+    public function testEnvDefaultProduction(): void
     {
         $env = new EnvConfig();
 
@@ -98,9 +115,10 @@ class EnvConfigTest extends TestCase
     }
 
     /**
+     * @test
      * @runInSeparateProcess
      */
-    public function testEnvDefaultFromWpDebug()
+    public function testEnvDefaultFromWpDebug(): void
     {
         define('WP_DEBUG', true);
 
@@ -110,7 +128,10 @@ class EnvConfigTest extends TestCase
         static::assertTrue($env->envIs(EnvConfig::DEVELOPMENT));
     }
 
-    public function testEnvDefaultFiltered()
+    /**
+     * @test
+     */
+    public function testEnvDefaultFiltered(): void
     {
         $env = new EnvConfig();
 
@@ -124,9 +145,10 @@ class EnvConfigTest extends TestCase
     }
 
     /**
+     * @test
      * @runInSeparateProcess
      */
-    public function testHostingOther()
+    public function testHostingOther(): void
     {
         define('ABSPATH', __DIR__);
         define('WP_CONTENT_DIR', __DIR__);
@@ -139,9 +161,10 @@ class EnvConfigTest extends TestCase
     }
 
     /**
+     * @test
      * @runInSeparateProcess
      */
-    public function testHostingVip()
+    public function testHostingVip(): void
     {
         define('ABSPATH', __DIR__);
         define('WP_CONTENT_DIR', __DIR__);
@@ -155,9 +178,10 @@ class EnvConfigTest extends TestCase
     }
 
     /**
+     * @test
      * @runInSeparateProcess
      */
-    public function testHostingWpe()
+    public function testHostingWpe(): void
     {
         define('ABSPATH', __DIR__);
         define('WP_CONTENT_DIR', __DIR__);
@@ -171,9 +195,10 @@ class EnvConfigTest extends TestCase
     }
 
     /**
+     * @test
      * @runInSeparateProcess
      */
-    public function testHostingSpaces()
+    public function testHostingSpaces(): void
     {
         define('ABSPATH', __DIR__);
         define('WP_CONTENT_DIR', __DIR__);
@@ -187,9 +212,10 @@ class EnvConfigTest extends TestCase
     }
 
     /**
+     * @test
      * @runInSeparateProcess
      */
-    public function testGetFromNamespacedConstant()
+    public function testGetFromNamespacedConstant(): void
     {
         define(__NAMESPACE__ . '\\' . 'TEST_ME', 'Yes!');
         define('Meh\\' . 'TEST_ME_2', 'Yes (2)');
@@ -201,9 +227,10 @@ class EnvConfigTest extends TestCase
     }
 
     /**
+     * @test
      * @runInSeparateProcess
      */
-    public function testGetFromGlobalConstant()
+    public function testGetFromGlobalConstant(): void
     {
         define('TEST_ME', 'Yes!!');
 
@@ -212,7 +239,10 @@ class EnvConfigTest extends TestCase
         static::assertSame('Yes!!', $env->get('TEST_ME'));
     }
 
-    public function testGetFromEnv()
+    /**
+     * @test
+     */
+    public function testGetFromEnv(): void
     {
         $_ENV['TEST_ME'] = 'Yes!!!';
 
@@ -221,7 +251,10 @@ class EnvConfigTest extends TestCase
         static::assertSame('Yes!!!', $env->get('TEST_ME'));
     }
 
-    public function testGetFromServer()
+    /**
+     * @test
+     */
+    public function testGetFromServer(): void
     {
         $_SERVER['TEST_ME'] = 'Yes!!!!';
 
@@ -230,7 +263,10 @@ class EnvConfigTest extends TestCase
         static::assertSame('Yes!!!!', $env->get('TEST_ME'));
     }
 
-    public function testGetFromServerDoesNotWorkForHeaders()
+    /**
+     * @test
+     */
+    public function testGetFromServerDoesNotWorkForHeaders(): void
     {
         $_SERVER['HTTP_TEST_ME'] = 'No';
 

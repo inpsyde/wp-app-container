@@ -1,7 +1,8 @@
 <?xml version="1.0"?>
 <ruleset>
 
-    <file>./src/</file>
+    <file>./src</file>
+    <file>./tests/</file>
 
     <arg value="sp"/>
     <arg name="colors"/>
@@ -9,5 +10,18 @@
 
     <rule ref="Inpsyde">
         <exclude name="WordPressVIPMinimum.Constants.ConstantString.NotCheckingConstantName" />
+    </rule>
+
+    <rule ref="WordPress.Security">
+        <exclude-pattern>*/tests/*</exclude-pattern>
+    </rule>
+    <rule ref="Inpsyde.CodeQuality.FunctionLength">
+        <exclude-pattern>*/tests/*</exclude-pattern>
+    </rule>
+    <rule ref="Inpsyde.CodeQuality.NestingLevel">
+        <exclude-pattern>*/tests/*</exclude-pattern>
+    </rule>
+    <rule ref="Inpsyde.CodeQuality.ForbiddenPublicProperty">
+        <exclude-pattern>*/tests/*</exclude-pattern>
     </rule>
 </ruleset>

@@ -1,4 +1,4 @@
-<?php # -*- coding: utf-8 -*-
+<?php
 
 declare(strict_types=1);
 
@@ -10,29 +10,35 @@ use Inpsyde\App\Location\VipLocations;
 use Inpsyde\App\Tests\TestCase;
 use Brain\Monkey\Functions;
 
+/**
+ * @runTestsInSeparateProcesses
+ */
 class VipLocationsTest extends TestCase
 {
+    /**
+     * @return void
+     */
     protected function setUp(): void
     {
         parent::setUp();
 
-        Functions\when('network_site_url')->alias(function (string $path = '/'): string {
+        Functions\when('network_site_url')->alias(static function (string $path = '/'): string {
             return 'http://example.com/' . ltrim($path, '/');
         });
 
-        Functions\when('content_url')->alias(function (string $path = '/'): string {
+        Functions\when('content_url')->alias(static function (string $path = '/'): string {
             return 'http://example.com/wp-content/' . ltrim($path, '/');
         });
 
-        Functions\when('wp_normalize_path')->alias(function (string $path): string {
+        Functions\when('wp_normalize_path')->alias(static function (string $path): string {
             return str_replace('\\', '/', $path);
         });
     }
 
     /**
-     * @runInSeparateProcess
+     * @test
      */
-    public function testVipLocations()
+    public function testVipLocations(): void
     {
         $libDir = dirname(__DIR__, 3);
 
@@ -65,9 +71,9 @@ class VipLocationsTest extends TestCase
     }
 
     /**
-     * @runInSeparateProcess
+     * @test
      */
-    public function testResolveCustomLocations()
+    public function testResolveCustomLocations(): void
     {
         $libDir = dirname(__DIR__, 3);
 
@@ -81,11 +87,11 @@ class VipLocationsTest extends TestCase
             'LOCATIONS',
             [
                 LocationResolver::URL => [
-                    VipLocations::CONTENT => 'http://static.example.com'
+                    VipLocations::CONTENT => 'http://static.example.com',
                 ],
                 LocationResolver::DIR => [
-                    VipLocations::PRIVATE => '/var/www/private/'
-                ]
+                    VipLocations::PRIVATE => '/var/www/private/',
+                ],
             ]
         );
 

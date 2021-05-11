@@ -1,4 +1,4 @@
-<?php # -*- coding: utf-8 -*-
+<?php
 
 declare(strict_types=1);
 
@@ -10,29 +10,35 @@ use Inpsyde\App\Location\LocationResolver;
 use Inpsyde\App\Tests\TestCase;
 use Brain\Monkey\Functions;
 
+/**
+ * @runTestsInSeparateProcesses
+ */
 class GenericLocationsTest extends TestCase
 {
+    /**
+     * @return void
+     */
     protected function setUp(): void
     {
         parent::setUp();
 
-        Functions\when('network_site_url')->alias(function (string $path = '/'): string {
+        Functions\when('network_site_url')->alias(static function (string $path = '/'): string {
             return 'http://example.com/' . ltrim($path, '/');
         });
 
-        Functions\when('content_url')->alias(function (string $path = '/'): string {
+        Functions\when('content_url')->alias(static function (string $path = '/'): string {
             return 'http://example.com/wp-content/' . ltrim($path, '/');
         });
 
-        Functions\when('wp_normalize_path')->alias(function (string $path): string {
+        Functions\when('wp_normalize_path')->alias(static function (string $path): string {
             return str_replace('\\', '/', $path);
         });
     }
 
     /**
-     * @runInSeparateProcess
+     * @test
      */
-    public function testResolveDefaultLocations()
+    public function testResolveDefaultLocations(): void
     {
         define('ABSPATH', dirname(__DIR__, 3) . '/');
         define('WP_CONTENT_DIR', str_replace('\\', '/', dirname(__DIR__, 3)));
@@ -80,9 +86,9 @@ class GenericLocationsTest extends TestCase
     }
 
     /**
-     * @runInSeparateProcess
+     * @test
      */
-    public function testResolveCustomLocations()
+    public function testResolveCustomLocations(): void
     {
         define('ABSPATH', dirname(__DIR__, 3) . '/');
         define('WP_CONTENT_DIR', str_replace('\\', '/', dirname(__DIR__, 3)));
@@ -91,11 +97,11 @@ class GenericLocationsTest extends TestCase
             'LOCATIONS',
             [
                 LocationResolver::URL => [
-                    'foo' => 'http://example.com/foo/'
+                    'foo' => 'http://example.com/foo/',
                 ],
                 LocationResolver::DIR => [
-                    'foo' => __DIR__
-                ]
+                    'foo' => __DIR__,
+                ],
             ]
         );
 

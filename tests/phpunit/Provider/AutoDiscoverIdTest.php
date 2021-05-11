@@ -1,4 +1,4 @@
-<?php # -*- coding: utf-8 -*-
+<?php
 
 declare(strict_types=1);
 
@@ -10,8 +10,10 @@ use Inpsyde\App\Tests\TestCase;
 
 class AutoDiscoverIdTest extends TestCase
 {
-
-    public function testIdFromProperty()
+    /**
+     * @test
+     */
+    public function testIdFromProperty(): void
     {
         $provider = new class extends RegisteredOnly {
             public $id = 'hi there';
@@ -24,7 +26,10 @@ class AutoDiscoverIdTest extends TestCase
         static::assertSame('hi there', $provider->id());
     }
 
-    public function testIdFromConstant()
+    /**
+     * @test
+     */
+    public function testIdFromConstant(): void
     {
         $provider = new class extends RegisteredOnly {
             public const ID = 'constant!';
@@ -37,7 +42,10 @@ class AutoDiscoverIdTest extends TestCase
         static::assertSame('constant!', $provider->id());
     }
 
-    public function testFromClass()
+    /**
+     * @test
+     */
+    public function testFromClass(): void
     {
         $provider = new class extends RegisteredOnly {
             public function register(Container $container): bool
@@ -49,7 +57,10 @@ class AutoDiscoverIdTest extends TestCase
         static::assertStringStartsWith('class@anonymous', $provider->id());
     }
 
-    public function testFromClassNotUnique()
+    /**
+     * @test
+     */
+    public function testFromClassNotUnique(): void
     {
         $provider1 = new class extends RegisteredOnly {
             public function register(Container $container): bool

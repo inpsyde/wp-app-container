@@ -1,4 +1,4 @@
-<?php # -*- coding: utf-8 -*-
+<?php
 
 declare(strict_types=1);
 
@@ -12,102 +12,80 @@ use Psr\Container\ContainerInterface;
 class ContainerTest extends TestCase
 {
     /**
-     * @param ContainerInterface ...$containers
-     * @return Container
+     * @test
      */
-    private function newContainer(ContainerInterface ...$containers): Container
+    public function testGetFailWithTypeErrorIfNeeded(): void
     {
-        return new Container(new EnvConfig(__NAMESPACE__), $this->factoryContext(), ...$containers);
-    }
-
-    /**
-     * @param array $things
-     * @return ContainerInterface
-     */
-    private static function stubContainer(array $things) : ContainerInterface
-    {
-        return new class ($things) implements ContainerInterface {
-
-            private $things;
-
-            public function __construct(array $things)
-            {
-                $this->things = $things;
-            }
-
-            public function get($id)
-            {
-               if (!$this->has($id)) {
-                   throw new UnknownIdentifierException($id);
-               }
-
-               return $this->things[$id];
-            }
-
-            public function has($id)
-            {
-                return array_key_exists($id, $this->things);
-            }
-        };
-    }
-
-    public function testGetFailWithTypeErrorIfNeeded()
-    {
-        $container = $this->newContainer();
+        $container = $this->factoryContainer();
 
         $this->expectException(\TypeError::class);
 
         $container->get(1);
     }
 
-    public function testSetAndGetFromPimple()
+    /**
+     * @test
+     */
+    public function testSetAndGetFromPimple(): void
     {
-        $container = $this->newContainer();
+        $container = $this->factoryContainer();
 
-        $container->addService('foo', static function () {
+        $container->addService('foo', static function (): \ArrayObject {
             return new \ArrayObject(['bar' => 'baz']);
         });
 
         static::assertSame('baz', $container->get('foo')['bar']);
     }
 
-    public function testAddServiceMakeGetReturnSameInstance()
+    /**
+     * @test
+     */
+    public function testAddServiceMakeGetReturnSameInstance(): void
     {
-        $container = $this->newContainer();
+        $container = $this->factoryContainer();
 
-        $container->addService('foo', static function () {
+        $container->addService('foo', static function (): \ArrayObject {
             return new \ArrayObject(['bar' => 'baz']);
         });
 
         static::assertSame($container->get('foo'), $container->get('foo'));
     }
 
-    public function testExtendService()
+    /**
+     * @test
+     */
+    public function testExtendService(): void
     {
-        $container = $this->newContainer();
+        $container = $this->factoryContainer();
 
-        $container->addService('foo', static function () {
+        $container->addService('foo', static function (): \ArrayObject {
             return new \ArrayObject(['bar' => 'baz']);
         });
 
-        $container->addService('x', static function () {
+        $container->addService('x', static function (): \ArrayObject {
             return new \ArrayObject(['y' => 'z']);
         });
 
-        $container->extendService('foo', static function (\ArrayObject $foo, Container $container) {
-            $foo['x'] = $container->get('x')['y'];
+        $container->extendService(
+            'foo',
+            static function (\ArrayObject $foo, Container $container): \ArrayObject {
+                $foo['x'] = $container->get('x')['y'];
 
-            return $foo;
-        });
+                return $foo;
+            }
+        );
 
         static::assertSame('z', $container->get('foo')['x']);
     }
 
-    public function testAddFactoryMakeGetReturnDifferentInstances()
+    /**
+     * @test
+     */
+    public function testAddFactoryMakeGetReturnDifferentInstances(): void
     {
-        $container = $this->newContainer();
+        $container = $this->factoryContainer();
 
-        $container->addFactory('foo', static function () {
+        $container->addFactory('foo', static function (): \ArrayObject {
             return new \ArrayObject(['bar' => 'baz']);
         });
 
@@ -115,20 +93,26 @@ class ContainerTest extends TestCase
         static::assertEquals($container->get('foo'), $container->get('foo'));
     }
 
-    public function testHasFailWithTypeErrorIfNeeded()
+    /**
+     * @test
+     */
+    public function testHasFailWithTypeErrorIfNeeded(): void
     {
-        $container = $this->newContainer();
+        $container = $this->factoryContainer();
 
         $this->expectException(\TypeError::class);
 
         $container->has(1);
     }
 
-    public function testHasFromPimple()
+    /**
+     * @test
+     */
+    public function testHasFromPimple(): void
     {
-        $container = $this->newContainer();
+        $container = $this->factoryContainer();
 
-        $container->addService('foo', static function () {
+        $container->addService('foo', static function (): \ArrayObject {
             return new \ArrayObject(['bar' => 'baz']);
         });
 
@@ -136,15 +120,18 @@ class ContainerTest extends TestCase
         static::assertFalse($container->has('bar'));
     }
 
-    public function testWithMultiContainers()
+    /**
+     * @test
+     */
+    public function testWithMultiContainers(): void
     {
-        $c1 = self::stubContainer(['a' => 'A!']);
-        $c2 = self::stubContainer(['b' => 'B!']);
-        $c3 = self::stubContainer(['c' => 'C!']);
+        $cont1 = self::factoryCustomContainer(['a' => 'A!']);
+        $cont2 = self::factoryCustomContainer(['b' => 'B!']);
+        $cont3 = self::factoryCustomContainer(['c' => 'C!']);
 
-        $container = $this->newContainer($c1, $c2);
-        $container->addContainer($c3);
-        $container->addService('d', function () {
+        $container = $this->factoryContainer($cont1, $cont2);
+        $container->addContainer($cont3);
+        $container->addService('d', static function (): \ArrayObject {
             return new \ArrayObject(['d' => 'D!']);
         });
 
@@ -159,5 +146,45 @@ class ContainerTest extends TestCase
 
         static::assertTrue($container->has('d'));
         static::assertSame('D!', $container->get('d')['d']);
+    }
+
+    /**
+     * @param array $things
+     * @return ContainerInterface
+     */
+    private static function factoryCustomContainer(array $things): ContainerInterface
+    {
+        return new class ($things) implements ContainerInterface {
+
+            private $things;
+
+            public function __construct(array $things)
+            {
+                $this->things = $things;
+            }
+
+            public function get($id)
+            {
+                if (!$this->has($id)) {
+                    throw new UnknownIdentifierException($id);
+                }
+
+                return $this->things[$id];
+            }
+
+            public function has($id)
+            {
+                return array_key_exists($id, $this->things);
+            }
+        };
+    }
+
+    /**
+     * @param ContainerInterface ...$containers
+     * @return Container
+     */
+    private function factoryContainer(ContainerInterface ...$containers): Container
+    {
+        return new Container(new EnvConfig(__NAMESPACE__), $this->factoryContext(), ...$containers);
     }
 }

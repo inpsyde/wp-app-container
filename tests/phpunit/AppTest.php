@@ -1,4 +1,4 @@
-<?php # -*- coding: utf-8 -*-
+<?php
 
 declare(strict_types=1);
 
@@ -36,35 +36,10 @@ class AppTest extends TestCase
     }
 
     /**
-     * @param $id
-     * @param callable|null $register
-     * @return ServiceProvider
+     * @test
+     * @runInSeparateProcess
      */
-    private static function stubProvider($id, callable $register = null): ServiceProvider
-    {
-        return new ConfigurableProvider($id, $register ?? '__return_true', '__return_true');
-    }
-
-    /**
-     * @param string $string
-     * @return object
-     */
-    public static function stubStringObject(string $string)
-    {
-        return new class($string) {
-            private $string;
-            public function __construct(string $string)
-            {
-               $this->string = $string;
-            }
-            public function __toString()
-            {
-                return $this->string;
-            }
-        };
-    }
-
-    public function testMakeFailsIfNoAppCreated()
+    public function testMakeFailsIfNoAppCreated(): void
     {
         $this->expectException(\Exception::class);
         $this->expectExceptionMessageMatches('/no valid app/i');
@@ -72,7 +47,11 @@ class AppTest extends TestCase
         App::make('foo');
     }
 
-    public function testMakeFailsIfAppIdle()
+    /**
+     * @test
+     * @runInSeparateProcess
+     */
+    public function testMakeFailsIfAppIdle(): void
     {
         $this->expectException(\DomainException::class);
         $this->expectExceptionMessageMatches('/uninitialised/i');
@@ -84,9 +63,10 @@ class AppTest extends TestCase
     }
 
     /**
+     * @test
      * @runInSeparateProcess
      */
-    public function testMakeFailsIfNothingInTheContainer()
+    public function testMakeFailsIfNothingInTheContainer(): void
     {
         $this->expectException(NotFoundExceptionInterface::class);
 
@@ -97,9 +77,10 @@ class AppTest extends TestCase
     }
 
     /**
+     * @test
      * @runInSeparateProcess
      */
-    public function testMakeGetContainer()
+    public function testMakeGetContainer(): void
     {
         $psr11 = new \Pimple\Psr11\Container(new \Pimple\Container(['foo' => 'bar']));
 
@@ -109,10 +90,13 @@ class AppTest extends TestCase
         static::assertSame('bar', App::make('foo'));
     }
 
-    public function testDebugInfo()
+    /**
+     * @test
+     */
+    public function testDebugInfo(): void
     {
         $app = App::new()->enableDebug();
-        $app->addProvider(self::stubProvider('p1'))->addProvider(self::stubProvider('p2'));
+        $app->addProvider(self::factoryProvider('p1'))->addProvider(self::factoryProvider('p2'));
 
         $info = $app->debugInfo();
 
@@ -121,7 +105,10 @@ class AppTest extends TestCase
         static::assertSame(['p1', 'p2'], array_keys($info['providers']));
     }
 
-    public function testBootFlow()
+    /**
+     * @test
+     */
+    public function testBootFlow(): void
     {
         /** @var callable|null $onPluginsLoaded */
         $onPluginsLoaded = null;
@@ -145,9 +132,9 @@ class AppTest extends TestCase
 
         $early = new ConfigurableProvider(
             'p-early',
-            static function (Container $c): bool {
-                $c->addService('a', static function (): object {
-                    return AppTest::stubStringObject('A-');
+            static function (Container $container): bool {
+                $container->addService('a', static function (): object {
+                    return AppTest::factoryStringObject('A-');
                 });
                 return true;
             }
@@ -162,8 +149,11 @@ class AppTest extends TestCase
                         new ConfigurableProvider(
                             'p-plugins-1',
                             '__return_true',
-                            function (Container $c) {
-                                echo $c->get('a') . $c->get('b') . $c->get('c');
+                            static function (Container $container): bool {
+                                echo
+                                    $container->get('a')
+                                    . $container->get('b')
+                                    . $container->get('c');
                                 return true;
                             },
                             ConfigurableProvider::REGISTER_LATER
@@ -172,9 +162,9 @@ class AppTest extends TestCase
                     ->add(
                         new ConfigurableProvider(
                             'p-plugins-2',
-                            function (Container $c) {
-                                $c->addService('c', function () {
-                                    return AppTest::stubStringObject('C!');
+                            static function (Container $container): bool {
+                                $container->addService('c', static function (): object {
+                                    return AppTest::factoryStringObject('C!');
                                 });
 
                                 return true;
@@ -186,9 +176,9 @@ class AppTest extends TestCase
 
         $themes = new ConfigurableProvider(
             'p-themes',
-            function (Container $c) {
-                $c->addService('b', function () {
-                    return AppTest::stubStringObject('B-');
+            static function (Container $container): bool {
+                $container->addService('b', static function (): object {
+                    return AppTest::factoryStringObject('B-');
                 });
 
                 return true;
@@ -199,7 +189,15 @@ class AppTest extends TestCase
         Actions\expectDone(App::ACTION_ADD_PROVIDERS)
             ->times(3)
             ->whenHappen(
-                function (App $app, AppStatus $status) use ($early, $plugins, $themes, &$count) {
+                static function (
+                    App $app,
+                    AppStatus $status
+                ) use (
+                    $early,
+                    $plugins,
+                    $themes,
+                    &$count
+                ): void {
                     $count++;
                     switch ($count) {
                         case 1:
@@ -227,27 +225,30 @@ class AppTest extends TestCase
         $onAfterSetupTheme();
     }
 
-    public function testNestedAddProvider()
+    /**
+     * @test
+     */
+    public function testNestedAddProvider(): void
     {
-        $p1 = self::stubProvider('p1', function (Container $container) {
-            $container->addService('a', function () {
-                return AppTest::stubStringObject('A-');
+        $pro1 = self::factoryProvider('p1', static function (Container $container): bool {
+            $container->addService('a', static function (): object {
+                return AppTest::factoryStringObject('A-');
             });
 
             return true;
         });
 
-        $p2 = self::stubProvider('p2', function (Container $container) {
-            $container->addService('b', function () {
-                return AppTest::stubStringObject('B-');
+        $pro2 = self::factoryProvider('p2', static function (Container $container): bool {
+            $container->addService('b', static function (): object {
+                return AppTest::factoryStringObject('B-');
             });
 
             return true;
         });
 
-        $p3 = self::stubProvider('p3', function (Container $container) {
-            $container->addService('c', function () {
-                return AppTest::stubStringObject('C!');
+        $pro3 = self::factoryProvider('p3', static function (Container $container): bool {
+            $container->addService('c', static function (): object {
+                return AppTest::factoryStringObject('C!');
             });
 
             return true;
@@ -258,32 +259,32 @@ class AppTest extends TestCase
         Actions\expectDone(App::ACTION_ADDED_PROVIDER)
             ->times(3)
             ->with(\Mockery::type('string'), $app)
-            ->whenHappen(function (string $id, App $app) use ($p2) {
+            ->whenHappen(static function (string $id, App $app) use ($pro2): void {
                 if ($id === 'p1') {
-                    $app->addProvider($p2);
+                    $app->addProvider($pro2);
                 }
             });
 
         Actions\expectDone(App::ACTION_REGISTERED_PROVIDER)
             ->times(3)
             ->with(\Mockery::type('string'), $app)
-            ->whenHappen(function (string $id, App $app) use ($p3) {
+            ->whenHappen(static function (string $id, App $app) use ($pro3): void {
                 if ($id === 'p2') {
-                    $app->addProvider($p3);
+                    $app->addProvider($pro3);
                 }
             });
 
         Actions\expectDone(App::ACTION_BOOTED)
             ->once()
             ->with(\Mockery::type(Container::class))
-            ->whenHappen(function (Container $container) {
+            ->whenHappen(static function (Container $container): void {
                 echo $container->get('a') . $container->get('b') . $container->get('c');
             });
 
         Actions\expectDone('init')
             ->once()
-            ->whenHappen(function () use ($app, $p1) {
-                $app->addProvider($p1)->boot();
+            ->whenHappen(static function () use ($app, $pro1): void {
+                $app->addProvider($pro1)->boot();
             });
 
         $this->expectOutputString('A-B-C!');
@@ -292,16 +293,19 @@ class AppTest extends TestCase
         do_action('init');
     }
 
-    public function testCallingBootFromNestedAddProviderFails()
+    /**
+     * @test
+     */
+    public function testCallingBootFromNestedAddProviderFails(): void
     {
         $app = App::new(new Container(null, $this->factoryContext()));
 
         Actions\expectDone(App::ACTION_ADDED_PROVIDER)
             ->twice()
             ->with(\Mockery::type('string'), $app)
-            ->whenHappen(function (string $id, App $app) {
+            ->whenHappen(static function (string $id, App $app): void {
                 if ($id === 'p1') {
-                    $app->addProvider(self::stubProvider('p2'));
+                    $app->addProvider(self::factoryProvider('p2'));
                     $app->boot();
                 }
             });
@@ -309,10 +313,13 @@ class AppTest extends TestCase
         $this->expectException(\DomainException::class);
         $this->expectExceptionMessageMatches('/already booting/i');
 
-        $app->addProvider(self::stubProvider('p1'));
+        $app->addProvider(self::factoryProvider('p1'));
     }
 
-    public function testDependantProviderOnLastBootIsBooted()
+    /**
+     * @test
+     */
+    public function testDependantProviderOnLastBootIsBooted(): void
     {
         /** @var callable|null $onPluginsLoaded */
         $onPluginsLoaded = null;
@@ -322,21 +329,19 @@ class AppTest extends TestCase
 
         $dependency = new ConfigurableProvider(
             'dependency',
-            function () {
-                return true;
-            },
+            '__return_true',
             null,
             ConfigurableProvider::REGISTER_LATER
         );
 
         $dependant = new ConfigurableProvider(
             'dependant',
-            function () {
+            static function (): bool {
                 echo "I have been registered!\n";
 
                 return true;
             },
-            function () {
+            static function (): bool {
                 echo "I have been booted!";
 
                 return true;
@@ -345,20 +350,20 @@ class AppTest extends TestCase
 
         Actions\expectAdded('plugins_loaded')
             ->once()
-            ->whenHappen(function (callable $callable) use (&$onPluginsLoaded) {
+            ->whenHappen(static function (callable $callable) use (&$onPluginsLoaded) {
                 $onPluginsLoaded = $callable;
             });
 
         Actions\expectAdded('init')
             ->once()
-            ->whenHappen(function (callable $callable) use (&$onInit) {
+            ->whenHappen(static function (callable $callable) use (&$onInit) {
                 $onInit = $callable;
             });
 
         Actions\expectDone(App::ACTION_REGISTERED_PROVIDER)
             ->with($dependency->id(), \Mockery::type(App::class))
             ->once()
-            ->whenHappen(function (string $providerId, App $app) use ($dependant) {
+            ->whenHappen(static function (string $providerId, App $app) use ($dependant) {
                 static::assertTrue($app->status()->isThemesStep());
                 $app->addProvider($dependant);
             });
@@ -380,5 +385,37 @@ class AppTest extends TestCase
         $onInit();
 
         static::assertTrue($app->hasProviders($dependency->id()));
+    }
+
+    /**
+     * @param string $id
+     * @param callable|null $register
+     * @return ServiceProvider
+     */
+    private static function factoryProvider(string $id, callable $register = null): ServiceProvider
+    {
+        return new ConfigurableProvider($id, $register ?? '__return_true', '__return_true');
+    }
+
+    /**
+     * @param string $string
+     * @return object
+     */
+    public static function factoryStringObject(string $string): object
+    {
+        return new class ($string) {
+
+            private $string;
+
+            public function __construct(string $string)
+            {
+                $this->string = $string;
+            }
+
+            public function __toString()
+            {
+                return $this->string;
+            }
+        };
     }
 }

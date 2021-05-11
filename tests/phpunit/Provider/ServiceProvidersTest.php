@@ -15,15 +15,10 @@ use Inpsyde\WpContext;
 
 class ServiceProvidersTest extends TestCase
 {
-    private static function newProvider($id): ServiceProvider
-    {
-        return new ConfigurableProvider($id, '__return_true');
-    }
-
     /**
-     * @runInSeparateProcess
+     * @test
      */
-    public function testProvideApp()
+    public function testProvideApp(): void
     {
         $app = App::new(new Container(null, $this->factoryContext()));
 
@@ -40,10 +35,19 @@ class ServiceProvidersTest extends TestCase
             ->with('p3', $app);
 
         $providers = ServiceProviders::new()
-            ->add(self::newProvider('p1'))
-            ->add(self::newProvider('p2'))
-            ->add(self::newProvider('p3'), WpContext::REST);
+            ->add(self::factoryProvider('p1'))
+            ->add(self::factoryProvider('p2'))
+            ->add(self::factoryProvider('p3'), WpContext::REST);
 
         $providers->provideTo($app);
+    }
+
+    /**
+     * @param string $id
+     * @return ServiceProvider
+     */
+    private static function factoryProvider(string $id): ServiceProvider
+    {
+        return new ConfigurableProvider($id, '__return_true');
     }
 }

@@ -1,4 +1,4 @@
-<?php # -*- coding: utf-8 -*-
+<?php
 
 declare(strict_types=1);
 
@@ -10,29 +10,35 @@ use Inpsyde\App\Location\Locations;
 use Inpsyde\App\Tests\TestCase;
 use Brain\Monkey\Functions;
 
+/**
+ * @runTestsInSeparateProcesses
+ */
 class LocationResolverTest extends TestCase
 {
+    /**
+     * @return void
+     */
     protected function setUp(): void
     {
         parent::setUp();
 
-        Functions\when('network_site_url')->alias(function (string $path = '/'): string {
+        Functions\when('network_site_url')->alias(static function (string $path = '/'): string {
             return 'http://example.com/' . ltrim($path, '/');
         });
 
-        Functions\when('content_url')->alias(function (string $path = '/'): string {
+        Functions\when('content_url')->alias(static function (string $path = '/'): string {
             return 'http://example.com/wp-content/' . ltrim($path, '/');
         });
 
-        Functions\when('wp_normalize_path')->alias(function (string $path): string {
+        Functions\when('wp_normalize_path')->alias(static function (string $path): string {
             return str_replace('\\', '/', $path);
         });
     }
 
     /**
-     * @runInSeparateProcess
+     * @test
      */
-    public function testResolveInvalidLocation()
+    public function testResolveInvalidLocation(): void
     {
         define('ABSPATH', dirname(__DIR__));
         define('WP_CONTENT_DIR', __DIR__);
@@ -44,9 +50,9 @@ class LocationResolverTest extends TestCase
     }
 
     /**
-     * @runInSeparateProcess
+     * @test
      */
-    public function testResolveDefaultLocations()
+    public function testResolveDefaultLocations(): void
     {
         define('ABSPATH', dirname(__DIR__, 3) . '/');
         define('WP_CONTENT_DIR', str_replace('\\', '/', dirname(__DIR__, 3)));
@@ -73,9 +79,9 @@ class LocationResolverTest extends TestCase
     }
 
     /**
-     * @runInSeparateProcess
+     * @test
      */
-    public function testResolveOverriddenDefaultLocations()
+    public function testResolveOverriddenDefaultLocations(): void
     {
         define('ABSPATH', __DIR__ . '/');
         define('WP_CONTENT_DIR', __DIR__ . '/wp-content');
@@ -84,8 +90,8 @@ class LocationResolverTest extends TestCase
             'LOCATIONS',
             [
                 LocationResolver::URL => [
-                    Locations::ROOT => 'http://root.example.com'
-                ]
+                    Locations::ROOT => 'http://root.example.com',
+                ],
             ]
         );
 
@@ -93,10 +99,10 @@ class LocationResolverTest extends TestCase
             new EnvConfig(),
             [
                 LocationResolver::URL => [
-                    Locations::VENDOR => 'http://example.com/vendor'
+                    Locations::VENDOR => 'http://example.com/vendor',
                 ],
                 LocationResolver::DIR => [
-                    Locations::VENDOR => __DIR__ . '/vendor'
+                    Locations::VENDOR => __DIR__ . '/vendor',
                 ],
             ]
         );
@@ -122,9 +128,9 @@ class LocationResolverTest extends TestCase
     }
 
     /**
-     * @runInSeparateProcess
+     * @test
      */
-    public function testResolveCustomLocations()
+    public function testResolveCustomLocations(): void
     {
         define('ABSPATH', dirname(__DIR__, 3) . '/');
         define('WP_CONTENT_DIR', str_replace('\\', '/', dirname(__DIR__, 3)));
@@ -133,10 +139,10 @@ class LocationResolverTest extends TestCase
             new EnvConfig(),
             [
                 LocationResolver::URL => [
-                    'foo' => 'http://example.com/foo'
+                    'foo' => 'http://example.com/foo',
                 ],
                 LocationResolver::DIR => [
-                    'foo' => __DIR__
+                    'foo' => __DIR__,
                 ],
             ]
         );

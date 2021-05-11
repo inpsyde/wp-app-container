@@ -1,4 +1,4 @@
-<?php # -*- coding: utf-8 -*-
+<?php
 
 declare(strict_types=1);
 
@@ -10,29 +10,35 @@ use Inpsyde\App\Location\WpEngineLocations;
 use Inpsyde\App\Tests\TestCase;
 use Brain\Monkey\Functions;
 
+/**
+ * @runTestsInSeparateProcesses
+ */
 class WpEngineLocationsTest extends TestCase
 {
+    /**
+     * @return void
+     */
     protected function setUp(): void
     {
         parent::setUp();
 
-        Functions\when('network_site_url')->alias(function (string $path = '/'): string {
+        Functions\when('network_site_url')->alias(static function (string $path = '/'): string {
             return 'http://example.com/' . ltrim($path, '/');
         });
 
-        Functions\when('content_url')->alias(function (string $path = '/'): string {
+        Functions\when('content_url')->alias(static function (string $path = '/'): string {
             return 'http://example.com/wp-content/' . ltrim($path, '/');
         });
 
-        Functions\when('wp_normalize_path')->alias(function (string $path): string {
+        Functions\when('wp_normalize_path')->alias(static function (string $path): string {
             return str_replace('\\', '/', $path);
         });
     }
 
     /**
-     * @runInSeparateProcess
+     * @test
      */
-    public function testWpeLocations()
+    public function testWpeLocations(): void
     {
         $libDir = dirname(__DIR__, 3);
 
@@ -47,9 +53,9 @@ class WpEngineLocationsTest extends TestCase
     }
 
     /**
-     * @runInSeparateProcess
+     * @test
      */
-    public function testResolveCustomLocations()
+    public function testResolveCustomLocations(): void
     {
         $libDir = str_replace('\\', '/', dirname(__DIR__, 3));
 
@@ -60,8 +66,8 @@ class WpEngineLocationsTest extends TestCase
             'LOCATIONS',
             [
                 LocationResolver::DIR => [
-                    WpEngineLocations::PRIVATE => '/var/www/private/'
-                ]
+                    WpEngineLocations::PRIVATE => '/var/www/private/',
+                ],
             ]
         );
 

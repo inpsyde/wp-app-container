@@ -1,4 +1,4 @@
-<?php # -*- coding: utf-8 -*-
+<?php
 
 declare(strict_types=1);
 
@@ -10,7 +10,10 @@ use Inpsyde\App\ProviderStatus;
 
 class ProviderStatusTest extends TestCase
 {
-    public function testNoSkipped()
+    /**
+     * @test
+     */
+    public function testNoSkipped(): void
     {
         $appStatus = AppStatus::new();
 
@@ -27,7 +30,10 @@ class ProviderStatusTest extends TestCase
         $status->nowSkipped($appStatus); // this does not work because already skipped
     }
 
-    public function testNowAdded()
+    /**
+     * @test
+     */
+    public function testNowAdded(): void
     {
         $appStatus = AppStatus::new();
 
@@ -44,7 +50,10 @@ class ProviderStatusTest extends TestCase
         $status->nowAdded($appStatus); // this does not work because already skipped
     }
 
-    public function testNowRegisteredFailsIfNotAdded()
+    /**
+     * @test
+     */
+    public function testNowRegisteredFailsIfNotAdded(): void
     {
         $appStatus = AppStatus::new();
 
@@ -55,7 +64,10 @@ class ProviderStatusTest extends TestCase
         $status->nowRegistered($appStatus);
     }
 
-    public function testNowRegistered()
+    /**
+     * @test
+     */
+    public function testNowRegistered(): void
     {
         $appStatus = AppStatus::new();
 
@@ -80,7 +92,10 @@ class ProviderStatusTest extends TestCase
         $status1->nowRegistered($appStatus, false); // Fails because already registered
     }
 
-    public function testNowBootedFailsIfNotAddedNorRegistered()
+    /**
+     * @test
+     */
+    public function testNowBootedFailsIfNotAddedNorRegistered(): void
     {
         $appStatus = AppStatus::new();
 
@@ -91,7 +106,10 @@ class ProviderStatusTest extends TestCase
         $status->nowBooted($appStatus);
     }
 
-    public function testNowBooted()
+    /**
+     * @test
+     */
+    public function testNowBooted(): void
     {
         $appStatus = AppStatus::new();
 
@@ -118,9 +136,10 @@ class ProviderStatusTest extends TestCase
     }
 
     /**
+     * @test
      * @runInSeparateProcess
      */
-    public function testBootingPluginsStepWhatRegisteredForThemesCauseException()
+    public function testBootingPluginsStepWhatRegisteredForThemesCauseException(): void
     {
         $app = App::new();
 
@@ -146,9 +165,10 @@ class ProviderStatusTest extends TestCase
     }
 
     /**
+     * @test
      * @runInSeparateProcess
      */
-    public function testRegisteringEarlyStepWhatAddedForPluginsCauseException()
+    public function testRegisteringEarlyStepWhatAddedForPluginsCauseException(): void
     {
         $app = App::new();
 
@@ -171,9 +191,10 @@ class ProviderStatusTest extends TestCase
     }
 
     /**
+     * @test
      * @runInSeparateProcess
      */
-    public function testToString()
+    public function testToString(): void
     {
         $app = App::new();
         $appStatus = $app->status();

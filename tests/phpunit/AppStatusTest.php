@@ -1,4 +1,4 @@
-<?php # -*- coding: utf-8 -*-
+<?php
 
 declare(strict_types=1);
 
@@ -8,23 +8,27 @@ use Brain\Monkey\Actions;
 use Brain\Monkey\Functions;
 use Inpsyde\App\App;
 use Inpsyde\App\AppStatus;
+use Inpsyde\App\Container;
 
-/**
- * @runTestsInSeparateProcesses
- */
 class AppStatusTest extends TestCase
 {
-    public function testChangingLastStepHookFailsIfNotIdle()
+    /**
+     * @test
+     */
+    public function testChangingLastStepHookFailsIfNotIdle(): void
     {
         $status = AppStatus::new();
-        $status->next(App::new());
+        $status->next($this->factoryApp());
 
         $this->expectException(\DomainException::class);
 
         $status->lastStepOn('after_setup_theme');
     }
 
-    public function testInitializeFailsIfLastStepHookAlreadyDone()
+    /**
+     * @test
+     */
+    public function testInitializeFailsIfLastStepHookAlreadyDone(): void
     {
         do_action('init');
 
@@ -32,10 +36,13 @@ class AppStatusTest extends TestCase
 
         $this->expectException(\DomainException::class);
 
-        $status->next(App::new());
+        $status->next($this->factoryApp());
     }
 
-    public function testInitializeFailsIfCustomLastStepHookAlreadyDone()
+    /**
+     * @test
+     */
+    public function testInitializeFailsIfCustomLastStepHookAlreadyDone(): void
     {
         $status = AppStatus::new()->lastStepOn('after_setup_theme');
 
@@ -43,12 +50,15 @@ class AppStatusTest extends TestCase
 
         $this->expectException(\DomainException::class);
 
-        $status->next(App::new());
+        $status->next($this->factoryApp());
     }
 
-    public function testInitializeEarlyAddsTwoMoreBootActions()
+    /**
+     * @test
+     */
+    public function testInitializeEarlyAddsTwoMoreBootActions(): void
     {
-        $app = App::new();
+        $app = $this->factoryApp();
 
         Actions\expectAdded('plugins_loaded')->once()->with([$app, 'boot'], \Mockery::type('int'));
         Actions\expectAdded('init')->once()->with([$app, 'boot'], \Mockery::type('int'));
@@ -59,11 +69,14 @@ class AppStatusTest extends TestCase
         static::assertTrue($status->isRegistering());
     }
 
-    public function testInitializeEarlyAddsTwoMoreBootActionsLastCustomized()
+    /**
+     * @test
+     */
+    public function testInitializeEarlyAddsTwoMoreBootActionsLastCustomized(): void
     {
-        $app = App::new();
+        $app = $this->factoryApp();
 
-        $status = $status = AppStatus::new()->lastStepOn('foo');
+        $status = AppStatus::new()->lastStepOn('foo');
 
         Actions\expectAdded('plugins_loaded')->once()->with([$app, 'boot'], \Mockery::type('int'));
         Actions\expectAdded('foo')->once()->with([$app, 'boot'], \Mockery::type('int'));
@@ -74,9 +87,12 @@ class AppStatusTest extends TestCase
         static::assertTrue($status->isRegistering());
     }
 
-    public function testInitializeAfterPluginsLoadedAddsOneMoreBootAction()
+    /**
+     * @test
+     */
+    public function testInitializeAfterPluginsLoadedAddsOneMoreBootAction(): void
     {
-        $app = App::new();
+        $app = $this->factoryApp();
 
         do_action('plugins_loaded');
 
@@ -88,11 +104,14 @@ class AppStatusTest extends TestCase
         static::assertTrue($status->isRegistering());
     }
 
-    public function testInitializeDuringPluginsLoadedAddsOneMoreBootAction()
+    /**
+     * @return void
+     */
+    public function testInitializeDuringPluginsLoadedAddsOneMoreBootAction(): void
     {
-        $app = App::new();
+        $app = $this->factoryApp();
 
-        Actions\expectDone('plugins_loaded')->whenHappen(function () use ($app) {
+        Actions\expectDone('plugins_loaded')->whenHappen(static function () use ($app): void {
 
             Actions\expectAdded('init')->once()->with([$app, 'boot'], \Mockery::type('int'));
 
@@ -105,9 +124,12 @@ class AppStatusTest extends TestCase
         do_action('plugins_loaded');
     }
 
-    public function testInitializeDuringInitAddsNoMoreBootAction()
+    /**
+     * @test
+     */
+    public function testInitializeDuringInitAddsNoMoreBootAction(): void
     {
-        $app = App::new();
+        $app = $this->factoryApp();
 
         Functions\expect('doing_action')->atLeast()->once()->with('init')->andReturn(true);
         Functions\expect('did_action')->atLeast()->once()->with('init')->andReturn(true);
@@ -122,9 +144,12 @@ class AppStatusTest extends TestCase
         static::assertTrue($status->isRegistering());
     }
 
-    public function testInitializeDuringCustomLastStepAddsNoMoreBootAction()
+    /**
+     * @test
+     */
+    public function testInitializeDuringCustomLastStepAddsNoMoreBootAction(): void
     {
-        $app = App::new();
+        $app = $this->factoryApp();
 
         Functions\expect('doing_action')
             ->atLeast()
@@ -154,9 +179,12 @@ class AppStatusTest extends TestCase
         static::assertTrue($status->isRegistering());
     }
 
-    public function testIsAnyOf()
+    /**
+     * @test
+     */
+    public function testIsAnyOf(): void
     {
-        $app = App::new();
+        $app = $this->factoryApp();
         $status = $app->status();
 
         static::assertTrue($status->isAnyOf(AppStatus::IDLE));
@@ -164,9 +192,12 @@ class AppStatusTest extends TestCase
         static::assertFalse($status->isAnyOf(AppStatus::BOOTED_EARLY, AppStatus::BOOTED_THEMES));
     }
 
-    public function testFlowStartingEarly()
+    /**
+     * @test
+     */
+    public function testFlowStartingEarly(): void
     {
-        $app = App::new();
+        $app = $this->factoryApp();
         $status = $app->status();
 
         $this->checkAllIssers($status, 'isIdle');
@@ -194,9 +225,12 @@ class AppStatusTest extends TestCase
         $status->next($app);
     }
 
-    public function testFlowStartingAfterPluginsLoaded()
+    /**
+     * @test
+     */
+    public function testFlowStartingAfterPluginsLoaded(): void
     {
-        $app = App::new();
+        $app = $this->factoryApp();
         $status = $app->status();
 
         do_action('plugins_loaded');
@@ -220,9 +254,12 @@ class AppStatusTest extends TestCase
         $status->next($app);
     }
 
-    public function testFlowStartingOnInit()
+    /**
+     * @test
+     */
+    public function testFlowStartingOnInit(): void
     {
-        $app = App::new();
+        $app = $this->factoryApp();
         $status = $app->status();
 
         Functions\expect('doing_action')->atLeast()->once()->with('init')->andReturn(true);
@@ -246,7 +283,7 @@ class AppStatusTest extends TestCase
      * @param AppStatus $status
      * @param string ...$true
      */
-    private function checkAllIssers(AppStatus $status, string ...$true)
+    private function checkAllIssers(AppStatus $status, string ...$true): void
     {
         $methods = [
             'isIdle',
@@ -264,5 +301,13 @@ class AppStatusTest extends TestCase
                 ? static::assertTrue($status->{$method}())
                 : static::assertFalse($status->{$method}());
         }
+    }
+
+    /**
+     * @return App
+     */
+    private function factoryApp(): App
+    {
+        return App::new(new Container(null, $this->factoryContext()));
     }
 }

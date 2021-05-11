@@ -1,4 +1,4 @@
-<?php # -*- coding: utf-8 -*-
+<?php
 
 declare(strict_types=1);
 
@@ -7,22 +7,16 @@ namespace Inpsyde\App\Tests;
 use Inpsyde\App\App;
 use Inpsyde\App\AppLogger;
 use Inpsyde\App\AppStatus;
+use Inpsyde\App\Container;
 use Inpsyde\App\Provider\ConfigurableProvider;
 use Inpsyde\App\Provider\ServiceProvider;
 use Inpsyde\App\ProviderStatus;
 
 class AppLoggerTest extends TestCase
 {
-    private static function newProvider($id, $delayed = false): ServiceProvider
-    {
-        return new ConfigurableProvider(
-            $id,
-            null,
-            null,
-            $delayed ? ConfigurableProvider::REGISTER_LATER : 0
-        );
-    }
-
+    /**
+     * @test
+     */
     public function testThatNoLoggingHappenIfDebugIsDisabled()
     {
         $logger = AppLogger::new();
@@ -30,42 +24,42 @@ class AppLoggerTest extends TestCase
 
         $status = AppStatus::new();
 
-        $logger->providerAdded(static::newProvider('p1'), $status);
-        $logger->providerAdded(static::newProvider('p2'), $status);
-        $logger->providerAdded(static::newProvider('p3'), $status);
+        $logger->providerAdded(static::factoryProvider('p1'), $status);
+        $logger->providerAdded(static::factoryProvider('p2'), $status);
+        $logger->providerAdded(static::factoryProvider('p3'), $status);
 
         static::assertNull($logger->dump());
     }
 
     /**
-     * @runInSeparateProcess
+     * @test
      */
-    public function testLoggingHappenIfDebugIsEnabled()
+    public function testLoggingHappenIfDebugIsEnabled(): void
     {
         $logger = AppLogger::new();
         $logger->enableDebug();
 
-        $app = App::new();
+        $app = App::new(new Container(null, $this->factoryContext()));
         $appStatus = AppStatus::new();
         // status: AppStatus::IDLE
 
-        $logger->providerAdded(static::newProvider('p1'), $appStatus);
-        $logger->providerRegistered(static::newProvider('p1'), $appStatus);
+        $logger->providerAdded(static::factoryProvider('p1'), $appStatus);
+        $logger->providerRegistered(static::factoryProvider('p1'), $appStatus);
 
         $appStatus->next($app);
         // status: AppStatus::REGISTERING_EARLY
 
-        $logger->providerAdded(static::newProvider('p2'), $appStatus);
-        $logger->providerRegistered(static::newProvider('p2'), $appStatus);
+        $logger->providerAdded(static::factoryProvider('p2'), $appStatus);
+        $logger->providerRegistered(static::factoryProvider('p2'), $appStatus);
 
         $appStatus->next($app);
         // status: AppStatus::BOOTING_EARLY
 
-        $logger->providerAdded(static::newProvider('p3'), $appStatus);
-        $logger->providerSkipped(static::newProvider('p4'), $appStatus);
+        $logger->providerAdded(static::factoryProvider('p3'), $appStatus);
+        $logger->providerSkipped(static::factoryProvider('p4'), $appStatus);
 
-        $logger->providerAdded(static::newProvider('p5'), $appStatus);
-        $logger->providerRegistered(static::newProvider('p5', true), $appStatus);
+        $logger->providerAdded(static::factoryProvider('p5'), $appStatus);
+        $logger->providerRegistered(static::factoryProvider('p5', true), $appStatus);
 
         $appStatus->next($app);
         // status: AppStatus::BOOTED_EARLY
@@ -76,7 +70,7 @@ class AppLoggerTest extends TestCase
         $appStatus->next($app);
         // status: AppStatus::BOOTING_PLUGINS
 
-        $logger->providerBooted(static::newProvider('p1'), $appStatus);
+        $logger->providerBooted(static::factoryProvider('p1'), $appStatus);
 
         $dump = $logger->dump();
 
@@ -122,6 +116,21 @@ class AppLoggerTest extends TestCase
                 ProviderStatus::REGISTERED_DELAYED => AppStatus::BOOTING_EARLY,
             ],
             $dump['p5']
+        );
+    }
+
+    /**
+     * @param string $id
+     * @param bool $delayed
+     * @return ServiceProvider
+     */
+    private static function factoryProvider(string $id, bool $delayed = false): ServiceProvider
+    {
+        return new ConfigurableProvider(
+            $id,
+            null,
+            null,
+            $delayed ? ConfigurableProvider::REGISTER_LATER : 0
         );
     }
 }
