@@ -18,6 +18,8 @@
     ],
     "require": {
         "php": "^7.2.5",
+        "ext-json": "*",
+        "inpsyde/wp-context": "^1.2",
         "pimple/pimple": "~3.3.1"
     },
     "require-dev": {

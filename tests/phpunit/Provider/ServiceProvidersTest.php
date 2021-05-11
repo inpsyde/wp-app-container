@@ -1,4 +1,4 @@
-<?php # -*- coding: utf-8 -*-
+<?php
 
 declare(strict_types=1);
 
@@ -6,11 +6,12 @@ namespace Inpsyde\App\Tests\Provider;
 
 use Brain\Monkey\Actions;
 use Inpsyde\App\App;
-use Inpsyde\App\Context;
+use Inpsyde\App\Container;
 use Inpsyde\App\Provider\ConfigurableProvider;
 use Inpsyde\App\Provider\ServiceProvider;
 use Inpsyde\App\Provider\ServiceProviders;
 use Inpsyde\App\Tests\TestCase;
+use Inpsyde\WpContext;
 
 class ServiceProvidersTest extends TestCase
 {
@@ -24,9 +25,7 @@ class ServiceProvidersTest extends TestCase
      */
     public function testProvideApp()
     {
-        $this->mockContext();
-
-        $app = App::new();
+        $app = App::new(new Container(null, $this->factoryContext()));
 
         Actions\expectDone(App::ACTION_REGISTERED_PROVIDER)
             ->once()
@@ -43,7 +42,7 @@ class ServiceProvidersTest extends TestCase
         $providers = ServiceProviders::new()
             ->add(self::newProvider('p1'))
             ->add(self::newProvider('p2'))
-            ->add(self::newProvider('p3'), Context::REST);
+            ->add(self::newProvider('p3'), WpContext::REST);
 
         $providers->provideTo($app);
     }

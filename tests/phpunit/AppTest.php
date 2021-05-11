@@ -9,7 +9,6 @@ use Brain\Monkey\Functions;
 use Inpsyde\App\App;
 use Inpsyde\App\AppStatus;
 use Inpsyde\App\Container;
-use Inpsyde\App\Context;
 use Inpsyde\App\EnvConfig;
 use Inpsyde\App\Provider\ConfigurableProvider;
 use Inpsyde\App\Provider\Package;
@@ -17,9 +16,6 @@ use Inpsyde\App\Provider\ServiceProvider;
 use Inpsyde\App\Provider\ServiceProviders;
 use Psr\Container\NotFoundExceptionInterface;
 
-/**
- * @runTestsInSeparateProcesses
- */
 class AppTest extends TestCase
 {
     /**
@@ -34,11 +30,9 @@ class AppTest extends TestCase
         Actions\expectDone(App::ACTION_ERROR)
             ->with(\Mockery::type(\Throwable::class))
             ->zeroOrMoreTimes()
-            ->whenHappen(
-                function (\Throwable $throwable) {
-                    throw $throwable;
-                }
-            );
+            ->whenHappen(static function (\Throwable $throwable) {
+                throw $throwable;
+            });
     }
 
     /**
@@ -83,27 +77,33 @@ class AppTest extends TestCase
         $this->expectException(\DomainException::class);
         $this->expectExceptionMessageMatches('/uninitialised/i');
 
-        $container = new Container(new EnvConfig(), Context::create());
+        $container = new Container(new EnvConfig());
         App::new($container);
 
         App::make('foo');
     }
 
+    /**
+     * @runInSeparateProcess
+     */
     public function testMakeFailsIfNothingInTheContainer()
     {
         $this->expectException(NotFoundExceptionInterface::class);
 
-        $container = new Container(new EnvConfig(), Context::create());
+        $container = new Container(new EnvConfig(), $this->factoryContext());
         App::new($container)->boot();
 
         App::make('foo');
     }
 
+    /**
+     * @runInSeparateProcess
+     */
     public function testMakeGetContainer()
     {
         $psr11 = new \Pimple\Psr11\Container(new \Pimple\Container(['foo' => 'bar']));
 
-        $container = new Container(new EnvConfig(), Context::create(), $psr11);
+        $container = new Container(new EnvConfig(), $this->factoryContext(), $psr11);
         App::new($container)->boot();
 
         static::assertSame('bar', App::make('foo'));
@@ -123,8 +123,6 @@ class AppTest extends TestCase
 
     public function testBootFlow()
     {
-        $this->mockContext();
-
         /** @var callable|null $onPluginsLoaded */
         $onPluginsLoaded = null;
         /** @var callable|null $onAfterSetupTheme */
@@ -132,13 +130,13 @@ class AppTest extends TestCase
 
         Actions\expectAdded('plugins_loaded')
             ->once()
-            ->whenHappen(function (callable $callable) use (&$onPluginsLoaded) {
+            ->whenHappen(static function (callable $callable) use (&$onPluginsLoaded) {
                 $onPluginsLoaded = $callable;
             });
 
         Actions\expectAdded('after_setup_theme')
             ->once()
-            ->whenHappen(function (callable $callable) use (&$onAfterSetupTheme) {
+            ->whenHappen(static function (callable $callable) use (&$onAfterSetupTheme) {
                 $onAfterSetupTheme = $callable;
             });
 
@@ -147,11 +145,10 @@ class AppTest extends TestCase
 
         $early = new ConfigurableProvider(
             'p-early',
-            function (Container $c) {
-                $c->addService('a', function () {
+            static function (Container $c): bool {
+                $c->addService('a', static function (): object {
                     return AppTest::stubStringObject('A-');
                 });
-
                 return true;
             }
         );
@@ -223,7 +220,8 @@ class AppTest extends TestCase
 
         $this->expectOutputString('A-B-C!');
 
-        App::new()->runLastBootAt('after_setup_theme')->boot();
+        $container = new Container(null, $this->factoryContext());
+        App::new($container)->runLastBootAt('after_setup_theme')->boot();
 
         $onPluginsLoaded();
         $onAfterSetupTheme();
@@ -231,8 +229,6 @@ class AppTest extends TestCase
 
     public function testNestedAddProvider()
     {
-        $this->mockContext();
-
         $p1 = self::stubProvider('p1', function (Container $container) {
             $container->addService('a', function () {
                 return AppTest::stubStringObject('A-');
@@ -257,7 +253,7 @@ class AppTest extends TestCase
             return true;
         });
 
-        $app = App::new();
+        $app = App::new(new Container(null, $this->factoryContext()));
 
         Actions\expectDone(App::ACTION_ADDED_PROVIDER)
             ->times(3)
@@ -298,9 +294,7 @@ class AppTest extends TestCase
 
     public function testCallingBootFromNestedAddProviderFails()
     {
-        $this->mockContext();
-
-        $app = App::new();
+        $app = App::new(new Container(null, $this->factoryContext()));
 
         Actions\expectDone(App::ACTION_ADDED_PROVIDER)
             ->twice()
@@ -320,8 +314,6 @@ class AppTest extends TestCase
 
     public function testDependantProviderOnLastBootIsBooted()
     {
-        $this->mockContext();
-
         /** @var callable|null $onPluginsLoaded */
         $onPluginsLoaded = null;
 
@@ -381,7 +373,7 @@ class AppTest extends TestCase
 
         $this->expectOutputString("I have been registered!\nI have been booted!");
 
-        $app = App::new();
+        $app = App::new(new Container(null, $this->factoryContext()));
         $app->addProvider($dependency)->boot();
 
         $onPluginsLoaded();

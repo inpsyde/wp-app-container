@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Inpsyde\App;
 
+use Inpsyde\WpContext;
 use Pimple;
 use Pimple\Exception\UnknownIdentifierException;
 use Psr\Container\ContainerInterface;
@@ -20,7 +21,7 @@ final class Container implements ContainerInterface
     private $config;
 
     /**
-     * @var Context
+     * @var WpContext
      */
     private $context;
 
@@ -36,17 +37,17 @@ final class Container implements ContainerInterface
 
     /**
      * @param SiteConfig|null $config
-     * @param Context|null $context
+     * @param WpContext|null $context
      * @param ContainerInterface ...$containers
      */
     public function __construct(
         SiteConfig $config = null,
-        Context $context = null,
+        WpContext $context = null,
         ContainerInterface ...$containers
     ) {
 
         $this->config = $config ?? new EnvConfig();
-        $this->context = $context ?? Context::create();
+        $this->context = $context ?? WpContext::determine();
         $this->containers = $containers;
         if (!$containers) {
             $this->ensurePimple();
@@ -54,6 +55,7 @@ final class Container implements ContainerInterface
     }
 
     /**
+     * @param SiteConfig $config
      * @return Container
      */
     public function withSiteConfig(SiteConfig $config): Container
@@ -73,9 +75,9 @@ final class Container implements ContainerInterface
     }
 
     /**
-     * @return Context
+     * @return WpContext
      */
-    public function context(): Context
+    public function context(): WpContext
     {
         return $this->context;
     }

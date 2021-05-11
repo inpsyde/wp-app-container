@@ -6,6 +6,7 @@ namespace Inpsyde\App;
 
 use Inpsyde\App\Provider\Package;
 use Inpsyde\App\Provider\ServiceProvider;
+use Inpsyde\WpContext;
 use Pimple\Exception\UnknownIdentifierException;
 
 final class App
@@ -237,7 +238,7 @@ final class App
     public function addProvider(ServiceProvider $provider, string ...$contexts): App
     {
         try {
-            $contexts or $contexts = [Context::CORE];
+            $contexts or $contexts = [WpContext::CORE];
 
             $this->initializeContainer();
 

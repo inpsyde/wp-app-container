@@ -338,15 +338,15 @@ At package level there are two ways to register services (will be shown later), 
 namespace AcmeInc\Foo;
 
 use Inpsyde\App\App;
-use Inpsyde\App\Context;
+use Inpsyde\WpContext;
 
 add_action(
     App::ACTION_ADD_PROVIDERS,
     function (App $app) {
         $app
-            ->addProvider(new MainProvider(), Context::CORE)
-            ->addProvider(new CronRestProvider(), Context::CRON, Context::REST)
-            ->addProvider(new AdminProvider(), Context::BACKOFFICE);
+            ->addProvider(new MainProvider(), WpContext::CORE)
+            ->addProvider(new CronRestProvider(), WpContext::CRON, WpContext::REST)
+            ->addProvider(new AdminProvider(), WpContext::BACKOFFICE);
     }
 );
 ```
@@ -383,14 +383,14 @@ This hook is fired right after any provider is registered. Using this hook it is
 namespace AcmeInc\Foo\Extension;
 
 use Inpsyde\App\App;
-use Inpsyde\App\Context;
+use Inpsyde\WpContext;
 use AcmeInc\Foo\MainProvider;
 
 add_action(
     App::ACTION_REGISTERED_PROVIDER,
     function (string $providerId, App $app) {
         if ($providerId === MainProvider::class) {
-            $app->addProvider(new ExtensionProvider(), Context::CORE);
+            $app->addProvider(new ExtensionProvider(), WpContext::CORE);
         }
     },
     10,
@@ -664,17 +664,17 @@ What we would do **in the package** is to create a package class, that will impl
 namespace AcmeInc\Auth;
 
 use Inpsyde\App\Provider;
-use Inpsyde\App\Context;
+use Inpsyde\WpContext;
 
 class Auth implements Provider\Package
 {
     public function providers(): Provider\ServiceProviders
     {
         return Provider\ServiceProviders::new()
-            ->add(new CoreProvider(), Context::CORE)
-            ->add(new AdminProvider(), Context::BACKOFFICE, Context::AJAX)
-            ->add(new RestProvider(), Context::REST, Context::AJAX)
-            ->add(new FrontProvider(), Context::FRONTOFFICE, Context::AJAX);
+            ->add(new CoreProvider(), WpContext::CORE)
+            ->add(new AdminProvider(), WpContext::BACKOFFICE, WpContext::AJAX)
+            ->add(new RestProvider(), WpContext::REST, WpContext::AJAX)
+            ->add(new FrontProvider(), WpContext::FRONTOFFICE, WpContext::AJAX);
     }
 }
 ```
@@ -739,7 +739,7 @@ function app(): App\App
         $env = new App\EnvConfig(__NAMESPACE__ . '\\Config', __NAMESPACE__); 
         
         // Build the App container using custom config class
-        $container = new App\Container($env, App\Context::create());
+        $container = new App\Container($env);
         
         // Create PSR-11 container and push into the App container
         $diBuilder = new \DI\ContainerBuilder();

@@ -4,10 +4,7 @@ declare(strict_types=1);
 
 namespace Inpsyde\App\Tests;
 
-use Brain\Monkey\Actions;
-use Inpsyde\App\App;
 use Inpsyde\App\Container;
-use Inpsyde\App\Context;
 use Inpsyde\App\EnvConfig;
 use Pimple\Exception\UnknownIdentifierException;
 use Psr\Container\ContainerInterface;
@@ -18,9 +15,9 @@ class ContainerTest extends TestCase
      * @param ContainerInterface ...$containers
      * @return Container
      */
-    private static function newContainer(ContainerInterface ...$containers): Container
+    private function newContainer(ContainerInterface ...$containers): Container
     {
-        return new Container(new EnvConfig(__NAMESPACE__), Context::create(), ...$containers);
+        return new Container(new EnvConfig(__NAMESPACE__), $this->factoryContext(), ...$containers);
     }
 
     /**
@@ -56,7 +53,7 @@ class ContainerTest extends TestCase
 
     public function testGetFailWithTypeErrorIfNeeded()
     {
-        $container = static::newContainer();
+        $container = $this->newContainer();
 
         $this->expectException(\TypeError::class);
 
@@ -65,7 +62,7 @@ class ContainerTest extends TestCase
 
     public function testSetAndGetFromPimple()
     {
-        $container = static::newContainer();
+        $container = $this->newContainer();
 
         $container->addService('foo', static function () {
             return new \ArrayObject(['bar' => 'baz']);
@@ -76,7 +73,7 @@ class ContainerTest extends TestCase
 
     public function testAddServiceMakeGetReturnSameInstance()
     {
-        $container = static::newContainer();
+        $container = $this->newContainer();
 
         $container->addService('foo', static function () {
             return new \ArrayObject(['bar' => 'baz']);
@@ -87,7 +84,7 @@ class ContainerTest extends TestCase
 
     public function testExtendService()
     {
-        $container = static::newContainer();
+        $container = $this->newContainer();
 
         $container->addService('foo', static function () {
             return new \ArrayObject(['bar' => 'baz']);
@@ -108,7 +105,7 @@ class ContainerTest extends TestCase
 
     public function testAddFactoryMakeGetReturnDifferentInstances()
     {
-        $container = static::newContainer();
+        $container = $this->newContainer();
 
         $container->addFactory('foo', static function () {
             return new \ArrayObject(['bar' => 'baz']);
@@ -120,7 +117,7 @@ class ContainerTest extends TestCase
 
     public function testHasFailWithTypeErrorIfNeeded()
     {
-        $container = static::newContainer();
+        $container = $this->newContainer();
 
         $this->expectException(\TypeError::class);
 
@@ -129,7 +126,7 @@ class ContainerTest extends TestCase
 
     public function testHasFromPimple()
     {
-        $container = static::newContainer();
+        $container = $this->newContainer();
 
         $container->addService('foo', static function () {
             return new \ArrayObject(['bar' => 'baz']);
@@ -145,7 +142,7 @@ class ContainerTest extends TestCase
         $c2 = self::stubContainer(['b' => 'B!']);
         $c3 = self::stubContainer(['c' => 'C!']);
 
-        $container = static::newContainer($c1, $c2);
+        $container = $this->newContainer($c1, $c2);
         $container->addContainer($c3);
         $container->addService('d', function () {
             return new \ArrayObject(['d' => 'D!']);
