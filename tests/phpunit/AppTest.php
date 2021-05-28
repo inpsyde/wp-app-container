@@ -105,10 +105,20 @@ class AppTest extends TestCase
         static::assertSame(['p1', 'p2'], array_keys($info['providers']));
     }
 
+    public function debugProvider(): array
+    {
+        return [
+            'debug disabled' => [false],
+            'debug enabled' => [true],
+        ];
+    }
+
     /**
      * @test
+     * @dataProvider debugProvider
+     * @param bool $isDebug
      */
-    public function testBootFlow(): void
+    public function testBootFlow(bool $isDebug): void
     {
         /** @var callable|null $onPluginsLoaded */
         $onPluginsLoaded = null;
@@ -219,7 +229,11 @@ class AppTest extends TestCase
         $this->expectOutputString('A-B-C!');
 
         $container = new Container(null, $this->factoryContext());
-        App::new($container)->runLastBootAt('after_setup_theme')->boot();
+        $app = App::new($container)->runLastBootAt('after_setup_theme');
+        if ($isDebug) {
+            $app->enableDebug();
+        }
+        $app->boot();
 
         $onPluginsLoaded();
         $onAfterSetupTheme();
@@ -227,8 +241,10 @@ class AppTest extends TestCase
 
     /**
      * @test
+     * @dataProvider debugProvider
+     * @param bool $isDebug
      */
-    public function testNestedAddProvider(): void
+    public function testNestedAddProvider(bool $isDebug): void
     {
         $pro1 = self::factoryProvider('p1', static function (Container $container): bool {
             $container->addService('a', static function (): object {
@@ -255,6 +271,9 @@ class AppTest extends TestCase
         });
 
         $app = App::new(new Container(null, $this->factoryContext()));
+        if ($isDebug) {
+            $app->enableDebug();
+        }
 
         Actions\expectDone(App::ACTION_ADDED_PROVIDER)
             ->times(3)
@@ -295,10 +314,15 @@ class AppTest extends TestCase
 
     /**
      * @test
+     * @dataProvider debugProvider
+     * @param bool $isDebug
      */
-    public function testCallingBootFromNestedAddProviderFails(): void
+    public function testCallingBootFromNestedAddProviderFails(bool $isDebug): void
     {
         $app = App::new(new Container(null, $this->factoryContext()));
+        if ($isDebug) {
+            $app->enableDebug();
+        }
 
         Actions\expectDone(App::ACTION_ADDED_PROVIDER)
             ->twice()
@@ -318,8 +342,10 @@ class AppTest extends TestCase
 
     /**
      * @test
+     * @dataProvider debugProvider
+     * @param bool $isDebug
      */
-    public function testDependantProviderOnLastBootIsBooted(): void
+    public function testDependantProviderOnLastBootIsBooted(bool $isDebug): void
     {
         /** @var callable|null $onPluginsLoaded */
         $onPluginsLoaded = null;
@@ -379,6 +405,9 @@ class AppTest extends TestCase
         $this->expectOutputString("I have been registered!\nI have been booted!");
 
         $app = App::new(new Container(null, $this->factoryContext()));
+        if ($isDebug) {
+            $app->enableDebug();
+        }
         $app->addProvider($dependency)->boot();
 
         $onPluginsLoaded();
