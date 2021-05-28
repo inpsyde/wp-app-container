@@ -22,7 +22,7 @@ jobs:
                 run: composer install -q -n -a --no-progress --prefer-dist
 
             -   name: Run unit tests
-                run: ./vendor/bin/phpunit --testsuite=unit --no-coverage
+                run: ./vendor/bin/phpunit --testsuite=all --no-coverage
 
             -   name: Check code styles
                 run: ./vendor/bin/phpcs
