@@ -43,10 +43,6 @@ jobs:
                     dependency-versions: ${{ matrix.prefer }}
                     composer-options: ${{ matrix.ignore-platform }}
 
-            -   name: Migrate PHPUnit config for PHPUnit 9
-                if: ${{ (matrix.php >= 7.3) && (matrix.prefer == 'highest') }}
-                run: ./vendor/bin/phpunit --migrate-configuration
-
             -   name: Run unit tests
                 run: ./vendor/bin/phpunit
 
