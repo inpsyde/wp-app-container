@@ -4,34 +4,16 @@ declare(strict_types=1);
 
 namespace Inpsyde\App\Provider;
 
-use Inpsyde\App\Container;
+use Inpsyde\Modularity\Module as Modularity;
 
-interface ServiceProvider
+interface ServiceProvider extends
+    Modularity\Module,
+    Modularity\ServiceModule,
+    Modularity\ExecutableModule,
+    Modularity\ExtendingModule,
+    Modularity\FactoryModule
 {
-    /**
-     * @return string
-     */
-    public function id(): string;
-
-    /**
-     * @return bool
-     */
     public function registerLater(): bool;
 
-    /**
-     * @param Container $container
-     * @return bool
-     */
-    public function register(Container $container): bool;
-
-    /**
-     * @return bool
-     */
     public function bootEarly(): bool;
-
-    /**
-     * @param Container $container
-     * @return bool
-     */
-    public function boot(Container $container): bool;
 }

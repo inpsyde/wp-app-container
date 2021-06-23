@@ -8,7 +8,6 @@ use Brain\Monkey\Actions;
 use Brain\Monkey\Functions;
 use Inpsyde\App\App;
 use Inpsyde\App\AppStatus;
-use Inpsyde\App\Container;
 
 class AppStatusTest extends TestCase
 {
@@ -20,7 +19,7 @@ class AppStatusTest extends TestCase
         $status = AppStatus::new();
         $status->next($this->factoryApp());
 
-        $this->expectException(\DomainException::class);
+        $this->expectException(\Error::class);
 
         $status->lastStepOn('after_setup_theme');
     }
@@ -308,6 +307,6 @@ class AppStatusTest extends TestCase
      */
     private function factoryApp(): App
     {
-        return App::new(new Container(null, $this->factoryContext()));
+        return App::new(null, null, $this->factoryContext());
     }
 }

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Inpsyde\App\Tests\Provider;
 
-use Inpsyde\App\Container;
 use Inpsyde\App\Provider\RegisteredOnly;
 use Inpsyde\App\Tests\TestCase;
 
@@ -15,11 +14,11 @@ class AutoDiscoverIdTest extends TestCase
      */
     public function testIdFromProperty(): void
     {
-        $provider = new class extends RegisteredOnly {
+        $provider = new class () extends RegisteredOnly {
             public $id = 'hi there';
-            public function register(Container $container): bool
+            public function services(): array
             {
-                return false;
+                return [];
             }
         };
 
@@ -29,28 +28,12 @@ class AutoDiscoverIdTest extends TestCase
     /**
      * @test
      */
-    public function testIdFromConstant(): void
-    {
-        $provider = new class extends RegisteredOnly {
-            public const ID = 'constant!';
-            public function register(Container $container): bool
-            {
-                return false;
-            }
-        };
-
-        static::assertSame('constant!', $provider->id());
-    }
-
-    /**
-     * @test
-     */
     public function testFromClass(): void
     {
-        $provider = new class extends RegisteredOnly {
-            public function register(Container $container): bool
+        $provider = new class () extends RegisteredOnly {
+            public function services(): array
             {
-                return false;
+                return [];
             }
         };
 
@@ -62,10 +45,10 @@ class AutoDiscoverIdTest extends TestCase
      */
     public function testFromClassNotUnique(): void
     {
-        $provider1 = new class extends RegisteredOnly {
-            public function register(Container $container): bool
+        $provider1 = new class () extends RegisteredOnly {
+            public function services(): array
             {
-                return false;
+                return [];
             }
         };
 
@@ -77,8 +60,16 @@ class AutoDiscoverIdTest extends TestCase
         $three =  $provider3->id();
 
         static::assertStringStartsWith('class@anonymous', $one);
-        static::assertSame("{$one}_2", $two);
-        static::assertStringEndsWith("{$one}_3", $three);
+        static::assertStringStartsWith('class@anonymous', $two);
+        static::assertStringStartsWith('class@anonymous', $three);
+
+        static::assertNotFalse(preg_match('~^class@anonymous_[a-f0-9]+$~', $one));
+        static::assertNotFalse(preg_match('~^class@anonymous_[a-f0-9]+$~', $two));
+        static::assertNotFalse(preg_match('~^class@anonymous_[a-f0-9]+$~', $three));
+
+        static::assertNotSame($one, $two);
+        static::assertNotSame($one, $three);
+        static::assertNotSame($two, $three);
 
         static::assertSame($one, $provider1->id());
         static::assertSame($one, $provider1->id());

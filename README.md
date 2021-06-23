@@ -139,7 +139,7 @@ namespace AcmeInc;
 
 use Inpsyde\App;
 
-$container = new App\Container(new App\EnvConfig('AcmeInc\Config', 'AcmeInc'));
+$container = new App\CompositeContainer(new App\EnvConfig('AcmeInc\Config', 'AcmeInc'));
 App\App::new($container)->boot();
 ```
 
@@ -157,7 +157,7 @@ it will be possible to do:
 
 ```php
 <?php
-/** @var Inpsyde\App\Container $container */
+/** @var Inpsyde\App\CompositeContainer $container */
 $container->config()->get('ONE'); // 1
 $container->config()->get('TWO'); // 2
 ```
@@ -166,7 +166,7 @@ Note that `EnvConfig::get()` accepts an optional second `$default` parameter to 
 
 ```php
 <?php
-/** @var Inpsyde\App\Container $container */
+/** @var Inpsyde\App\CompositeContainer $container */
 $container->config()->get('SOMETHING_NOT_DEFINED', 3); // 3
 ```
 
@@ -234,15 +234,15 @@ For example:
 namespace AwesomeWebsite\Config;
  
 use Inpsyde\App\Location\Locations;
-use Inpsyde\App\Location\LocationResolver;
+use Inpsyde\App\Location\Locations;
 
 const LOCATIONS = [
-    LocationResolver::URL => [
+    Locations::URL => [
         Locations::VENDOR => 'http://example.com/wp/wp-content/composer/vendor/',
         Locations::ROOT => __DIR__,
         Locations::CONTENT => 'http://content.example.com/',
     ],
-    LocationResolver::DIR => [
+    Locations::DIR => [
         Locations::VENDOR => '/var/www/wp/wp-content/composer/vendor/',
         Locations::ROOT => dirname(__DIR__),
         Locations::CONTENT => '/var/www/content/',
@@ -265,10 +265,10 @@ For example:
 ```php
 namespace AwesomeWebsite\Config;
  
-use Inpsyde\App\Location\LocationResolver;
+use Inpsyde\App\Location\Locations;
 
 const LOCATIONS = [
-    LocationResolver::DIR => [
+    Locations::DIR => [
         'logs' => '/var/www/logs/',
     ],
 ];
@@ -387,7 +387,7 @@ use Inpsyde\WpContext;
 use AcmeInc\Foo\MainProvider;
 
 add_action(
-    App::ACTION_REGISTERED_PROVIDER,
+    App::ACTION_REGISTERED_MODULE,
     function (string $providerId, App $app) {
         if ($providerId === MainProvider::class) {
             $app->addProvider(new ExtensionProvider(), WpContext::CORE);
@@ -537,27 +537,27 @@ Besides the two PSR-11 methods, the container has the methods:
 <?php
 namespace AcmeInc\Redirector;
 
-use Inpsyde\App\Container;
+use Inpsyde\App\CompositeContainer;
 use Inpsyde\App\Provider\Booted;
 
 final class Provider extends Booted {
     
     private const CONFIG_KEY = 'REDIRECTOR_CONFIG';
    
-    public function register(Container $container): bool
+    public function register(CompositeContainer $container): bool
     {
         // class names are used as service ids...
       
         $container->addService(
             Config::class,
-            static function (Container $container): Config {
+            static function (CompositeContainer $container): Config {
                 return Config::load($container->config()->get(self::CONFIG_KEY));
             }
         );
         
         $container->addService(
             Redirector::class,
-            static function (Container $container): Redirector {
+            static function (CompositeContainer $container): Redirector {
                 return new Redirector($container->get(Config::class));
             }
         );
@@ -565,7 +565,7 @@ final class Provider extends Booted {
         return true;
     }
     
-    public function boot(Container $container): bool
+    public function boot(CompositeContainer $container): bool
     {
         return add_action(
             'template_redirect',
@@ -590,11 +590,11 @@ In the following example I will use [PHP-DI](http://php-di.org), but any PSR-11-
 namespace AcmeInc\Redirector;
 
 use Inpsyde\App\Provider\Booted;
-use Inpsyde\App\Container;
+use Inpsyde\App\CompositeContainer;
 
 final class Provider extends Booted {
    
-    public function register(Container $container): bool
+    public function register(CompositeContainer $container): bool
     {
         $diBuilder = new \DI\ContainerBuilder();
         
@@ -611,7 +611,7 @@ final class Provider extends Booted {
         return true;
     }
     
-    public function boot(Container $container): bool
+    public function boot(CompositeContainer $container): bool
     {
         return add_action(
             'template_redirect',
@@ -685,7 +685,7 @@ With such class in place (and autoloadable), in the MU plugin that bootstrap the
 <?php
 namespace AcmeInc;
 
-\Inpsyde\App\App::new()->addPackage(new Auth\Auth());
+\Inpsyde\App\App::new()->addProvidersPackage(new Auth\Auth());
 ```
 
 
@@ -739,7 +739,7 @@ function app(): App\App
         $env = new App\EnvConfig(__NAMESPACE__ . '\\Config', __NAMESPACE__); 
         
         // Build the App container using custom config class
-        $container = new App\Container($env);
+        $container = new App\CompositeContainer($env);
         
         // Create PSR-11 container and push into the App container
         $diBuilder = new \DI\ContainerBuilder();

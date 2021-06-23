@@ -1,7 +1,7 @@
 {
     "name": "inpsyde/wp-app-container",
     "type": "library",
-    "description": "DI Container and related tools to be used at website level.",
+    "description": "Website-level DI container and related tools.",
     "license": "gpl-2.0-or-later",
     "authors": [
         {
@@ -9,34 +9,35 @@
             "homepage": "https://inpsyde.com/",
             "email": "hello@inpsyde.com",
             "role": "Company"
-        },
-        {
-            "name": "Giuseppe Mazzapica",
-            "email": "g.mazzapica@inpsyde.com",
-            "role": "Developer"
         }
     ],
     "require": {
-        "php": "^7.2.5",
+        "php": "^7.2",
         "ext-json": "*",
-        "inpsyde/wp-context": "^1.2",
-        "pimple/pimple": "~3.3.1"
+        "inpsyde/wp-context": "^1",
+        "inpsyde/modularity": "^1.2.0"
     },
     "require-dev": {
-        "phpunit/phpunit": "^8",
+        "phpunit/phpunit": "^8.5.16",
         "inpsyde/php-coding-standards": "^1",
         "vimeo/psalm": "@stable",
         "brain/monkey": "^2",
-        "roots/wordpress": "@stable"
+        "johnpbloch/wordpress-core": "@stable"
     },
     "autoload": {
+        "files": [
+            "inc/functions.php"
+        ],
         "psr-4": {
             "Inpsyde\\App\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Inpsyde\\App\\Tests\\": "tests/phpunit/"
+            "Inpsyde\\App\\Tests\\": [
+                "tests/src/",
+                "tests/unit/"
+            ]
         }
     },
     "minimum-stability": "dev",
@@ -54,8 +55,10 @@
     },
     "extra": {
         "branch-alias": {
-            "dev-master": "1.x-dev"
-        },
-        "wordpress-install-dir": "vendor/roots/wordpress"
+            "dev-master": "2.x-dev",
+            "dev-v1.x": "1.x-dev",
+            "dev-v2.x": "2.x-dev",
+            "dev-v3.x": "3.x-dev"
+        }
     }
 }

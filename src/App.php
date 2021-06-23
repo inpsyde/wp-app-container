@@ -6,33 +6,31 @@ namespace Inpsyde\App;
 
 use Inpsyde\App\Provider\Package;
 use Inpsyde\App\Provider\ServiceProvider;
+use Inpsyde\Modularity;
 use Inpsyde\WpContext;
-use Pimple\Exception\UnknownIdentifierException;
+use Psr\Container\ContainerInterface;
 
 final class App
 {
     public const ACTION_ADD_PROVIDERS = 'wp-app.add-providers';
     public const ACTION_REGISTERED = 'wp-app.all-providers-registered';
     public const ACTION_BOOTED = 'wp-app.all-providers-booted';
-    public const ACTION_REGISTERED_PROVIDER = 'wp-app.provider-registered';
-    public const ACTION_ADDED_PROVIDER = 'wp-app.provider-added';
-    public const ACTION_BOOTED_PROVIDER = 'wp-app.provider-booted';
+    public const ACTION_ADDED_MODULE = 'wp-app.module-added';
+    public const ACTION_BOOTED_MODULE = 'wp-app.module-booted';
     public const ACTION_ERROR = 'wp-app.error';
 
-    /**
-     * @var App|null
-     */
-    private static $app;
+    private const PACKAGE_INTERNAL_EARLY = 1;
+    private const PACKAGE_INTERNAL = 2;
+    private const PACKAGE_EXTERNAL = 16;
+    private const PACKAGE_EXTERNAL_RESERVED = 32;
+
+    private const EVENTS_KEY = 'events';
+    private const PACKAGES_KEY = 'packages';
 
     /**
-     * @var Container|null
+     * @var array{context:WpContext, config: Config\Config, debug: bool | null, booting: bool}
      */
-    private $container;
-
-    /**
-     * @var AppLogger
-     */
-    private $logger;
+    private $props;
 
     /**
      * @var AppStatus
@@ -40,77 +38,103 @@ final class App
     private $status;
 
     /**
-     * @var \SplQueue|null
+     * @var \SplObjectStorage<Modularity\Package, int>|null
      */
-    private $bootable;
+    private $bootQueue;
 
     /**
-     * @var \SplQueue|null
+     * @var \SplObjectStorage<ServiceProvider, list<string>>|null
      */
-    private $delayed;
+    private $deferredProviders;
 
     /**
-     * @var bool
+     * @var CompositeContainer
      */
-    private $booting = false;
+    private $container;
 
     /**
-     * @var array<string,bool>
+     * @var Modularity\Package|null
      */
-    private $providers = [];
+    private $modularity = null;
 
     /**
-     * @param Container|null $container
+     * @var Modularity\Package|null
+     */
+    private $modularityForEarly = null;
+
+    /**
+     * @var array{status?:string, packages?:array, events?:array, context?:array, config?:array}
+     */
+    private $modulesDebug = [];
+
+    /**
+     * @param Config\Config|null $config
+     * @param ContainerInterface|null $container
+     * @param WpContext|null $context
      * @return App
      */
-    public static function new(Container $container = null): App
-    {
-        $app = new App($container);
-        self::$app or self::$app = $app;
+    public static function new(
+        ?Config\Config $config = null,
+        ?ContainerInterface $container = null,
+        ?WpContext $context = null
+    ): App {
 
-        return $app;
-    }
-
-    /**
-     * @param string $id
-     * @return mixed
-     *
-     * phpcs:disable Inpsyde.CodeQuality.ReturnTypeDeclaration
-     * @psalm-suppress MissingReturnType
-     */
-    public static function make(string $id)
-    {
-        // phpcs:enable Inpsyde.CodeQuality.ReturnTypeDeclaration
-
-        if (!self::$app) {
-            static::handleThrowable(new \Exception('No valid app found.'));
-
-            return null;
-        }
-
-        return self::$app->resolve($id);
+        return new App($config, $container, $context);
     }
 
     /**
      * @param \Throwable $throwable
+     * @param bool|null $reThrow
      */
-    public static function handleThrowable(\Throwable $throwable): void
+    public static function handleThrowable(\Throwable $throwable, ?bool $reThrow = null): void
     {
         do_action(self::ACTION_ERROR, $throwable);
 
-        if (defined('WP_DEBUG') && WP_DEBUG) {
+        if ($reThrow ?? (defined('WP_DEBUG') && WP_DEBUG)) {
             throw $throwable;
         }
     }
 
     /**
-     * @param Container|null $container
+     * @param Config\Config|null $config
+     * @param ContainerInterface|null $container
+     * @param WpContext|null $context
      */
-    private function __construct(Container $container = null)
-    {
-        $this->status = AppStatus::new();
-        $this->logger = AppLogger::new();
+    private function __construct(
+        ?Config\Config $config,
+        ?ContainerInterface $container,
+        ?WpContext $context
+    ) {
+
+        $container or $container = CompositeContainer::new();
+        if (!($container instanceof CompositeContainer)) {
+            $container = CompositeContainer::new()->addContainer($container);
+        }
+
         $this->container = $container;
+        $this->status = AppStatus::new();
+
+        $this->props = [
+            'config' => $config ?? new Config\EnvConfig(),
+            'context' => $context ?? WpContext::determine(),
+            'debug' => null,
+            'booting' => false,
+        ];
+    }
+
+    /**
+     * @param string $hook
+     * @return static
+     */
+    public function runLastBootAt(string $hook): App
+    {
+        try {
+            $this->status = $this->status->lastStepOn($hook);
+        } catch (\Throwable $throwable) {
+            static::handleThrowable($throwable, $this->isDebug());
+        }
+
+        return $this;
     }
 
     /**
@@ -118,7 +142,7 @@ final class App
      */
     public function enableDebug(): App
     {
-        $this->logger->enableDebug();
+        $this->props['debug'] = true;
 
         return $this;
     }
@@ -128,47 +152,35 @@ final class App
      */
     public function disableDebug(): App
     {
-        $this->logger->disableDebug();
+        $this->props['debug'] = false;
 
         return $this;
     }
 
     /**
-     * @param string $hook
-     * @return $this
+     * @return bool
      */
-    public function runLastBootAt(string $hook): App
+    public function isDebug(): bool
     {
-        try {
-            $this->status = $this->status->lastStepOn($hook);
-        } catch (\Throwable $throwable) {
-            static::handleThrowable($throwable);
+        if ($this->props['debug'] === null) {
+            $this->props['debug'] = defined('WP_DEBUG') && WP_DEBUG;
         }
 
-        return $this;
+        return $this->props['debug'];
     }
 
     /**
-     * @return array|null
+     * @return array{status:string, packages:array, events:array, context:array, config:array}
      */
-    public function debugInfo(): ?array
+    public function debugInfo(): array
     {
-        $providers = $this->logger->dump();
-        if ($providers === null) {
-            return null;
-        }
-
         $data = [
             'status' => (string)$this->status,
-            'providers' => $providers,
-            'context' => null,
-            'config' => null,
+            'packages' => (array)($this->modulesDebug[self::PACKAGES_KEY] ?? []),
+            'events' => (array)($this->modulesDebug[self::EVENTS_KEY] ?? []),
+            'context' => $this->props['context']->jsonSerialize(),
+            'config' => (array)($this->props['config']->jsonSerialize()),
         ];
-
-        if ($this->container) {
-            $data['context'] = $this->container->context()->jsonSerialize();
-            $data['config'] = $this->container->config()->jsonSerialize();
-        }
 
         return $data;
     }
@@ -182,52 +194,91 @@ final class App
     }
 
     /**
+     * @return Config\Config
+     */
+    public function config(): Config\Config
+    {
+        return $this->props['config'];
+    }
+
+    /**
+     * @return WpContext
+     */
+    public function context(): WpContext
+    {
+        $context = $this->props['context'];
+
+        return clone $context;
+    }
+
+    /**
      * @return void
      */
     public function boot(): void
     {
         try {
-            if ($this->booting) {
-                throw new \DomainException('Can\'t call App::boot() when already booting.');
+            if ($this->props['booting']) {
+                throw new \Error("Can't call App::boot() when already booting.");
             }
 
             $this->status = $this->status->next($this); // registering
 
-            // Prevent anything listening self::ACTION_ADD_PROVIDERS to call boot().
-            $this->booting = true;
+            $this->fireHook(self::ACTION_ADD_PROVIDERS, $this->status);
 
-            /**
-             * Allows registration of providers via `App::addProvider()`
-             */
-            do_action(self::ACTION_ADD_PROVIDERS, $this, $this->status);
+            $lastRun = $this->status->isThemesStep();
 
-            $this->booting = false;
+            if ($lastRun) {
+                $this->registerDeferredProviders();
 
-            $this->registerAndBootProviders();
+                do_action(self::ACTION_REGISTERED);
+
+                if ($this->modularity) {
+                    $this->pushToBootQueue($this->modularity, self::PACKAGE_INTERNAL);
+                }
+            }
+
+            $this->status = $this->status->next($this); // booting
+
+            $this->bootTheQueue();
+
+            $this->status = $this->status->next($this); // booted
+
+            $lastRun and do_action(self::ACTION_BOOTED);
+            //
+        } catch (\Throwable $throwable) {
+            static::handleThrowable($throwable, $this->isDebug());
+        } finally {
+            // If exception has been caught, ensure status is booted, so next `boot()` will not fail
+            if ($this->status->isRegistering() || $this->status->isBooting()) {
+                $this->status = $this->status->next($this);
+            }
 
             // Remove the actions to prevent duplicate registration.
             remove_all_actions(self::ACTION_ADD_PROVIDERS);
-        } catch (\Throwable $exception) {
-            self::handleThrowable($exception);
         }
     }
 
     /**
-     * @param string $serviceProviderId
-     * @param string ...$serviceProviderIds
+     * @param string $moduleId
+     * @param string ...$moduleIds
      * @return bool
      */
-    public function hasProviders(string $serviceProviderId, string ...$serviceProviderIds): bool
+    public function hasModules(string $moduleId, string ...$moduleIds): bool
     {
-        array_unshift($serviceProviderIds, $serviceProviderId);
+        array_unshift($moduleIds, $moduleId);
 
-        foreach ($serviceProviderIds as $id) {
-            if (!isset($this->providers[$id])) {
-                return false;
+        $toFound = $moduleIds;
+        /** @var array $packageModules */
+        foreach ($this->modulesDebug[self::PACKAGES_KEY] ?? [] as $packageModules) {
+            /** @var array $added */
+            $added = $packageModules[Modularity\Package::MODULE_ADDED] ?? [];
+            $toFound = array_diff($toFound, $added);
+            if (!$toFound) {
+                break;
             }
         }
 
-        return true;
+        return !$toFound;
     }
 
     /**
@@ -238,36 +289,18 @@ final class App
     public function addProvider(ServiceProvider $provider, string ...$contexts): App
     {
         try {
-            $contexts or $contexts = [WpContext::CORE];
-
-            $this->initializeContainer();
-
-            $providerId = $provider->id();
-
-            if ($this->hasProviders($providerId)) {
-                return $this;
-            }
-
-            /** @psalm-suppress PossiblyNullReference */
-            if (!$this->container->context()->is(...$contexts)) {
-                $this->logger->providerSkipped($provider, $this->status);
+            $early = $provider->bootEarly();
+            if (!$early && $provider->registerLater()) {
+                $this->deferredProviders or $this->deferredProviders = new \SplObjectStorage();
+                /** @var list<string> $contexts */
+                $this->deferredProviders->attach($provider, $contexts);
 
                 return $this;
             }
 
-            $this->providers[$providerId] = true;
-            $this->logger->providerAdded($provider, $this->status);
-            $this->fireBootingHook(self::ACTION_ADDED_PROVIDER, $providerId);
-
-            /** @psalm-suppress PossiblyNullReference */
-            $provider->registerLater()
-                ? $this->delayed->enqueue($provider)
-                : $this->registerProvider($provider);
-
-            /** @psalm-suppress PossiblyNullReference */
-            $this->bootable->enqueue($provider);
+            return $this->addModularityModule($early, $provider, ...$contexts);
         } catch (\Throwable $throwable) {
-            static::handleThrowable($throwable);
+            static::handleThrowable($throwable, $this->isDebug());
         }
 
         return $this;
@@ -277,7 +310,7 @@ final class App
      * @param Package $package
      * @return App
      */
-    public function addPackage(Package $package): App
+    public function addProvidersPackage(Package $package): App
     {
         $package->providers()->provideTo($this);
 
@@ -285,87 +318,178 @@ final class App
     }
 
     /**
-     * @param string $id
-     * @param mixed|null $default
+     * @param Modularity\Module\Module $module
+     * @param string ...$contexts
+     * @return App
+     */
+    public function addModule(Modularity\Module\Module $module, string ...$contexts): App
+    {
+        return $this->addModularityModule(false, $module, ...$contexts);
+    }
+
+    /**
+     * @param Modularity\Module\Module $module
+     * @param string ...$contexts
+     * @return static
+     */
+    public function addEarlyModule(Modularity\Module\Module $module, string ...$contexts): App
+    {
+        return $this->addModularityModule(true, $module, ...$contexts);
+    }
+
+    /**
+     * @param Modularity\Package $package
+     * @param string ...$contexts
+     * @return App
+     */
+    public function addPackage(Modularity\Package $package, string ...$contexts): App
+    {
+        return $this->addModularityPackage(self::PACKAGE_EXTERNAL_RESERVED, $package, ...$contexts);
+    }
+
+    /**
+     * @param Modularity\Package $package
+     * @param string ...$contexts
+     * @return App
+     */
+    public function sharePackage(Modularity\Package $package, string ...$contexts): App
+    {
+        return $this->addModularityPackage(self::PACKAGE_EXTERNAL, $package, ...$contexts);
+    }
+
+    /**
+     * @param string $serviceId
+     * @param mixed $default
      * @return mixed
-     *
-     * phpcs:disable Inpsyde.CodeQuality.ArgumentTypeDeclaration
-     * phpcs:disable Inpsyde.CodeQuality.ReturnTypeDeclaration
-     * @psalm-suppress MissingReturnType
-     * @psalm-suppress MissingParamType
      */
-    public function resolve(string $id, $default = null)
+    public function resolve(string $serviceId, $default = null)
     {
-        // phpcs:enable Inpsyde.CodeQuality.ReturnTypeDeclaration
-
-        $value = $default;
-
         try {
-            if ($this->status->isIdle()) {
-                throw new \DomainException('Can\'t resolve from an uninitialised application.');
-            }
-
-            $this->initializeContainer();
-
-            /** @psalm-suppress PossiblyNullReference */
-            if (!$this->container->has($id)) {
-                do_action(
-                    self::ACTION_ERROR,
-                    new UnknownIdentifierException($id)
-                );
-
-                return $default;
-            }
-
-            $value = $this->container->get($id);
+            return $this->container->has($serviceId) ? $this->container->get($serviceId) : $default;
         } catch (\Throwable $throwable) {
-            static::handleThrowable($throwable);
-        }
+            static::handleThrowable($throwable, $this->isDebug());
 
-        return $value;
+            return $default;
+        }
     }
 
     /**
+     * @param bool $early
      * @return void
      */
-    private function initializeContainer(): void
+    private function initializeModularity(bool $early = false): void
     {
-        $this->container or $this->container = new Container();
-        $this->delayed or $this->delayed = new \SplQueue();
-        $this->bootable or $this->bootable = new \SplQueue();
+        if (($early && $this->modularityForEarly) || (!$early && $this->modularity)) {
+            return;
+        }
+
+        $properties = new Properties($this->config()->locations(), $this->isDebug());
+        $package = Modularity\Package::new($properties, $this->container);
+
+        $early
+            ? $this->modularityForEarly = $package
+            : $this->modularity = $package;
+
+        $early and $this->pushToBootQueue($package, self::PACKAGE_INTERNAL_EARLY);
     }
 
     /**
+     * @param Modularity\Package $package
+     * @param int $type
      * @return void
      */
-    private function registerAndBootProviders(): void
+    private function pushToBootQueue(Modularity\Package $package, int $type): void
     {
-        $this->initializeContainer();
-        $lastRun = $this->status->isThemesStep();
+        $this->bootQueue or $this->bootQueue = new \SplObjectStorage();
+        $this->bootQueue->attach($package, $type);
+    }
 
-        try {
-            $this->registerDeferredProviders();
+    /**
+     * @param bool $early
+     * @param Modularity\Module\Module $module
+     * @param string ...$contexts
+     * @return App
+     */
+    private function addModularityModule(
+        bool $early,
+        Modularity\Module\Module $module,
+        string ...$contexts
+    ): App {
 
-            $this->status = $this->status->next($this); // booting
+        $id = $module->id();
 
-            $lastRun and do_action(self::ACTION_REGISTERED);
+        $contexts or $contexts = [WpContext::CORE];
+        $wrongContext = !$this->contextIs(...$contexts);
+        $alreadyAdded = !$wrongContext && $this->hasModules($id);
 
-            $this->bootProviders();
+        if ($wrongContext || $alreadyAdded) {
+            $this->moduleNotAdded($id, $wrongContext ? 'wrong context' : 'already added');
 
-            $this->status = $this->status->next($this); // booted
-
-            $lastRun and do_action(self::ACTION_BOOTED, $this->container);
-        } catch (\Throwable $throwable) {
-            static::handleThrowable($throwable);
-        } finally {
-            // If exception has been caught, ensure status is booted, so next `boot()` will not fail
-            if ($this->status->isRegistering()) {
-                $this->status = $this->status->next($this);
-            }
-            if ($this->status->isBooting()) {
-                $this->status = $this->status->next($this);
-            }
+            return $this;
         }
+
+        $this->initializeModularity($early);
+        $this->ensureWillBoot();
+
+        /** @var Modularity\Package $package */
+        $package = $early ? $this->modularityForEarly : $this->modularity;
+        $package->addModule($module);
+
+        $this->syncModularityStatus($package, Modularity\Package::MODULE_ADDED);
+
+        $this->fireHook(self::ACTION_ADDED_MODULE, $id);
+
+        return $this;
+    }
+
+    /**
+     * @param int $type
+     * @param Modularity\Package $package
+     * @param string ...$contexts
+     * @return App
+     */
+    private function addModularityPackage(
+        int $type,
+        Modularity\Package $package,
+        string ...$contexts
+    ): App {
+
+        $contexts or $contexts = [WpContext::CORE];
+        $wrongContext = !$this->contextIs(...$contexts);
+        $failed = !$wrongContext && $package->statusIs(Modularity\Package::STATUS_FAILED);
+
+        $modulesStatus = $package->modulesStatus();
+
+        if ($wrongContext || $failed) {
+            $modules = (array)($modulesStatus[Modularity\Package::MODULE_ADDED] ?? []);
+            $reason = $wrongContext ? 'wrong context' : 'package failed';
+            foreach ($modules as $id) {
+                $this->moduleNotAdded($id, $reason);
+            }
+
+            return $this;
+        }
+
+        $this->ensureWillBoot();
+        $this->syncModularityStatus($package, Modularity\Package::MODULE_ADDED);
+        $this->maybeSetLibraryUrl($package);
+
+        $added = (array)($modulesStatus[Modularity\Package::MODULE_ADDED] ?? []);
+        foreach ($added as $id) {
+            $this->fireHook(self::ACTION_ADDED_MODULE, $id);
+        }
+
+        if ($package->statusIs(Modularity\Package::STATUS_BOOTED)) {
+            if ($type !== self::PACKAGE_EXTERNAL_RESERVED) {
+                $this->container->addContainer($package->container());
+            }
+
+            return $this;
+        }
+
+        $this->pushToBootQueue($package, $type);
+
+        return $this;
     }
 
     /**
@@ -373,106 +497,201 @@ final class App
      */
     private function registerDeferredProviders(): void
     {
-        if (!$this->delayed) {
+        if (!$this->deferredProviders) {
             return;
         }
 
-        $lastRun = $this->status->isThemesStep();
-        $toRegisterLater = $lastRun ? null : new \SplQueue();
-
-        while ($this->delayed->count()) {
-            /** @var ServiceProvider $delayed */
-            $delayed = $this->delayed->dequeue();
-            $toRegisterNow = $lastRun || $delayed->bootEarly();
-            $toRegisterNow and $this->registerProvider($delayed);
-
-            if ($toRegisterLater && !$toRegisterNow) {
-                $toRegisterLater->enqueue($delayed);
-            }
+        $this->deferredProviders->rewind();
+        while ($this->deferredProviders->valid()) {
+            $provider = $this->deferredProviders->current();
+            $contexts = $this->deferredProviders->getInfo();
+            $this->addModularityModule(false, $provider, ...$contexts);
+            $this->deferredProviders->next();
         }
 
-        $this->delayed = $toRegisterLater;
+        $this->deferredProviders = null;
     }
 
     /**
      * @return void
      */
-    private function bootProviders(): void
+    private function bootTheQueue(): void
     {
-        if (!$this->bootable) {
+        if (!$this->bootQueue) {
             return;
         }
 
-        $lastRun = $this->status->isThemesStep();
+        $this->bootQueue->rewind();
+        while ($this->bootQueue->valid()) {
+            /** @var Modularity\Package $package */
+            $package = $this->bootQueue->current();
+            $type = $this->bootQueue->getInfo();
 
-        $toBootLater = $lastRun ? null : new \SplQueue();
+            $this->bootQueue->next();
 
-        while ($this->bootable->count()) {
-            /** @var ServiceProvider $bootable */
-            $bootable = $this->bootable->dequeue();
+            $booted = $package->boot();
 
-            if ($lastRun || $bootable->bootEarly()) {
-                $this->bootProvider($bootable);
+            $this->syncModularityStatus($package, Modularity\Package::MODULE_EXECUTED);
+
+            if (!$booted) {
                 continue;
             }
 
-            if ($toBootLater) {
-                $toBootLater->enqueue($bootable);
+            if ($type !== self::PACKAGE_EXTERNAL_RESERVED) {
+                $this->container->addContainer($package->container());
+            }
+
+            $statuses = $package->modulesStatus();
+            $executed = (array)($statuses[Modularity\Package::MODULE_EXECUTED] ?? []);
+            foreach ($executed as $id) {
+                $this->fireHook(self::ACTION_BOOTED_MODULE, $id);
             }
         }
 
-        $this->bootable = $toBootLater;
+        $this->bootQueue = null;
+        $this->modularityForEarly = null;
     }
 
     /**
-     * @param ServiceProvider $provider
      * @return void
      */
-    private function registerProvider(ServiceProvider $provider): void
+    private function ensureWillBoot(): void
     {
-        try {
-            $this->initializeContainer();
-            /** @psalm-suppress PossiblyNullArgument */
-            if ($provider->register($this->container)) {
-                $this->fireBootingHook(self::ACTION_REGISTERED_PROVIDER, $provider->id());
-                $this->logger->providerRegistered($provider, $this->status);
-            }
-        } catch (\Throwable $exception) {
-            self::handleThrowable($exception);
+        static $ensure;
+        $ensure or $ensure = add_action(
+            'init',
+            function (): void {
+                $this->status->isIdle() and $this->boot();
+            },
+            AppStatus::BOOT_HOOK_PRIORITY + 10
+        );
+    }
+
+    /**
+     * @param string $moduleId
+     * @param string $reason
+     * @return void
+     */
+    private function moduleNotAdded(string $moduleId, string $reason)
+    {
+        if (!isset($this->modulesDebug[self::EVENTS_KEY])) {
+            $this->modulesDebug[self::EVENTS_KEY] = [];
         }
+
+        $this->modulesDebug[self::EVENTS_KEY][] = "Module {$moduleId} not added ({$reason}).";
     }
 
     /**
-     * @param ServiceProvider $provider
+     * @param Modularity\Package $package
+     * @param string $statusKey
      * @return void
+     *
+     * @psalm-suppress MixedArrayAssignment
+     * @psalm-suppress MixedArrayAccess
      */
-    private function bootProvider(ServiceProvider $provider): void
+    private function syncModularityStatus(Modularity\Package $package, string $statusKey): void
     {
-        $this->initializeContainer();
-        /** @psalm-suppress PossiblyNullArgument */
-        if (!$provider->boot($this->container)) {
+        $packageId = $package->name();
+
+        if (!isset($this->modulesDebug[self::PACKAGES_KEY])) {
+            $this->modulesDebug[self::PACKAGES_KEY] = [];
+        }
+        if (!isset($this->modulesDebug[self::PACKAGES_KEY][$packageId])) {
+            $this->modulesDebug[self::PACKAGES_KEY][$packageId] = [];
+        }
+
+        $modularityStatuses = $package->modulesStatus();
+        $moduleIds = $modularityStatuses[$statusKey] ?? [];
+
+        /** @var array $status */
+        $status = $this->modulesDebug[self::PACKAGES_KEY][$packageId][$statusKey] ?? [];
+        if ($moduleIds && !$status) {
+            $this->modulesDebug[self::PACKAGES_KEY][$packageId][$statusKey] = [];
+        }
+        foreach ($moduleIds as $moduleId) {
+            if (!in_array($moduleId, $status, true)) {
+                $this->modulesDebug[self::PACKAGES_KEY][$packageId][$statusKey][] = $moduleId;
+            }
+        }
+
+        if (!$this->isDebug()) {
             return;
         }
 
-        $this->logger->providerBooted($provider, $this->status);
+        $packageEvents = $modularityStatuses[Modularity\Package::MODULES_ALL] ?? [];
+        if ($packageEvents && !isset($this->modulesDebug[self::EVENTS_KEY])) {
+            $this->modulesDebug[self::EVENTS_KEY] = [];
+        }
+        foreach ($packageEvents as $event) {
+            $fullEvent = "Module {$event} (Package: {$packageId})";
+            /** @psalm-suppress PossiblyUndefinedArrayOffset */
+            if (!in_array($fullEvent, $this->modulesDebug[self::EVENTS_KEY], true)) {
+                $this->modulesDebug[self::EVENTS_KEY][] = $fullEvent;
+            }
+        }
+    }
 
-        do_action(self::ACTION_BOOTED_PROVIDER, $provider->id());
+    /**
+     * @param Modularity\Package $package
+     * @return void
+     */
+    private function maybeSetLibraryUrl(Modularity\Package $package): void
+    {
+        $properties = $package->properties();
+        if (
+            !($properties instanceof Modularity\Properties\LibraryProperties)
+            || ($properties->baseUrl() !== null)
+        ) {
+            return;
+        }
+
+        $pathParts = explode('/', $properties->basePath());
+        $relativePath = implode('/', array_slice($pathParts, -2)); // "some-vendor/some-package"
+        $locations = $this->config()->locations();
+        $vendorPath = $locations->vendorDir($relativePath);
+        if ($vendorPath && is_dir($vendorPath)) {
+            $vendorUrl = $locations->vendorUrl($relativePath);
+            $vendorUrl and $properties->withBaseUrl($vendorUrl);
+        }
     }
 
     /**
      * @param string $hook
-     * @param string $providerId
+     * @param list<mixed> $params
+     * @return void
+     *
+     * phpcs:disable Inpsyde.CodeQuality.ArgumentTypeDeclaration
      */
-    private function fireBootingHook(string $hook, string $providerId): void
+    private function fireHook(string $hook, ...$params): void
     {
-        if ($this->booting) {
-            do_action($hook, $providerId, $this);
+        // phpcs:enable Inpsyde.CodeQuality.ArgumentTypeDeclaration
 
-            return;
-        }
+        ($hook === self::ACTION_ADD_PROVIDERS)
+            ? array_unshift($params, $this)
+            : $params[] = $this;
 
-        $this->booting = true;
-        do_action($hook, $providerId, $this);
-        $this->booting = false;
+        // "Backup" current booting prop value, then force it to true.
+        $wasBooting = $this->props['booting'];
+        $this->props['booting'] = true;
+
+        // Fire the hook after having ensured $this->booting is true, to prevent calls to methods
+        // which could cause infinite recursion
+        do_action($hook, ...$params);
+
+        // Restore booting prop to the value it had before this method was called.
+        $this->props['booting'] = $wasBooting;
+    }
+
+    /**
+     * @param string $context
+     * @param string ...$contexts
+     * @return bool
+     */
+    private function contextIs(string $context, string ...$contexts): bool
+    {
+        /** @var WpContext $wpContext */
+        $wpContext = $this->props['context'];
+
+        return $wpContext->is($context, ...$contexts);
     }
 }

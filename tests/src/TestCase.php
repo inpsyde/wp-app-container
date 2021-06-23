@@ -13,6 +13,8 @@ abstract class TestCase extends FrameworkTestCase
 {
     use MockeryPHPUnitIntegration;
 
+    protected $environmentType = 'development';
+
     /**
      * @return void
      */
@@ -20,6 +22,18 @@ abstract class TestCase extends FrameworkTestCase
     {
         parent::setUp();
         Monkey\setUp();
+
+        Monkey\Functions\stubs([
+            'wp_get_environment_type' => function (): string {
+                return $this->environmentType;
+            },
+            'set_url_scheme' => static function (string $str): string {
+                return preg_replace('~^(https?:)?//~i', 'https://', $str);
+            },
+            'wp_normalize_path' => static function (string $str): string {
+                return str_replace('\\', '/', $str);
+            },
+        ]);
     }
 
     /**

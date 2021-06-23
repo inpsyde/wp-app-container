@@ -20,6 +20,8 @@ final class AppStatus
     public const BOOTING_THEMES = 'booting themes';
     public const BOOTED_THEMES = 'Done with themes';
 
+    public const BOOT_HOOK_PRIORITY = 1764;
+
     private const NEXT_STEP_MAP = [
         self::REGISTERING_EARLY => self::BOOTING_EARLY,
         self::BOOTING_EARLY => self::BOOTED_EARLY,
@@ -55,12 +57,13 @@ final class AppStatus
     }
 
     /**
-     * @return AppStatus
+     * @param string $hook
+     * @return static
      */
     public function lastStepOn(string $hook): AppStatus
     {
         if ($this->status !== self::IDLE) {
-            throw new \DomainException("Last boot step has to be before App is initialized.");
+            throw new \Error("Last boot step has to be before App is initialized.");
         }
 
         $this->lastStepHook = $hook;
@@ -178,7 +181,7 @@ final class AppStatus
     }
 
     /**
-     * @param string $statuses
+     * @param string ...$statuses
      * @return bool
      */
     public function isAnyOf(string ...$statuses): bool
@@ -216,8 +219,8 @@ final class AppStatus
         if (!did_action('plugins_loaded')) {
             // App is booted before "plugins_loaded": we boot it a second time on "plugins_loaded"
             // and then again a third time on last step hook.
-            add_action('plugins_loaded', [$app, 'boot'], PHP_INT_MAX);
-            add_action($this->lastStepHook, [$app, 'boot'], PHP_INT_MAX);
+            add_action('plugins_loaded', [$app, 'boot'], self::BOOT_HOOK_PRIORITY);
+            add_action($this->lastStepHook, [$app, 'boot'], self::BOOT_HOOK_PRIORITY);
 
             $this->status = self::REGISTERING_EARLY;
 
@@ -225,7 +228,7 @@ final class AppStatus
         }
 
         // App is booted before last step hook, we will boot it again on last step hook.
-        $doingLast or add_action($this->lastStepHook, [$app, 'boot'], PHP_INT_MAX);
+        $doingLast or add_action($this->lastStepHook, [$app, 'boot'], self::BOOT_HOOK_PRIORITY);
 
         $this->status = $doingLast ? self::REGISTERING_THEMES : self::REGISTERING_PLUGINS;
 
