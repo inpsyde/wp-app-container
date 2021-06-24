@@ -243,7 +243,7 @@ final class App
 
             $this->status = $this->status->next($this); // booted
 
-            $lastRun and do_action(self::ACTION_BOOTED);
+            $lastRun and do_action(self::ACTION_BOOTED, $this->container);
             //
         } catch (\Throwable $throwable) {
             static::handleThrowable($throwable, $this->isDebug());
