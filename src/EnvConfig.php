@@ -17,6 +17,7 @@ class EnvConfig implements SiteConfig
     public const DEVELOPMENT = 'development';
     public const PRODUCTION = 'production';
     public const STAGING = 'staging';
+    public const TRAINING = 'training';
 
     private const ENV_ALIASES = [
         'local' => self::LOCAL,
@@ -28,6 +29,8 @@ class EnvConfig implements SiteConfig
         'preprod' => self::STAGING,
         'pre-prod' => self::STAGING,
         'pre-production' => self::STAGING,
+        'training' => self::TRAINING,
+        'train' => self::TRAINING,
         'test' => self::STAGING,
         'uat' => self::STAGING,
         'production' => self::PRODUCTION,
@@ -38,7 +41,6 @@ class EnvConfig implements SiteConfig
     private const HOSTING_LOCATIONS_CLASS_MAP = [
         self::HOSTING_WPE => WpEngineLocations::class,
         self::HOSTING_VIP => VipLocations::class,
-        self::HOSTING_SPACES => GenericLocations::class,
         self::HOSTING_OTHER => GenericLocations::class,
     ];
 
@@ -130,12 +132,6 @@ class EnvConfig implements SiteConfig
 
         if (function_exists('is_wpe')) {
             $this->hosting = self::HOSTING_WPE;
-
-            return $this->hosting;
-        }
-
-        if ($this->get('SPACES_SPACE_ID')) {
-            $this->hosting = self::HOSTING_SPACES;
 
             return $this->hosting;
         }
