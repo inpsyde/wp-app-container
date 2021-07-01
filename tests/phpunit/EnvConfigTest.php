@@ -57,8 +57,7 @@ class EnvConfigTest extends TestCase
         static::assertSame(EnvConfig::STAGING, $env->env());
         static::assertTrue($env->envIs(EnvConfig::STAGING));
     }
-
-    /**
+/**
      * @test
      */
     public function testEnvFromEnvVarIsNotFiltered(): void
@@ -192,23 +191,6 @@ class EnvConfigTest extends TestCase
         static::assertSame(EnvConfig::HOSTING_WPE, $env->hosting());
         static::assertTrue($env->hostingIs(EnvConfig::HOSTING_WPE));
         static::assertInstanceOf(WpEngineLocations::class, $env->locations());
-    }
-
-    /**
-     * @test
-     * @runInSeparateProcess
-     */
-    public function testHostingSpaces(): void
-    {
-        define('ABSPATH', __DIR__);
-        define('WP_CONTENT_DIR', __DIR__);
-        define('SPACES_SPACE_ID', '123456789');
-
-        $env = new EnvConfig();
-
-        static::assertSame(EnvConfig::HOSTING_SPACES, $env->hosting());
-        static::assertTrue($env->hostingIs(EnvConfig::HOSTING_SPACES));
-        static::assertInstanceOf(GenericLocations::class, $env->locations());
     }
 
     /**
