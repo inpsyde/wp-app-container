@@ -176,7 +176,6 @@ $container->config()->get('SOMETHING_NOT_DEFINED', 3); // 3
 
 - `EnvConfig::HOSTING_VIP` - WordPress VIP Go
 - `EnvConfig::HOSTING_WPE` - WP Engine
-- `EnvConfig::HOSTING_SPACES` - Mittwald Spaces
 - `EnvConfig::HOSTING_OTHER` - If none of those above is detected
 
 Custom hosting can be setup via a `HOSTING` env variable or constant.

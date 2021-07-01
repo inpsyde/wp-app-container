@@ -8,7 +8,6 @@ interface SiteConfig extends \JsonSerializable
 {
     public const HOSTING_VIP = 'vip';
     public const HOSTING_WPE = 'wpe';
-    public const HOSTING_SPACES = 'spaces';
     public const HOSTING_OTHER = 'other';
 
     /**
