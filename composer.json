@@ -14,15 +14,15 @@
     "require": {
         "php": ">=7.2",
         "ext-json": "*",
-        "inpsyde/wp-context": "^1",
-        "inpsyde/modularity": "^1.2.0"
+        "inpsyde/wp-context": "^1.2.0",
+        "inpsyde/modularity": "^1.3.0"
     },
     "require-dev": {
         "phpunit/phpunit": "^8.5.16",
         "inpsyde/php-coding-standards": "^1",
-        "vimeo/psalm": "@stable",
-        "brain/monkey": "^2",
-        "johnpbloch/wordpress-core": "@stable"
+        "vimeo/psalm": ">=4.8.1@stable",
+        "brain/monkey": "^2.6.0",
+        "php-stubs/wordpress-stubs": ">=5.7.2@stable"
     },
     "autoload": {
         "files": [
