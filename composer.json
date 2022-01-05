@@ -27,7 +27,7 @@
         "inpsyde/php-coding-standards": "^1@dev",
         "vimeo/psalm": "^4.17.0",
         "brain/monkey": "^2.6.1",
-        "roots/wordpress": ">=5.8.2"
+        "php-stubs/wordpress-stubs": ">=5.8.2"
     },
     "autoload": {
         "psr-4": {
@@ -56,15 +56,14 @@
             "dev-master": "2.x-dev",
             "dev-1.x": "1.x-dev",
             "dev-2.x": "2.x-dev"
-        },
-        "wordpress-install-dir": "vendor/roots/wordpress"
+        }
     },
     "config": {
         "allow-plugins": {
             "composer/*": true,
             "inpsyde/*": true,
-            "roots/wordpress-core-installer": true,
-            "dealerdirect/phpcodesniffer-composer-installer": true
+            "dealerdirect/phpcodesniffer-composer-installer": true,
+            "roots/wordpress-core-installer": false
         }
     }
 }

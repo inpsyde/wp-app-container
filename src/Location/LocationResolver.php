@@ -36,8 +36,8 @@ class LocationResolver
     {
         $this->config = $config;
         $vendorPath = $this->discoverVendorPath();
-        $contentPath = (string)trailingslashit(wp_normalize_path(WP_CONTENT_DIR));
-        $contentUrl = (string)content_url('/');
+        $contentPath = trailingslashit(wp_normalize_path((string)WP_CONTENT_DIR));
+        $contentUrl = content_url('/');
 
         if ($vendorPath && strpos($vendorPath, $contentPath) === 0) {
             // If vendor path is inside content path, then we can calculate vendor URL
@@ -47,7 +47,7 @@ class LocationResolver
 
         $locations = [
             self::DIR => [
-                Locations::ROOT => trailingslashit(ABSPATH),
+                Locations::ROOT => trailingslashit((string)ABSPATH),
                 Locations::VENDOR => $vendorPath ?: null,
                 Locations::CONTENT => $contentPath,
             ],
@@ -150,7 +150,7 @@ class LocationResolver
             return null;
         }
 
-        $base = (string)trailingslashit($base);
+        $base = trailingslashit((string)$base);
 
         if (!$subDir) {
             return $base;
