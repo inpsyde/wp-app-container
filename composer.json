@@ -17,17 +17,17 @@
         }
     ],
     "require": {
-        "php": "^7.2.5",
+        "php": ">=7.2.5 < 9",
         "ext-json": "*",
-        "inpsyde/wp-context": "^1.2",
-        "pimple/pimple": "~3.3.1"
+        "inpsyde/wp-context": "^1.2.0",
+        "pimple/pimple": "^3"
     },
     "require-dev": {
-        "phpunit/phpunit": "^8",
-        "inpsyde/php-coding-standards": "^1",
-        "vimeo/psalm": "@stable",
-        "brain/monkey": "^2",
-        "roots/wordpress": "@stable"
+        "phpunit/phpunit": "^8.5.22",
+        "inpsyde/php-coding-standards": "^1@dev",
+        "vimeo/psalm": "^4.17.0",
+        "brain/monkey": "^2.6.1",
+        "roots/wordpress": ">=5.8.2"
     },
     "autoload": {
         "psr-4": {
@@ -39,8 +39,7 @@
             "Inpsyde\\App\\Tests\\": "tests/phpunit/"
         }
     },
-    "minimum-stability": "dev",
-    "prefer-stable": true,
+    "minimum-stability": "stable",
     "scripts": {
         "cs": "@php ./vendor/squizlabs/php_codesniffer/bin/phpcs",
         "psalm": "@php ./vendor/vimeo/psalm/psalm --no-cache --output-format=compact",
@@ -59,5 +58,13 @@
             "dev-2.x": "2.x-dev"
         },
         "wordpress-install-dir": "vendor/roots/wordpress"
+    },
+    "config": {
+        "allow-plugins": {
+            "composer/*": true,
+            "inpsyde/*": true,
+            "roots/wordpress-core-installer": true,
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        }
     }
 }
