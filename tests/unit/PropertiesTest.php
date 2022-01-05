@@ -46,6 +46,6 @@ class PropertiesTest extends TestCase
 
         static::assertSame('Inpsyde GmbH', $properties->author());
         static::assertSame('https://inpsyde.com/', $properties->authorUri());
-        static::assertSame('7.2', $properties->requiresPhp());
+        static::assertSame('7.2.5', $properties->requiresPhp());
     }
 }

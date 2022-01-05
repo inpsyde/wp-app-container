@@ -55,8 +55,8 @@ class ServiceProvidersTest extends TestCase
      */
     private static function factoryProvider(string $id): ServiceProvider
     {
-        return new class ($id) extends Booted {
-
+        return new class ($id) extends Booted
+        {
             public $id;
 
             public function __construct(string $id)

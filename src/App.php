@@ -174,15 +174,13 @@ final class App
      */
     public function debugInfo(): array
     {
-        $data = [
+        return [
             'status' => (string)$this->status,
             'packages' => (array)($this->modulesDebug[self::PACKAGES_KEY] ?? []),
             'events' => (array)($this->modulesDebug[self::EVENTS_KEY] ?? []),
             'context' => $this->props['context']->jsonSerialize(),
             'config' => (array)($this->props['config']->jsonSerialize()),
         ];
-
-        return $data;
     }
 
     /**
@@ -614,6 +612,16 @@ final class App
             }
         }
 
+        $this->syncModularityPackageStatus($modularityStatuses, $packageId);
+    }
+
+    /**
+     * @param array $modularityStatuses
+     * @param string $packageId
+     * @return void
+     */
+    private function syncModularityPackageStatus(array $modularityStatuses, string $packageId): void
+    {
         if (!$this->isDebug()) {
             return;
         }

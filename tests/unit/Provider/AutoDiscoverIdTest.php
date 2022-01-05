@@ -37,7 +37,7 @@ class AutoDiscoverIdTest extends TestCase
             }
         };
 
-        static::assertStringStartsWith('class@anonymous', $provider->id());
+        static::assertSame(get_class($provider), $provider->id());
     }
 
     /**
@@ -59,23 +59,8 @@ class AutoDiscoverIdTest extends TestCase
         $two =  $provider2->id();
         $three =  $provider3->id();
 
-        static::assertStringStartsWith('class@anonymous', $one);
-        static::assertStringStartsWith('class@anonymous', $two);
-        static::assertStringStartsWith('class@anonymous', $three);
-
-        static::assertNotFalse(preg_match('~^class@anonymous_[a-f0-9]+$~', $one));
-        static::assertNotFalse(preg_match('~^class@anonymous_[a-f0-9]+$~', $two));
-        static::assertNotFalse(preg_match('~^class@anonymous_[a-f0-9]+$~', $three));
-
-        static::assertNotSame($one, $two);
-        static::assertNotSame($one, $three);
-        static::assertNotSame($two, $three);
-
-        static::assertSame($one, $provider1->id());
-        static::assertSame($one, $provider1->id());
-        static::assertSame($two, $provider2->id());
-        static::assertSame($two, $provider2->id());
-        static::assertSame($three, $provider3->id());
-        static::assertSame($three, $provider3->id());
+        static::assertSame(get_class($provider1), $provider1->id());
+        static::assertSame(get_class($provider2), $provider2->id());
+        static::assertSame(get_class($provider3), $provider3->id());
     }
 }
