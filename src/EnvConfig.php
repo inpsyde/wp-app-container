@@ -156,9 +156,12 @@ class EnvConfig implements SiteConfig
 
     /**
      * @return string
+     *
+     * phpcs:disable Generic.Metrics.CyclomaticComplexity
      */
     public function env(): string
     {
+        // phpcs:enable Generic.Metrics.CyclomaticComplexity
         if ($this->env) {
             return $this->env;
         }
