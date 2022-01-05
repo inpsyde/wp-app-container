@@ -154,8 +154,8 @@ class ContainerTest extends TestCase
      */
     private static function factoryCustomContainer(array $things): ContainerInterface
     {
-        return new class ($things) implements ContainerInterface {
-
+        return new class ($things) implements ContainerInterface
+        {
             private $things;
 
             public function __construct(array $things)
@@ -172,7 +172,7 @@ class ContainerTest extends TestCase
                 return $this->things[$id];
             }
 
-            public function has($id)
+            public function has($id): bool
             {
                 return array_key_exists($id, $this->things);
             }

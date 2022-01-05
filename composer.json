@@ -62,8 +62,7 @@
         "allow-plugins": {
             "composer/*": true,
             "inpsyde/*": true,
-            "dealerdirect/phpcodesniffer-composer-installer": true,
-            "roots/wordpress-core-installer": false
+            "dealerdirect/phpcodesniffer-composer-installer": true
         }
     }
 }

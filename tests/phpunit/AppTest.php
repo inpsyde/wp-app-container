@@ -150,8 +150,8 @@ class AppTest extends TestCase
             }
         );
 
-        $plugins = new class implements Package {
-
+        $plugins = new class implements Package
+        {
             public function providers(): ServiceProviders
             {
                 return ServiceProviders::new()
@@ -432,8 +432,8 @@ class AppTest extends TestCase
      */
     public static function factoryStringObject(string $string): object
     {
-        return new class ($string) {
-
+        return new class ($string)
+        {
             private $string;
 
             public function __construct(string $string)

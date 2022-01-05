@@ -54,7 +54,7 @@ class AutoDiscoverIdTest extends TestCase
             }
         };
 
-        static::assertStringStartsWith('class@anonymous', $provider->id());
+        static::assertSame(get_class($provider), $provider->id());
     }
 
     /**
@@ -76,7 +76,7 @@ class AutoDiscoverIdTest extends TestCase
         $two =  $provider2->id();
         $three =  $provider3->id();
 
-        static::assertStringStartsWith('class@anonymous', $one);
+        static::assertSame($one, get_class($provider1));
         static::assertSame("{$one}_2", $two);
         static::assertStringEndsWith("{$one}_3", $three);
 
