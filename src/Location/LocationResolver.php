@@ -31,9 +31,13 @@ class LocationResolver
     /**
      * @param EnvConfig $config
      * @param array $extendedDefaults
+     *
+     * phpcs:disable Generic.Metrics.CyclomaticComplexity
      */
     public function __construct(EnvConfig $config, array $extendedDefaults = [])
     {
+        // phpcs:enable Generic.Metrics.CyclomaticComplexity
+
         $this->config = $config;
         $vendorPath = $this->discoverVendorPath();
         $contentPath = trailingslashit(wp_normalize_path((string)WP_CONTENT_DIR));
