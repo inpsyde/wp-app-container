@@ -1,11 +1,9 @@
 <?xml version="1.0"?>
 <psalm
-    autoloader="./.psalm/autoloader.php"
     totallyTyped="true"
     useDocblockPropertyTypes="true"
     usePhpDocMethodsWithoutMagicCall="true"
     strictBinaryOperands="true"
-    allowPhpStormGenerics="true"
     ignoreInternalFunctionFalseReturn="false"
     ignoreInternalFunctionNullReturn="false"
     hideExternalErrors="true"
@@ -19,9 +17,14 @@
             <directory name="vendor" />
         </ignoreFiles>
     </projectFiles>
+    
+    <stubs>
+        <file name="./vendor/php-stubs/wordpress-stubs/wordpress-stubs.php"/>
+    </stubs>
 
    <issueHandlers>
         <MixedAssignment errorLevel="suppress" />
         <RedundantCastGivenDocblockType errorLevel="suppress" />
+        <UndefinedConstant errorLevel="suppress" />
     </issueHandlers>
 </psalm>
