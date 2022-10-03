@@ -7,12 +7,22 @@ namespace Inpsyde\App\Provider;
 trait AutoDiscoverIdTrait
 {
     /**
+     * @var string|null
+     */
+    private $discoveredId = null;
+
+    /**
      * @return string
      */
     public function id(): string
     {
+        if (is_string($this->discoveredId)) {
+            return $this->discoveredId;
+        }
+
         if (isset($this->id) && is_string($this->id)) {
-            return $this->id;
+            $this->discoveredId = $this->id;
+            return $this->discoveredId;
         }
 
         $class = get_called_class();
@@ -20,33 +30,16 @@ trait AutoDiscoverIdTrait
         if (defined("{$class}::ID")) {
             $byConstant = constant("{$class}::ID");
             if (is_string($byConstant)) {
-                return $byConstant;
+                $this->discoveredId = $byConstant;
+                return $this->discoveredId;
             }
         }
 
-        /** @var array<string, int> $classes */
-        static $classes = [];
+        /** @var int $instance */
+        static $instance = 0;
+        $instance++;
+        $this->discoveredId = "{$class}_{$instance}";
 
-        /** @var array<string, string> $hashes */
-        static $hashes = [];
-
-        isset($classes[$class]) or $classes[$class] = 0;
-
-        $hash = spl_object_hash($this);
-
-        if (isset($hashes[$hash])) {
-            return $hashes[$hash];
-        }
-
-        $classes[$class]++;
-
-        $id = $class;
-        if ($classes[$class] > 1) {
-            $id .= "_{$classes[$class]}";
-        }
-
-        $hashes[$hash] = $id;
-
-        return $id;
+        return $this->discoveredId;
     }
 }

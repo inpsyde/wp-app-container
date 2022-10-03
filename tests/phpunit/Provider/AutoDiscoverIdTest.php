@@ -6,8 +6,11 @@ namespace Inpsyde\App\Tests\Provider;
 
 use Inpsyde\App\Container;
 use Inpsyde\App\Provider\RegisteredOnly;
-use Inpsyde\App\Tests\TestCase;
+use PHPUnit\Framework\TestCase;
 
+/**
+ * @runTestsInSeparateProcesses
+ */
 class AutoDiscoverIdTest extends TestCase
 {
     /**
@@ -54,7 +57,7 @@ class AutoDiscoverIdTest extends TestCase
             }
         };
 
-        static::assertSame(get_class($provider), $provider->id());
+        static::assertSame(get_class($provider) . '_1', $provider->id());
     }
 
     /**
@@ -76,9 +79,9 @@ class AutoDiscoverIdTest extends TestCase
         $two =  $provider2->id();
         $three =  $provider3->id();
 
-        static::assertSame($one, get_class($provider1));
-        static::assertSame("{$one}_2", $two);
-        static::assertStringEndsWith("{$one}_3", $three);
+        static::assertSame(get_class($provider1) . '_1', $one);
+        static::assertSame(get_class($provider2) . '_2', $two);
+        static::assertStringEndsWith(get_class($provider3) . '_3', $three);
 
         static::assertSame($one, $provider1->id());
         static::assertSame($one, $provider1->id());
@@ -86,5 +89,23 @@ class AutoDiscoverIdTest extends TestCase
         static::assertSame($two, $provider2->id());
         static::assertSame($three, $provider3->id());
         static::assertSame($three, $provider3->id());
+    }
+
+    public function testIfObjectHasNotReference(): void
+    {
+        $providerId1 = (new class extends RegisteredOnly {
+            public function register(Container $container): bool
+            {
+                return true;
+            }
+        })->id();
+        $providerId2 = (new class extends RegisteredOnly {
+            public function register(Container $container): bool
+            {
+                return true;
+            }
+        })->id();
+
+        static::assertNotSame($providerId1, $providerId2);
     }
 }
