@@ -1,14 +1,12 @@
 <?xml version="1.0"?>
 <psalm
-    autoloader="./.psalm/autoloader.php"
-    totallyTyped="true"
+    errorLevel="1"
     useDocblockPropertyTypes="true"
     usePhpDocMethodsWithoutMagicCall="true"
     strictBinaryOperands="true"
     ignoreInternalFunctionFalseReturn="false"
     ignoreInternalFunctionNullReturn="false"
     hideExternalErrors="true"
-    allowNamedArgumentCalls="false"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns="https://getpsalm.org/schema/config"
     xsi:schemaLocation="https://getpsalm.org/schema/config vendor/vimeo/psalm/config.xsd"
@@ -19,15 +17,12 @@
             <directory name="vendor" />
         </ignoreFiles>
     </projectFiles>
-
     <stubs>
-        <file name="vendor/php-stubs/wordpress-stubs/wordpress-stubs.php" />
+        <file name="vendor/inpsyde/wp-stubs/stubs/latest.php" />
     </stubs>
-
-   <issueHandlers>
+    <issueHandlers>
         <MixedAssignment errorLevel="suppress" />
-        <ParamNameMismatch errorLevel="suppress" />
         <RedundantCastGivenDocblockType errorLevel="suppress" />
-        <UnnecessaryVarAnnotation errorLevel="suppress" />
+        <RedundantCast errorLevel="suppress" />
     </issueHandlers>
 </psalm>

@@ -19,10 +19,10 @@
     },
     "require-dev": {
         "phpunit/phpunit": "^8.5.22",
-        "inpsyde/php-coding-standards": "^1@dev",
-        "vimeo/psalm": ">=4.17.0",
+        "inpsyde/php-coding-standards": "^1",
+        "vimeo/psalm": "^4.26.0",
         "brain/monkey": "^2.6.1",
-        "php-stubs/wordpress-stubs": ">=5.8.2"
+        "inpsyde/wp-stubs": "dev-main"
     },
     "autoload": {
         "files": [
