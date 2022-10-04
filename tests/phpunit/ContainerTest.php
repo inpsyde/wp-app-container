@@ -38,7 +38,7 @@ class ContainerTest extends TestCase
                 $this->things = $things;
             }
 
-            public function get($id)
+            public function get(string $id)
             {
                if (!$this->has($id)) {
                    throw new UnknownIdentifierException($id);
@@ -47,7 +47,7 @@ class ContainerTest extends TestCase
                return $this->things[$id];
             }
 
-            public function has($id)
+            public function has(string $id): bool
             {
                 return array_key_exists($id, $this->things);
             }

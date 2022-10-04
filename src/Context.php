@@ -27,7 +27,9 @@ final class Context implements \JsonSerializable
      */
     public static function create(): Context
     {
+        /** @psalm-suppress RedundantCondition */
         $installing = defined('WP_INSTALLING') && WP_INSTALLING;
+        /** @psalm-suppress RedundantCondition */
         $xmlRpc = defined('XMLRPC_REQUEST') && XMLRPC_REQUEST;
         $isCore = defined('ABSPATH');
         $isCli = defined('WP_CLI');
@@ -46,6 +48,7 @@ final class Context implements \JsonSerializable
         // This is done to do as less as possible during installation, when most of WP does not act
         // as expected.
 
+        // phpcs:disable VariableAnalysis.CodeAnalysis.VariableAnalysis.VariableRedeclaration
         return new static(
             [
                 self::CORE => ($isCore || $xmlRpc) && !$installing,
@@ -60,6 +63,7 @@ final class Context implements \JsonSerializable
                 self::INSTALLING => $installing,
             ]
         );
+        // phpcs:enable VariableAnalysis.CodeAnalysis.VariableAnalysis.VariableRedeclaration
     }
 
     /**

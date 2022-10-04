@@ -97,6 +97,7 @@ final class App
     {
         do_action(self::ACTION_ERROR, $throwable);
 
+        /** @psalm-suppress TypeDoesNotContainType */
         if (defined('WP_DEBUG') && WP_DEBUG) {
             throw $throwable;
         }

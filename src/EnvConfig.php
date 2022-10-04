@@ -186,6 +186,7 @@ class EnvConfig implements SiteConfig
             return $this->env;
         }
 
+        /** @psalm-suppress TypeDoesNotContainType */
         $env = (defined('WP_DEBUG') && WP_DEBUG) ? self::DEVELOPMENT : self::PRODUCTION;
         $this->env = $this->normalizeEnv($env, true);
 

@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <psalm
-    totallyTyped="true"
+    errorLevel="1"
     useDocblockPropertyTypes="true"
     usePhpDocMethodsWithoutMagicCall="true"
     strictBinaryOperands="true"
@@ -17,14 +17,12 @@
             <directory name="vendor" />
         </ignoreFiles>
     </projectFiles>
-    
     <stubs>
-        <file name="./vendor/php-stubs/wordpress-stubs/wordpress-stubs.php"/>
+        <file name="vendor/inpsyde/wp-stubs/stubs/latest.php" />
     </stubs>
-
-   <issueHandlers>
+    <issueHandlers>
         <MixedAssignment errorLevel="suppress" />
         <RedundantCastGivenDocblockType errorLevel="suppress" />
-        <UndefinedConstant errorLevel="suppress" />
+        <RedundantCast errorLevel="suppress" />
     </issueHandlers>
 </psalm>
