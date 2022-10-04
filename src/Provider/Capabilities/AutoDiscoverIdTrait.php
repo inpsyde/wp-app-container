@@ -7,47 +7,41 @@ namespace Inpsyde\App\Provider\Capabilities;
 trait AutoDiscoverIdTrait
 {
     /**
-     * When an `$id` non empty string property is available, that is returned.
-     * Otherwise, an ID is calculated using the FQ class name. And in the case multiple instances
-     * exists for that class, a numeric suffix is added to make sure ID is different per instance,
-     * not per class.
-     *
+     * @var string|null
+     */
+    private $discoveredId = null;
+
+    /**
      * @return string
      */
     public function id(): string
     {
-        if (isset($this->id) && is_string($this->id) && $this->id) {
-            return $this->id;
+        if (is_string($this->discoveredId)) {
+            return $this->discoveredId;
+        }
+
+        if (isset($this->id) && is_string($this->id)) {
+            $this->discoveredId = $this->id;
+
+            return $this->discoveredId;
         }
 
         $class = get_called_class();
-        if (preg_match('~^class@anonymous(.+)~', $class, $match)) {
-            $class = 'class@anonymous';
+
+        if (defined("{$class}::ID")) {
+            $byConstant = constant("{$class}::ID");
+            if (is_string($byConstant)) {
+                $this->discoveredId = $byConstant;
+
+                return $this->discoveredId;
+            }
         }
 
-        /** @var array<string, int> $classes */
-        static $classes = [];
+        static $instance = 0;
+        /** @var int $instance */
+        $instance++;
+        $this->discoveredId = "{$class}_{$instance}";
 
-        /** @var array<string, string> $hashes */
-        static $hashes = [];
-
-        isset($classes[$class]) or $classes[$class] = 0;
-
-        $hash = spl_object_hash($this);
-
-        if (isset($hashes[$hash])) {
-            return $hashes[$hash];
-        }
-
-        $classes[$class]++;
-
-        $id = $class;
-        if ($classes[$class] > 1 || ($class === 'class@anonymous')) {
-            $id .= "_{$hash}";
-        }
-
-        $hashes[$hash] = $id;
-
-        return $id;
+        return $this->discoveredId;
     }
 }
