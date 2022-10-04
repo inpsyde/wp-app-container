@@ -75,6 +75,8 @@ class Locations
      * @param Location|null $muPlugins
      * @param Location|null $languages
      * @return Locations
+     *
+     * phpcs:disable Generic.Metrics.CyclomaticComplexity
      */
     public static function new(
         ?Location $root = null,
@@ -86,28 +88,23 @@ class Locations
         ?Location $muPlugins = null,
         ?Location $languages = null
     ): Locations {
+        // phpcs:enable Generic.Metrics.CyclomaticComplexity
 
-        $root or $root = Location::new(ABSPATH, site_url(''));
-        $content or $content = Location::new(WP_CONTENT_DIR, content_url(''));
-        $vendor or $vendor = static::discoverVendor($root, $content);
-        $plugins or $plugins = Location::new(WP_PLUGIN_DIR, plugins_url());
-        $themes or $themes = Location::new(get_theme_root(), get_theme_root_uri());
-        $theme or $theme = Location::new(
-            get_stylesheet_directory(),
-            get_stylesheet_directory_uri()
-        );
-        $muPlugins or $muPlugins = Location::new(WPMU_PLUGIN_DIR, plugins_url('', WPMU_PLUGIN_DIR));
-        $languages or $languages = static::discoverLanguages($root, $content);
+        $muPluginsDir = defined('WPMU_PLUGIN_DIR') ? (string)WPMU_PLUGIN_DIR : '';
+        $pluginsDir = defined('WP_PLUGIN_DIR') ? (string)WP_PLUGIN_DIR : '';
+
+        $root = $root ?? Location::new(ABSPATH, site_url(''));
+        $content = $content ?? Location::new(WP_CONTENT_DIR, content_url(''));
 
         return new self(
             $root,
             $content,
-            $vendor,
-            $plugins,
-            $themes,
-            $theme,
-            $muPlugins,
-            $languages
+            $vendor ?? static::discoverVendor($root, $content),
+            $plugins ?? Location::new($pluginsDir, plugins_url()),
+            $themes ?? Location::new(get_theme_root(), get_theme_root_uri()),
+            $theme ?? Location::new(get_stylesheet_directory(), get_stylesheet_directory_uri()),
+            $muPlugins ?? Location::new($muPluginsDir, plugins_url('', $muPluginsDir)),
+            $languages ?? static::discoverLanguages($root, $content)
         );
     }
 
@@ -154,7 +151,7 @@ class Locations
      */
     private static function discoverLanguages(Location $root, Location $content): Location
     {
-        if (!defined(WP_LANG_DIR)) {
+        if (!defined('WP_LANG_DIR')) {
             wp_set_lang_dir();
         }
 
@@ -162,7 +159,7 @@ class Locations
             return Location::compose($content, 'languages');
         }
 
-        return Location::new(WP_LANG_DIR, ($root->url() ?? '') . '/wp-includes/languages');
+        return Location::new((string)WP_LANG_DIR, ($root->url() ?? '') . '/wp-includes/languages');
     }
 
     /**

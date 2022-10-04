@@ -28,7 +28,7 @@ final class App
     private const PACKAGES_KEY = 'packages';
 
     /**
-     * @var array{context:WpContext, config: Config\Config, debug: bool | null, booting: bool}
+     * @var array{context: WpContext, config: Config\Config, debug: bool | null, booting: bool}
      */
     private $props;
 
@@ -90,6 +90,7 @@ final class App
     {
         do_action(self::ACTION_ERROR, $throwable);
 
+        /** @psalm-suppress TypeDoesNotContainType */
         if ($reThrow ?? (defined('WP_DEBUG') && WP_DEBUG)) {
             throw $throwable;
         }
@@ -163,6 +164,7 @@ final class App
     public function isDebug(): bool
     {
         if ($this->props['debug'] === null) {
+            /** @psalm-suppress TypeDoesNotContainType */
             $this->props['debug'] = defined('WP_DEBUG') && WP_DEBUG;
         }
 
@@ -521,7 +523,6 @@ final class App
 
         $this->bootQueue->rewind();
         while ($this->bootQueue->valid()) {
-            /** @var Modularity\Package $package */
             $package = $this->bootQueue->current();
             $type = $this->bootQueue->getInfo();
 
@@ -697,7 +698,6 @@ final class App
      */
     private function contextIs(string $context, string ...$contexts): bool
     {
-        /** @var WpContext $wpContext */
         $wpContext = $this->props['context'];
 
         return $wpContext->is($context, ...$contexts);

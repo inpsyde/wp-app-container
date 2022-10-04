@@ -37,8 +37,8 @@ trait AutoDiscoverIdTrait
             }
         }
 
-        static $instance = 0;
         /** @var int $instance */
+        static $instance = 0;
         $instance++;
         $this->discoveredId = "{$class}_{$instance}";
 
