@@ -183,6 +183,7 @@ class EnvConfig implements Config
     /**
      * @return array{env:string, keys:list<string>}
      */
+    #[\ReturnTypeWillChange]
     public function jsonSerialize(): array
     {
         return [
