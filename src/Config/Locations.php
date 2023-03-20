@@ -45,9 +45,9 @@ class Locations
 
         foreach (self::NAMES as $name) {
             $dir = $config->get('WP_APP_' . strtoupper("{$name}_DIR"));
-            if (!$dir || !is_string($dir) || !is_dir($dir)) {
+            if (($dir === '') || !is_string($dir)) {
                 // if not custom defined, let's use auto-discovered value, if any
-                is_array($discovered) or $discovered = (new self())->locations;
+                is_array($discovered) or $discovered = self::new()->locations;
                 $location = $discovered[$name] ?? null;
                 $location and $instance->addLocation($name, $location);
                 continue;
@@ -112,36 +112,86 @@ class Locations
      * @param Location $root
      * @param Location $content
      * @return Location|null
+     *
+     * @see Locations::findVendorDir()
      */
-    private static function discoverVendor(Location $root, Location $content): ?Location
+    protected static function discoverVendor(Location $root, Location $content): ?Location
     {
-        $contentUrl = $content->url();
-        $candidates = [
-            [$root->dir(), $root->url()],
-            [$content->dir(), $contentUrl],
-        ];
-
-        // Support for VIP + Inpsyde Composer VIP plugin
-        if (defined('WPCOM_VIP_CLIENT_MU_PLUGIN_DIR')) {
-            $candidates[] = [WPCOM_VIP_CLIENT_MU_PLUGIN_DIR, "{$contentUrl}/client-mu-plugins"];
+        $libRoot = untrailingslashit(wp_normalize_path(dirname(__DIR__, 2)));
+        $vendorDir = static::findVendorDir();
+        if ($vendorDir === null) {
+            return null;
         }
 
-        foreach ($candidates as [$basePath, $baseUrl]) {
-            if (!$basePath || !is_string($basePath)) {
-                continue;
-            }
-            $basePath = untrailingslashit(wp_normalize_path($basePath));
-            if (is_dir("{$basePath}/vendor/inpsyde/wp-app-container/src")) {
-                return Location::new("{$basePath}/vendor", $baseUrl ? "{$baseUrl}/vendor" : null);
-            }
-        }
+        $vendorDir = untrailingslashit(wp_normalize_path($vendorDir));
 
-        $vendorDir = wp_normalize_path(dirname(__DIR__, 4));
-        if (is_dir($vendorDir) && is_dir("{$vendorDir}/psr/container")) {
+        /*
+         * If vendor dir is found inside lib root, lib is installed as root package.
+         * We know the path, but can't determine the URL.
+         */
+        if (strpos($vendorDir, "{$libRoot}/") === 0) {
             return Location::new($vendorDir, null);
         }
 
+        $contentUrl = $content->url();
+        $candidates = [
+            [$content->dir(), $contentUrl],
+            [$root->dir(), $root->url()],
+        ];
+
+        // Support for VIP + Inpsyde Composer VIP plugin
+        if (
+            defined('WPCOM_VIP_CLIENT_MU_PLUGIN_DIR')
+            && is_string(\WPCOM_VIP_CLIENT_MU_PLUGIN_DIR)
+        ) {
+            /** @psalm-suppress MixedArgument */
+            $path = wp_normalize_path(\WPCOM_VIP_CLIENT_MU_PLUGIN_DIR);
+            array_unshift(
+                $candidates,
+                [
+                    untrailingslashit($path),
+                    ($contentUrl === null) ? null : "{$contentUrl}/client-mu-plugins",
+                ]
+            );
+        }
+
+        foreach ($candidates as [$basePath, $baseUrl]) {
+            if ($basePath === $vendorDir) {
+                return Location::new($basePath, $baseUrl);
+            }
+
+            if (strpos($vendorDir, "{$basePath}/") === 0) {
+                $vendorUrl = ($baseUrl === null)
+                    ? null
+                    : "{$baseUrl}/" . (substr($vendorDir, strlen("{$basePath}/")) ?: '');
+
+                return Location::new($vendorDir, $vendorUrl);
+            }
+        }
+
         return null;
+    }
+
+    /**
+     * @return string|null
+     */
+    protected static function findVendorDir(): ?string
+    {
+        /*
+         * ClassLoader is located in vendor dir. We have 3 options:
+         * - vendor dir not found
+         * - vendor dir is found inside lib root (lib is installed as root package)
+         * - lib root is found inside vendor dir (lib is installed as dependency)
+         */
+        $ref = class_exists(\Composer\Autoload\ClassLoader::class)
+            ? new \ReflectionClass(\Composer\Autoload\ClassLoader::class)
+            : null;
+        $file = $ref ? $ref->getFileName() : null;
+        if (!$file) {
+            return null;
+        }
+
+        return dirname($file, 2);
     }
 
     /**

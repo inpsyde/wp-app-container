@@ -4,33 +4,11 @@ declare(strict_types=1);
 
 namespace Inpsyde\App\Tests\Config;
 
-use Brain\Monkey\Filters;
-use Brain\Monkey\Functions;
 use Inpsyde\App\Config\EnvConfig;
 use Inpsyde\App\Tests\TestCase;
 
 class EnvConfigTest extends TestCase
 {
-    /**
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        Functions\when('network_site_url')->alias(static function (string $path = '/'): string {
-            return 'http://example.com/' . ltrim($path, '/');
-        });
-
-        Functions\when('content_url')->alias(static function (string $path = '/'): string {
-            return 'http://example.com/wp-content/' . ltrim($path, '/');
-        });
-
-        Functions\when('wp_normalize_path')->alias(static function (string $path): string {
-            return str_replace('\\', '/', $path);
-        });
-    }
-
     /**
      * @return void
      */
