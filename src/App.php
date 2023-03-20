@@ -107,17 +107,23 @@ final class App
         ?WpContext $context
     ) {
 
-        $container or $container = CompositeContainer::new();
+        if ($container instanceof CompositeContainer) {
+            $container = CompositeContainer::newFromExisting($container, $context, $config);
+        }
+
         if (!($container instanceof CompositeContainer)) {
-            $container = CompositeContainer::new()->addContainer($container);
+            $config = $config ?? new Config\EnvConfig();
+            $context = $context ?? WpContext::determine();
+            $containers = $container ? [$container] : [];
+            $container = CompositeContainer::newWithContainers($context, $config, ...$containers);
         }
 
         $this->container = $container;
         $this->status = AppStatus::new();
 
         $this->props = [
-            'config' => $config ?? new Config\EnvConfig(),
-            'context' => $context ?? WpContext::determine(),
+            'config' => $container->config(),
+            'context' => $container->context(),
             'debug' => null,
             'booting' => false,
         ];

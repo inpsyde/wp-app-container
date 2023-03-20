@@ -6,6 +6,8 @@ namespace Inpsyde\App\Tests\Provider;
 
 use Brain\Monkey\Actions;
 use Inpsyde\App\App;
+use Inpsyde\App\Config\EnvConfig;
+use Inpsyde\App\Config\Locations;
 use Inpsyde\App\Provider\Booted;
 use Inpsyde\App\Provider\ConfigurableProvider;
 use Inpsyde\App\Provider\ServiceProvider;
@@ -21,7 +23,11 @@ class ServiceProvidersTest extends TestCase
      */
     public function testProvideApp(): void
     {
-        $app = App::new(null, null, $this->factoryContext());
+        $locations = \Mockery::mock(Locations::class);
+        $locations->allows('vendorUrl')->andReturn(null);
+        $config = new EnvConfig();
+
+        $app = App::new($config->withLocations($locations), null, $this->factoryContext());
 
         Actions\expectDone(App::ACTION_ADDED_MODULE)
             ->once()
