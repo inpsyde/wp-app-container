@@ -7,7 +7,7 @@ namespace Inpsyde\App\Provider\Capabilities;
 trait ExtensionsTrait
 {
     /**
-     * @return array<string, callable(\Psr\Container\ContainerInterface):mixed>
+     * @return array<string, callable(mixed,\Psr\Container\ContainerInterface):mixed>
      */
     public function extensions(): array
     {

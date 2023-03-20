@@ -40,7 +40,7 @@ class TestContainer implements ContainerInterface
      * @param string $id
      * @return bool
      */
-    public function has(string $id)
+    public function has(string $id): bool
     {
         return array_key_exists($id, $this->things);
     }
