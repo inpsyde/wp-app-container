@@ -32,7 +32,7 @@ class Locations
     /**
      * @var array<string, Location|null>
      */
-    private $locations = [];
+    private $locations;
 
     /**
      * @param Config $config
@@ -117,7 +117,6 @@ class Locations
      */
     protected static function discoverVendor(Location $root, Location $content): ?Location
     {
-        $libRoot = untrailingslashit(wp_normalize_path(dirname(__DIR__, 2)));
         $vendorDir = static::findVendorDir();
         if ($vendorDir === null) {
             return null;
@@ -129,15 +128,13 @@ class Locations
          * If vendor dir is found inside lib root, lib is installed as root package.
          * We know the path, but can't determine the URL.
          */
+        $libRoot = untrailingslashit(wp_normalize_path(dirname(__DIR__, 2)));
         if (strpos($vendorDir, "{$libRoot}/") === 0) {
             return Location::new($vendorDir, null);
         }
 
         $contentUrl = $content->url();
-        $candidates = [
-            [$content->dir(), $contentUrl],
-            [$root->dir(), $root->url()],
-        ];
+        $candidates = [[$root->dir(), $root->url()], [$content->dir(), $contentUrl]];
 
         // Support for VIP + Inpsyde Composer VIP plugin
         if (
@@ -157,7 +154,7 @@ class Locations
 
         foreach ($candidates as [$basePath, $baseUrl]) {
             if ($basePath === $vendorDir) {
-                return Location::new($basePath, $baseUrl);
+                return Location::new($vendorDir, $baseUrl);
             }
 
             if (strpos($vendorDir, "{$basePath}/") === 0) {
@@ -415,6 +412,40 @@ class Locations
     }
 
     /**
+     * Returns the URL by given path
+     *
+     * @param string $path
+     * @return string|null
+     */
+    public function resolveUrlByPath(string $path): ?string
+    {
+        $rawDir = wp_normalize_path($path);
+        $dir = untrailingslashit($rawDir);
+        $suffix = ($rawDir === $dir) ? '' : '/';
+
+        $found = ['name' => '', 'path' => '', 'length' => -1];
+        foreach (self::NAMES as $name) {
+            $path = rtrim($this->resolve($name, self::DIR) ?? '', '/');
+            if ($path === $dir) {
+                return $this->resolve($name, self::URL, $suffix);
+            }
+            if (strpos($dir, "{$path}/") !== 0) {
+                continue;
+            }
+            $length = strlen($path);
+            ($length > $found['length']) and $found = compact('name', 'path', 'length');
+        }
+
+        if (!$found['name'] || !$found['path']) {
+            return $this->maybeResolveClientMuPluginUrlByPath($dir, $suffix);
+        }
+
+        $relative = substr($dir, strlen($found['path'])) ?: '';
+
+        return $this->resolveUrl($found['name'], $relative . $suffix);
+    }
+
+    /**
      * Returns the website root url.
      *
      * @param string $path
@@ -448,5 +479,40 @@ class Locations
         $path = $isDir ? wp_normalize_path($path) : filter_var($path, FILTER_SANITIZE_URL);
 
         return (string)trailingslashit($base) . ltrim((string)$path, '\\/');
+    }
+
+    /**
+     * @param string $dir
+     * @param string $suffix
+     * @return string|null
+     */
+    private function maybeResolveClientMuPluginUrlByPath(string $dir, string $suffix): ?string
+    {
+        $clientMuPlugins = defined('WPCOM_VIP_CLIENT_MU_PLUGIN_DIR')
+            ? \WPCOM_VIP_CLIENT_MU_PLUGIN_DIR
+            : '';
+
+        if (($clientMuPlugins === '') || !is_string($clientMuPlugins)) {
+            return null;
+        }
+
+        $baseUrl = $this->resolveUrl(self::CONTENT, '/client-mu-plugins');
+        if ($baseUrl === null) {
+            return null;
+        }
+
+        $clientMuPlugins = rtrim(wp_normalize_path($clientMuPlugins), '/');
+
+        if ($dir === $clientMuPlugins) {
+            return $baseUrl . $suffix;
+        }
+
+        if (strpos($dir, "{$clientMuPlugins}/") === 0) {
+            $relative = substr($dir, strlen($clientMuPlugins)) ?: '';
+
+            return $baseUrl . $relative . $suffix;
+        }
+
+        return null;
     }
 }

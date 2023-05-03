@@ -15,6 +15,9 @@ use Inpsyde\App\Tests\TestLocations;
  */
 class LocationsTest extends TestCase
 {
+    /**
+     * @return void
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -92,5 +95,60 @@ class LocationsTest extends TestCase
 
         static::assertSame(TestLocations::VENDOR_DIR, $locations->vendorDir(''));
         static::assertSame(WP_CONTENT_URL . '/client-mu-plugins/vendor/', $locations->vendorUrl());
+    }
+
+    /**
+     * @test
+     */
+    public function testUrlByPath(): void
+    {
+        define('WPCOM_VIP_CLIENT_MU_PLUGIN_DIR', dirname(TestLocations::VENDOR_DIR));
+
+        $locations = TestLocations::new();
+
+        static::assertSame(
+            'https://example.com/wp-includes/something/something',
+            $locations->resolveUrlByPath(ABSPATH . 'wp-includes/something/something')
+        );
+
+        static::assertSame(
+            'https://example.com/',
+            $locations->resolveUrlByPath(ABSPATH)
+        );
+
+        static::assertSame(
+            'https://example.com/wp-content/something',
+            $locations->resolveUrlByPath(WP_CONTENT_DIR . '/something')
+        );
+
+        static::assertSame(
+            'https://example.com/wp-content',
+            $locations->resolveUrlByPath(WP_CONTENT_DIR)
+        );
+
+        static::assertSame(
+            'https://example.com/wp-content/client-mu-plugins/vendor/acme/thingy',
+            $locations->resolveUrlByPath(TestLocations::VENDOR_DIR . '/acme/thingy')
+        );
+
+        static::assertSame(
+            'https://example.com/wp-content/client-mu-plugins/vendor',
+            $locations->resolveUrlByPath(TestLocations::VENDOR_DIR)
+        );
+
+        static::assertSame(
+            'https://example.com/wp-content/client-mu-plugins',
+            $locations->resolveUrlByPath(WPCOM_VIP_CLIENT_MU_PLUGIN_DIR)
+        );
+
+        static::assertSame(
+            'https://example.com/wp-content/client-mu-plugins/something/file.js',
+            $locations->resolveUrlByPath(WPCOM_VIP_CLIENT_MU_PLUGIN_DIR . '/something/file.js')
+        );
+
+        static::assertSame(
+            'https://example.com/wp-content/plugins/something/something/',
+            $locations->resolveUrlByPath(WP_PLUGIN_DIR . '/something/something/')
+        );
     }
 }

@@ -1,0 +1,27 @@
+{
+    "name": "inpsyde/test-wac-plugin",
+    "type": "wordpress-plugin",
+    "license": "gpl-2.0-or-later",
+    "minimum-stability": "dev",
+    "authors": [
+        {
+            "name": "Inpsyde GmbH",
+            "role": "Company",
+            "email": "hello@inpsyde.com",
+            "homepage": "https://inpsyde.com/en"
+        },
+        {
+            "name": "Giuseppe Mazzapica",
+            "role": "Developer",
+            "email": "g.mazzapica@inpsyde.com"
+        }
+    ],
+    "require": {
+        "inpsyde/wp-app-container": "^3@dev"
+    },
+    "autoload": {
+        "classmap": [
+            "src/"
+        ]
+    }
+}

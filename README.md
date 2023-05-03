@@ -157,7 +157,7 @@ it will be possible to do:
 
 ```php
 <?php
-/** @var Inpsyde\App\CompositeContainer $container */
+/** @var \Inpsyde\App\CompositeContainer $container */
 $container->config()->get('ONE'); // 1
 $container->config()->get('TWO'); // 2
 ```
@@ -166,7 +166,7 @@ Note that `EnvConfig::get()` accepts an optional second `$default` parameter to 
 
 ```php
 <?php
-/** @var Inpsyde\App\CompositeContainer $container */
+/** @var \Inpsyde\App\CompositeContainer $container */
 $container->config()->get('SOMETHING_NOT_DEFINED', 3); // 3
 ```
 
@@ -537,8 +537,7 @@ Besides the two PSR-11 methods, the container has the methods:
 <?php
 namespace AcmeInc\Redirector;
 
-use Inpsyde\App\CompositeContainer;
-use Inpsyde\App\Provider\Booted;
+use Inpsyde\App\CompositeContainer;use Inpsyde\App\Provider\Booted;
 
 final class Provider extends Booted {
     
@@ -589,8 +588,7 @@ In the following example I will use [PHP-DI](http://php-di.org), but any PSR-11-
 <?php
 namespace AcmeInc\Redirector;
 
-use Inpsyde\App\Provider\Booted;
-use Inpsyde\App\CompositeContainer;
+use Inpsyde\App\CompositeContainer;use Inpsyde\App\Provider\Booted;
 
 final class Provider extends Booted {
    

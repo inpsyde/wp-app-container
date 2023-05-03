@@ -51,6 +51,8 @@ final class AppStatus
         return new static();
     }
 
+    /**
+     */
     private function __construct()
     {
         $this->status = self::IDLE;

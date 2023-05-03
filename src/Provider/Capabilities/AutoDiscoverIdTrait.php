@@ -20,7 +20,7 @@ trait AutoDiscoverIdTrait
             return $this->discoveredId;
         }
 
-        if (isset($this->id) && is_string($this->id)) {
+        if (isset($this->id) && is_string($this->id) && ($this->id !== '')) {
             $this->discoveredId = $this->id;
 
             return $this->discoveredId;
@@ -30,7 +30,7 @@ trait AutoDiscoverIdTrait
 
         if (defined("{$class}::ID")) {
             $byConstant = constant("{$class}::ID");
-            if (is_string($byConstant)) {
+            if (is_string($byConstant) && ($byConstant !== '')) {
                 $this->discoveredId = $byConstant;
 
                 return $this->discoveredId;

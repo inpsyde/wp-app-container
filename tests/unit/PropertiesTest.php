@@ -35,9 +35,9 @@ class PropertiesTest extends TestCase
             $config->set("WP_APP_{$const}_URL", $baseUrl . $name);
         }
 
-        $properties = new Properties(Locations::fromConfig($config), false);
+        $properties = new Properties(Locations::fromConfig($config), null, false);
 
-        static::assertSame('wp-app', $properties->baseName());
+        static::assertSame('inpsyde-wp-app', $properties->baseName());
         static::assertSame($baseDir, $properties->basePath());
         static::assertSame(
             'https://example.com/vendor/inpsyde/wp-app-container/',

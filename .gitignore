@@ -1,4 +1,11 @@
 /vendor/
-phpunit.xml
-.phpunit.result.cache
-composer.lock
+/phpunit.xml
+/.phpunit.result.cache
+/composer.lock
+
+/tests/example/vendor/
+/tests/example/project/plugins/*
+!/tests/example/project/plugins/.gitkeep
+/tests/example/project/themes/*
+!/tests/example/project/themes/.gitkeep
+/tests/example/.phpunit.result.cache

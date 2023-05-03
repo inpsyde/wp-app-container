@@ -1,0 +1,68 @@
+{
+    "name": "inpsyde/wp-app-container-test-project",
+    "type": "project",
+    "license": "gpl-2.0-or-later",
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "repositories": [
+        {
+            "type": "path",
+            "url": "sources/*/*",
+            "only": ["inpsyde/test-*"],
+            "options": {
+                "symlink": true
+            }
+        },
+        {
+            "type": "path",
+            "url": "../../",
+            "only": ["inpsyde/wp-app-container"],
+            "options": {
+                "symlink": true
+            }
+        }
+    ],
+    "require": {
+        "php": ">= 7.4 < 8.3",
+		"composer/installers": "^2.2",
+        "roots/wordpress-no-content": ">= 6.1.1",
+        "antecedent/patchwork" : "^2.1.25",
+        "phpunit/phpunit": "^9.6.5",
+        "psr/log": "^1.1.4",
+        "inpsyde/wp-app-container": "*",
+        "inpsyde/test-modularity-lib": "*",
+        "inpsyde/test-wac-lib": "*",
+        "inpsyde/test-modularity-plugin": "*",
+        "inpsyde/test-modularity-plugin-two": "*",
+        "inpsyde/test-modularity-plugin-three": "*",
+        "inpsyde/test-wac-plugin": "*",
+        "inpsyde/test-modularity-theme": "*"
+    },
+    "autoload": {
+        "files": [
+            "patchwork.php",
+            "wordpress.php"
+        ],
+        "psr-4": {
+            "Inpsyde\\App\\Tests\\Project\\": "cases/"
+        }
+    },
+    "extra": {
+        "installer-paths": {
+            "project/themes/{$name}": [
+                "type:wordpress-theme"
+            ],
+            "project/plugins/{$name}": [
+                "type:wordpress-plugin"
+            ]
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "composer/*": true
+        }
+    },
+    "scripts": {
+        "tests": "@php ./vendor/phpunit/phpunit/phpunit --no-coverage"
+    }
+}

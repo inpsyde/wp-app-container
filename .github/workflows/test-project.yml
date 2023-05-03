@@ -1,0 +1,47 @@
+name: PHP Test Project
+
+on:
+    workflow_dispatch:
+    pull_request:
+        paths:
+            - '**workflows/test-project.yml'
+            - '**.php'
+            - '**tests/example/phpunit.xml.dist'
+            - '**composer.json'
+    push:
+        paths:
+            - '**workflows/test-project.yml'
+            - '**.php'
+            - '**tests/example/phpunit.xml.dist'
+            - '**composer.json'
+
+concurrency:
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    test-project-php:
+        runs-on: ubuntu-latest
+        timeout-minutes: 5
+
+        strategy:
+            matrix:
+            php-version: ["7.4", "8.0", "8.1", "8.2"]
+
+        steps:
+            -   name: Checkout
+                uses: actions/checkout@v3
+
+            -   name: Setup PHP
+                uses: shivammathur/setup-php@v2
+                with:
+                    php-version: ${{ matrix.php-version }}
+                    coverage: none
+
+            -   name: Install dependencies
+                uses: ramsey/composer-install@v2
+                with:
+                    composer-options: '-d tests/example'
+
+            -   name: Run tests
+                run: composer tests:example-project

@@ -4,24 +4,61 @@ declare(strict_types=1);
 
 namespace Inpsyde\App;
 
+use Inpsyde\App\Config\Locations;
 use Inpsyde\Modularity\Properties\BaseProperties;
 use Inpsyde\Modularity\Properties\LibraryProperties;
 
 class Properties extends BaseProperties
 {
+    private const SUFFIXES = ['0-before-mu-plugins', '1-before-plugins', '2-plugins', '3-themes'];
+
     /**
-     * @param Config\Locations $locations
-     * @param bool $enableDebug
+     * @var AppStatus|null
      */
-    public function __construct(Config\Locations $locations, bool $enableDebug)
+    private $status;
+
+    /**
+     * @param Locations $locations
+     * @param AppStatus|null $status
+     * @param bool $enableDebug
+     * @throws \Exception
+     */
+    public function __construct(Config\Locations $locations, ?AppStatus $status, bool $enableDebug)
     {
         $path = dirname(__DIR__);
         parent::__construct(
-            'wp-app',
+            'inpsyde-wp-app',
             $path,
             $locations->vendorUrl('inpsyde/wp-app-container'),
             LibraryProperties::new("{$path}/composer.json")->properties
         );
         $this->isDebug = $enableDebug;
+        $this->status = $status;
+    }
+
+    /**
+     * @return string
+     */
+    public function baseName(): string
+    {
+        $base = parent::baseName();
+        if (!$this->status) {
+            return $base;
+        }
+
+        $key = 0;
+        switch (true) {
+            case $this->status->isEarly():
+                $key = 1;
+                break;
+            case $this->status->isPluginsStep():
+                $key = 2;
+                break;
+            case $this->status->isThemesStep():
+                $key = 3;
+                break;
+        }
+
+        return "{$base}-" . self::SUFFIXES[$key];
     }
 }

@@ -22,6 +22,6 @@ trait NoBootTrait
      */
     final public function run(ContainerInterface $container): bool
     {
-        return false;
+        return true;
     }
 }

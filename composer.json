@@ -34,9 +34,6 @@
         "roots/wordpress-no-content": ">= 6.1.1"
     },
     "autoload": {
-        "files": [
-            "inc/functions.php"
-        ],
         "psr-4": {
             "Inpsyde\\App\\": "src/"
         }
@@ -52,14 +49,15 @@
     "minimum-stability": "stable",
     "scripts": {
         "cs": "@php ./vendor/squizlabs/php_codesniffer/bin/phpcs",
-        "phpcompat": "@php ./vendor/squizlabs/php_codesniffer/bin/phpcs -p . --standard=PHPCompatibility --ignore=*/vendor/* --extensions=php --basepath=./ --runtime-set testVersion 7.2-",
         "psalm": "@php ./vendor/vimeo/psalm/psalm --no-cache --output-format=compact",
         "tests": "@php ./vendor/phpunit/phpunit/phpunit",
         "tests:no-cov": "@php ./vendor/phpunit/phpunit/phpunit --no-coverage",
+        "tests:example-project": "composer -d tests/example -q install && composer -d tests/example tests",
         "qa": [
             "@cs",
             "@psalm",
-            "@tests:no-cov"
+            "@tests:no-cov",
+            "@tests:example-project"
         ]
     },
     "extra": {
