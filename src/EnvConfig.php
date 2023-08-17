@@ -255,7 +255,8 @@ class EnvConfig implements SiteConfig
     /**
      * @return array{env:string, hosting:string, keys:array<string>}
      */
-    public function jsonSerialize()
+    #[\ReturnTypeWillChange]
+    public function jsonSerialize(): array
     {
         return [
             'env' => $this->env(),
