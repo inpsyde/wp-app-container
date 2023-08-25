@@ -34,9 +34,6 @@
         "vimeo/psalm": "^4.26.0"
     },
     "autoload": {
-        "files": [
-            "inc/functions.php"
-        ],
         "psr-4": {
             "Inpsyde\\App\\": "src/"
         }
