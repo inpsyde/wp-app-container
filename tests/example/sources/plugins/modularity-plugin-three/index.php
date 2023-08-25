@@ -38,4 +38,4 @@ function plugin(): Package
     return $plugin;
 }
 
-plugin()->boot(new PluginModule());
+plugin()->addModule(new PluginModule())->boot();

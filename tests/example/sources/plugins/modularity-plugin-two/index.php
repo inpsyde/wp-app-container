@@ -44,7 +44,7 @@ add_action(
     static function (): void {
         $plugin = plugin();
         $plugin->connect(ModularityPlugin2\plugin());
-        $plugin->boot(new PluginModule());
+        $plugin->addModule(new PluginModule())->boot();
     },
     1
 );

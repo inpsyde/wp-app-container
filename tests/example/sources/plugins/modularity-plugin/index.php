@@ -41,6 +41,6 @@ function plugin(): Package
 add_action(
     'plugins_loaded',
     static function (): void {
-        plugin()->boot(new CollectorModule());
+        plugin()->addModule(new CollectorModule())->boot();
     }
 );

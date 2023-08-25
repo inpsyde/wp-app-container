@@ -57,7 +57,7 @@
             "@cs",
             "@psalm",
             "@tests:no-cov",
-            "tests:example-project"
+            "@tests:example-project"
         ]
     },
     "extra": {
