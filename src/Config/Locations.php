@@ -32,7 +32,7 @@ class Locations
     /**
      * @var array<string, Location|null>
      */
-    private $locations = [];
+    private $locations;
 
     /**
      * @param Config $config
@@ -117,13 +117,13 @@ class Locations
      */
     protected static function discoverVendor(Location $root, Location $content): ?Location
     {
-        $libRoot = untrailingslashit(wp_normalize_path(dirname(__DIR__, 2)));
         $vendorDir = static::findVendorDir();
         if ($vendorDir === null) {
             return null;
         }
 
         $vendorDir = untrailingslashit(wp_normalize_path($vendorDir));
+        $libRoot = untrailingslashit(wp_normalize_path(dirname(__DIR__, 2)));
 
         /*
          * If vendor dir is found inside lib root, lib is installed as root package.
@@ -134,10 +134,7 @@ class Locations
         }
 
         $contentUrl = $content->url();
-        $candidates = [
-            [$content->dir(), $contentUrl],
-            [$root->dir(), $root->url()],
-        ];
+        $candidates = [[$root->dir(), $root->url()], [$content->dir(), $contentUrl]];
 
         // Support for VIP + Inpsyde Composer VIP plugin
         if (
@@ -157,7 +154,7 @@ class Locations
 
         foreach ($candidates as [$basePath, $baseUrl]) {
             if ($basePath === $vendorDir) {
-                return Location::new($basePath, $baseUrl);
+                return Location::new($vendorDir, $baseUrl);
             }
 
             if (strpos($vendorDir, "{$basePath}/") === 0) {
