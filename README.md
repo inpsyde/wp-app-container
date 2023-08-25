@@ -157,7 +157,7 @@ it will be possible to do:
 
 ```php
 <?php
-/** @var Inpsyde\App\CompositeContainer $container */
+/** @var \Inpsyde\App\CompositeContainer $container */
 $container->config()->get('ONE'); // 1
 $container->config()->get('TWO'); // 2
 ```
@@ -166,7 +166,7 @@ Note that `EnvConfig::get()` accepts an optional second `$default` parameter to 
 
 ```php
 <?php
-/** @var Inpsyde\App\CompositeContainer $container */
+/** @var \Inpsyde\App\CompositeContainer $container */
 $container->config()->get('SOMETHING_NOT_DEFINED', 3); // 3
 ```
 
@@ -233,7 +233,6 @@ For example:
 ```php
 namespace AwesomeWebsite\Config;
  
-use Inpsyde\App\Location\Locations;
 use Inpsyde\App\Location\Locations;
 
 const LOCATIONS = [

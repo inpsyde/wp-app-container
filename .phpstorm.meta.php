@@ -2,6 +2,12 @@
 
 namespace PHPSTORM_META {
 
+    override(\Psr\Container\ContainerInterface::get(0),
+        map([
+            '' => '@',
+        ])
+    );
+
     override(\Inpsyde\App\CompositeContainer::get(0),
         map([
             '' => '@',
