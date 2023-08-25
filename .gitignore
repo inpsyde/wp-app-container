@@ -2,3 +2,10 @@
 /.phpunit.result.cache
 /composer.lock
 /phpunit.xml
+
+/tests/example/vendor/
+/tests/example/project/plugins/*
+/tests/example/project/themes/*
+/tests/example/.phpunit.result.cache
+
+!.gitkeep

@@ -52,10 +52,12 @@
         "psalm": "@php ./vendor/vimeo/psalm/psalm --no-cache --output-format=compact",
         "tests": "@php ./vendor/phpunit/phpunit/phpunit",
         "tests:no-cov": "@php ./vendor/phpunit/phpunit/phpunit --no-coverage",
+        "tests:example-project": "composer -d tests/example -q install && composer -d tests/example tests",
         "qa": [
             "@cs",
             "@psalm",
-            "@tests:no-cov"
+            "@tests:no-cov",
+            "tests:example-project"
         ]
     },
     "extra": {

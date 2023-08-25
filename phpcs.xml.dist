@@ -12,6 +12,12 @@
     <file>./src</file>
     <file>./tests/</file>
 
+    <exclude-pattern>*/tests/example/project/plugins/*</exclude-pattern>
+    <exclude-pattern>*/tests/example/project/themes/*</exclude-pattern>
+    <exclude-pattern>*/tests/example/vendor/*</exclude-pattern>
+    <exclude-pattern>*/tests/example/patchwork.php</exclude-pattern>
+    <exclude-pattern>*/tests/example/wordpress.php</exclude-pattern>
+
     <rule ref="Inpsyde">
         <exclude name="WordPressVIPMinimum.Constants.ConstantString.NotCheckingConstantName"/>
     </rule>
@@ -30,6 +36,16 @@
 
     <rule ref="Inpsyde.CodeQuality.ForbiddenPublicProperty">
         <exclude-pattern>*/tests/*</exclude-pattern>
+    </rule>
+
+    <rule ref="PSR1.Files.SideEffects.FoundWithSymbols">
+        <exclude-pattern>*/tests/example/project/mu-plugins/*</exclude-pattern>
+        <exclude-pattern>*/tests/example/sources/plugins/modularity-plugin/index.php</exclude-pattern>
+        <exclude-pattern>*/tests/example/sources/plugins/wac-plugin/index.php</exclude-pattern>
+    </rule>
+
+    <rule ref="Inpsyde.CodeQuality.Psr4">
+        <exclude-pattern>*/tests/example/project/mu-plugins/*</exclude-pattern>
     </rule>
 
 </ruleset>
