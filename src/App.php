@@ -253,8 +253,9 @@ final class App
 
             $this->status = $this->status->next($this); // booted
 
-            $lastRun and do_action(self::ACTION_BOOTED, $this->container);
-            //
+            if ($lastRun) {
+                do_action(self::ACTION_BOOTED, $this->container);
+            }
         } catch (\Throwable $throwable) {
             static::handleThrowable($throwable, $this->isDebug());
         } finally {
@@ -723,8 +724,6 @@ final class App
      */
     private function contextIs(string $context, string ...$contexts): bool
     {
-        $wpContext = $this->prop('context');
-
-        return $wpContext->is($context, ...$contexts);
+        return $this->prop('context')->is($context, ...$contexts);
     }
 }
