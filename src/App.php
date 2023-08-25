@@ -17,13 +17,13 @@ final class App
     public const ACTION_BOOTED = 'wp-app.all-providers-booted';
     public const ACTION_ADDED_MODULE = 'wp-app.module-added';
     public const ACTION_BOOTED_MODULE = 'wp-app.module-booted';
+    public const ACTION_READY_PACKAGE = 'wp-app.package-ready';
     public const ACTION_ERROR = 'wp-app.error';
 
     private const PACKAGE_INTERNAL_EARLY = 1;
     private const PACKAGE_INTERNAL = 2;
     private const PACKAGE_EXTERNAL = 16;
-    private const PACKAGE_EXTERNAL_RESERVED = 32;
-
+    private const PACKAGE_EXTERNAL_TO_BOOT = 64;
     private const EVENTS_KEY = 'events';
     private const PACKAGES_KEY = 'packages';
 
@@ -38,29 +38,24 @@ final class App
     private $status;
 
     /**
-     * @var \SplObjectStorage<Modularity\Package, int>|null
-     */
-    private $bootQueue;
-
-    /**
-     * @var \SplObjectStorage<ServiceProvider, list<string>>|null
-     */
-    private $deferredProviders;
-
-    /**
      * @var CompositeContainer
      */
     private $container;
 
     /**
-     * @var Modularity\Package|null
+     * @var array<"standard"|"early"|"connecting", Modularity\Package|null>
      */
-    private $modularity = null;
+    private $internalPackages = ['standard' => null, 'early' => null, 'connecting' => null];
 
     /**
-     * @var Modularity\Package|null
+     * @var \SplObjectStorage<Modularity\Package, int>|null
      */
-    private $modularityForEarly = null;
+    private $bootQueue = null;
+
+    /**
+     * @var \SplObjectStorage<ServiceProvider, list<string>>|null
+     */
+    private $deferredProviders = null;
 
     /**
      * @var array{status?:string, packages?:array, events?:array, context?:array, config?:array}
@@ -242,9 +237,8 @@ final class App
 
                 do_action(self::ACTION_REGISTERED);
 
-                if ($this->modularity) {
-                    $this->pushToBootQueue($this->modularity, self::PACKAGE_INTERNAL);
-                }
+                $package = $this->internalPackage('standard');
+                $package and $this->pushToBootQueue($package, self::PACKAGE_INTERNAL);
             }
 
             $this->status = $this->status->next($this); // booting
@@ -353,9 +347,9 @@ final class App
      * @param string ...$contexts
      * @return App
      */
-    public function addPackage(Modularity\Package $package, string ...$contexts): App
+    public function sharePackage(Modularity\Package $package, string ...$contexts): App
     {
-        return $this->addModularityPackage(self::PACKAGE_EXTERNAL_RESERVED, $package, ...$contexts);
+        return $this->addExternalModularityPackage(self::PACKAGE_EXTERNAL, $package, ...$contexts);
     }
 
     /**
@@ -363,9 +357,9 @@ final class App
      * @param string ...$contexts
      * @return App
      */
-    public function sharePackage(Modularity\Package $package, string ...$contexts): App
+    public function sharePackageToBoot(Modularity\Package $package, string ...$contexts): App
     {
-        return $this->addModularityPackage(self::PACKAGE_EXTERNAL, $package, ...$contexts);
+        return $this->addExternalModularityPackage(self::PACKAGE_EXTERNAL_TO_BOOT, $package, ...$contexts);
     }
 
     /**
@@ -400,23 +394,51 @@ final class App
     }
 
     /**
+     * @param "standard"|"early"|"connecting" $which
+     * @return ?Modularity\Package
+     */
+    private function internalPackage(string $which): ?Modularity\Package
+    {
+        return $this->internalPackages[$which];
+    }
+
+    /**
      * @param bool $early
      * @return void
      */
     private function initializeModularity(bool $early = false): void
     {
-        if (($early && $this->modularityForEarly) || (!$early && $this->modularity)) {
+        if (
+            ($early && $this->internalPackage('early'))
+            || (!$early && $this->internalPackage('standard'))
+        ) {
             return;
         }
 
-        $properties = new Properties($this->config()->locations(), $this->status, $this->isDebug());
+        $config = $this->config();
+        $properties = new Properties($config->locations(), $this->status, $this->isDebug());
         $package = Modularity\Package::new($properties, $this->container);
 
-        $early
-            ? $this->modularityForEarly = $package
-            : $this->modularity = $package;
+        $key = $early ? 'early' : 'standard';
+        $this->internalPackages[$key] = $package;
 
         $early and $this->pushToBootQueue($package, self::PACKAGE_INTERNAL_EARLY);
+    }
+
+    /**
+     * @return Modularity\Package
+     */
+    private function connectingModularityPackage(): Modularity\Package
+    {
+        $package = $this->internalPackage('connecting');
+        if (!$package) {
+            $properties = new Properties($this->config()->locations(), null, false);
+            $package = Modularity\Package::new($properties, $this->container);
+            $package->boot();
+            $this->internalPackages['connecting'] = $package;
+        }
+
+        return $package;
     }
 
     /**
@@ -458,7 +480,7 @@ final class App
         $this->ensureWillBoot();
 
         /** @var Modularity\Package $package */
-        $package = $early ? $this->modularityForEarly : $this->modularity;
+        $package = $this->internalPackage($early ? 'early' : 'standard');
         $package->addModule($module);
 
         $this->syncModularityStatus($package, Modularity\Package::MODULE_ADDED);
@@ -474,7 +496,7 @@ final class App
      * @param string ...$contexts
      * @return App
      */
-    private function addModularityPackage(
+    private function addExternalModularityPackage(
         int $type,
         Modularity\Package $package,
         string ...$contexts
@@ -487,7 +509,7 @@ final class App
         $modulesStatus = $package->modulesStatus();
 
         if ($wrongContext || $failed) {
-            $modules = (array)($modulesStatus[Modularity\Package::MODULE_ADDED] ?? []);
+            $modules = $modulesStatus[Modularity\Package::MODULE_ADDED] ?? [];
             $reason = $wrongContext ? 'wrong context' : 'package failed';
             foreach ($modules as $id) {
                 $this->moduleNotAdded($id, $reason);
@@ -500,20 +522,28 @@ final class App
         $this->syncModularityStatus($package, Modularity\Package::MODULE_ADDED);
         $this->maybeSetLibraryUrl($package);
 
-        $added = (array)($modulesStatus[Modularity\Package::MODULE_ADDED] ?? []);
+        $added = $modulesStatus[Modularity\Package::MODULE_ADDED] ?? [];
         foreach ($added as $id) {
             $this->fireHook(self::ACTION_ADDED_MODULE, $id);
         }
 
-        if ($package->statusIs(Modularity\Package::STATUS_BOOTED)) {
-            if ($type !== self::PACKAGE_EXTERNAL_RESERVED) {
-                $this->container->addContainer($package->container());
+        if (
+            $package->statusIs(Modularity\Package::STATUS_BOOTED)
+            || $package->statusIs(Modularity\Package::STATUS_FAILED)
+        ) {
+            if (did_action($package->hookName(Modularity\Package::ACTION_READY))) {
+                $this->fireHook(self::ACTION_READY_PACKAGE, $package);
             }
+            $this->handleModularityBoot($package);
 
             return $this;
         }
 
-        $this->pushToBootQueue($package, $type);
+        $package->connect($this->connectingModularityPackage());
+
+        ($type === self::PACKAGE_EXTERNAL_TO_BOOT)
+            ? $this->pushToBootQueue($package, $type)
+            : $this->waitForPackageBoot($package);
 
         return $this;
     }
@@ -550,31 +580,72 @@ final class App
         $this->bootQueue->rewind();
         while ($this->bootQueue->valid()) {
             $package = $this->bootQueue->current();
-            $type = $this->bootQueue->getInfo();
-
             $this->bootQueue->next();
-
-            $booted = $package->boot();
-
-            $this->syncModularityStatus($package, Modularity\Package::MODULE_EXECUTED);
-
-            if (!$booted) {
-                continue;
-            }
-
-            if ($type !== self::PACKAGE_EXTERNAL_RESERVED) {
-                $this->container->addContainer($package->container());
-            }
-
-            $statuses = $package->modulesStatus();
-            $executed = (array)($statuses[Modularity\Package::MODULE_EXECUTED] ?? []);
-            foreach ($executed as $id) {
-                $this->fireHook(self::ACTION_BOOTED_MODULE, $id);
-            }
+            $this->bootModularityPackage($package);
         }
 
         $this->bootQueue = null;
-        $this->modularityForEarly = null;
+        $this->internalPackages['early'] = null;
+    }
+
+    /**
+     * @param Modularity\Package $package
+     * @return void
+     */
+    private function bootModularityPackage(Modularity\Package $package): void
+    {
+        try {
+            $package->boot();
+        } catch (\Throwable $throwable) {
+            static::handleThrowable($throwable, $this->isDebug());
+        } finally {
+            $this->handleModularityBoot($package);
+        }
+    }
+
+    /**
+     * @param Modularity\Package $package
+     * @return void
+     */
+    private function waitForPackageBoot(Modularity\Package $package): void
+    {
+        add_action(
+            $package->hookName(Modularity\Package::ACTION_READY),
+            function (Modularity\Package $readyPackage) {
+                $this->syncModularityStatus($readyPackage, Modularity\Package::MODULE_ADDED);
+                $this->fireHook(self::ACTION_READY_PACKAGE, $readyPackage);
+                $this->handleModularityBoot($readyPackage, true);
+            }
+        );
+    }
+
+    /**
+     * @param Modularity\Package $package
+     * @param bool $onPackageReady
+     * @return void
+     */
+    private function handleModularityBoot(
+        Modularity\Package $package,
+        bool $onPackageReady = false
+    ): void {
+
+        $status = $package->statusIs(Modularity\Package::STATUS_FAILED)
+            ? Modularity\Package::MODULE_EXECUTION_FAILED
+            : Modularity\Package::MODULE_EXECUTED;
+        $this->syncModularityStatus($package, $status);
+
+        if (
+            $package->statusIs(Modularity\Package::STATUS_BOOTED)
+            || ($onPackageReady && $package->statusIs(Modularity\Package::STATUS_INITIALIZED))
+        ) {
+            $this->container->addContainer($package->container());
+        }
+
+        $statuses = $package->modulesStatus();
+        $executed = $statuses[Modularity\Package::MODULE_EXECUTED] ?? [];
+        foreach ($executed as $id) {
+            $this->fireHook(self::ACTION_BOOTED_MODULE, $id);
+        }
     }
 
     /**
