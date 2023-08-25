@@ -132,6 +132,14 @@ final class CompositeContainer implements ContainerInterface
      */
     public function get(string $id)
     {
+        if ($id === Config::class) {
+            return $this->config();
+        }
+
+        if ($id === WpContext::class) {
+            return $this->context();
+        }
+
         $container = $this->findContainerFor($id);
         if (!$container) {
             $error = "Service {$id} not found.";
@@ -149,6 +157,10 @@ final class CompositeContainer implements ContainerInterface
      */
     public function has(string $id): bool
     {
+        if (in_array($id, [Config::class, WpContext::class], true)) {
+            return true;
+        }
+
         if ($this->checking === $id) {
             return false;
         }
