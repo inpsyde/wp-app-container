@@ -2,6 +2,13 @@ name: PHP Quality Assurance
 
 on:
     pull_request:
+        paths:
+            - '**workflows/qa.yml'
+            - '**.php'
+            - '**phpcs.xml.dist'
+            - '**phpunit.xml.dist'
+            - '**psalm.xml'
+            - '**composer.json'
     push:
         paths:
             - '**workflows/qa.yml'
@@ -42,3 +49,21 @@ jobs:
         uses: inpsyde/reusable-workflows/.github/workflows/tests-unit-php.yml@main
         with:
             PHP_MATRIX: '["7.2", "7.3", "7.4", "8.0", "8.1", "8.2"]'
+
+    test-project-php:
+        if: ${{ (github.event_name != 'workflow_dispatch') || ((github.event.inputs.jobs == 'Run all') || (github.event.inputs.jobs == 'Run unit tests only')) }}
+        timeout-minutes: 5
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+            php-version: ["7.4", "8.0", "8.1", "8.2"]
+        steps:
+            -   uses: actions/checkout@v3
+            -   uses: shivammathur/setup-php@v2
+                with:
+                    php-version: ${{ matrix.php-version }}
+                    coverage: none
+            -   uses: ramsey/composer-install@v2
+                with:
+                    composer-options: '-d tests/example'
+            -   run: composer tests:example-project
