@@ -389,7 +389,7 @@ final class App
             return;
         }
 
-        $properties = new Properties($this->config()->locations(), $this->isDebug());
+        $properties = new Properties($this->config()->locations(), $this->status, $this->isDebug());
         $package = Modularity\Package::new($properties, $this->container);
 
         $early
