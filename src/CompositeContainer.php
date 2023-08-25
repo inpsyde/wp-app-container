@@ -12,9 +12,19 @@ use Psr\Container\NotFoundExceptionInterface;
 final class CompositeContainer implements ContainerInterface
 {
     /**
+     * @var string|null
+     */
+    private $checking = null;
+
+    /**
      * @var Config
      */
     private $config;
+
+    /**
+     * @var array<string, ContainerInterface>
+     */
+    private $containers;
 
     /**
      * @var WpContext
@@ -22,9 +32,9 @@ final class CompositeContainer implements ContainerInterface
     private $context;
 
     /**
-     * @var list<ContainerInterface>
+     * @var array<string, string>
      */
-    private $containers = [];
+    private $map = [];
 
     /**
      * @param CompositeContainer $container
@@ -38,12 +48,9 @@ final class CompositeContainer implements ContainerInterface
         Config $config = null
     ): CompositeContainer {
 
-        $instance = new static(
-            $context ?? $container->context(),
-            $config ?? $container->config()
-        );
+        $instance = new static($context ?? $container->context(), $config ?? $container->config());
 
-        foreach ($container->containers as $container) {
+        foreach ($container->containers() as $container) {
             $instance->addContainer($container);
         }
 
@@ -82,11 +89,11 @@ final class CompositeContainer implements ContainerInterface
     }
 
     /**
-     * @return WpContext
+     * @return Config
      */
-    public function context(): WpContext
+    public function containers(): array
     {
-        return $this->context;
+        return $this->containers;
     }
 
     /**
@@ -98,12 +105,23 @@ final class CompositeContainer implements ContainerInterface
     }
 
     /**
+     * @return WpContext
+     */
+    public function context(): WpContext
+    {
+        return $this->context;
+    }
+
+    /**
      * @param ContainerInterface $container
      * @return static
      */
     public function addContainer(ContainerInterface $container): CompositeContainer
     {
-        $this->containers[] = $container;
+        $hash = spl_object_hash($container);
+        if (($container !== $this) && !isset($this->containers[$hash])) {
+            $this->containers[$hash] = $container;
+        }
 
         return $this;
     }
@@ -131,7 +149,24 @@ final class CompositeContainer implements ContainerInterface
      */
     public function has(string $id): bool
     {
-        return $this->findContainerFor($id) !== null;
+        if ($this->checking === $id) {
+            return false;
+        }
+
+        $this->checking = $id;
+        $has = $this->findContainerFor($id) !== null;
+        $this->checking = null;
+
+        return $has;
+    }
+
+    /**
+     * @param ContainerInterface $container
+     * @return bool
+     */
+    public function hasContainer(ContainerInterface $container): bool
+    {
+        return ($container === $this) || isset($this->containers[spl_object_hash($container)]);
     }
 
     /**
@@ -140,8 +175,15 @@ final class CompositeContainer implements ContainerInterface
      */
     private function findContainerFor(string $id): ?ContainerInterface
     {
-        foreach ($this->containers as $container) {
+        $hash = $this->map[$id] ?? null;
+        if ($hash) {
+            return $this->containers[$hash];
+        }
+
+        foreach ($this->containers as $hash => $container) {
             if ($container->has($id)) {
+                $this->map[$id] = $hash;
+
                 return $container;
             }
         }
