@@ -28,7 +28,7 @@ final class App
     private const PACKAGES_KEY = 'packages';
 
     /**
-     * @var array{context: WpContext, config: Config\Config, debug: bool | null, booting: bool}
+     * @var array{context: WpContext, config: Config\Config, debug: bool|null, booting: bool}
      */
     private $props;
 
@@ -169,12 +169,12 @@ final class App
      */
     public function isDebug(): bool
     {
-        if ($this->props['debug'] === null) {
+        if ($this->prop('debug') === null) {
             /** @psalm-suppress TypeDoesNotContainType */
             $this->props['debug'] = defined('WP_DEBUG') && WP_DEBUG;
         }
 
-        return $this->props['debug'];
+        return (bool)$this->prop('debug');
     }
 
     /**
@@ -186,8 +186,8 @@ final class App
             'status' => (string)$this->status,
             'packages' => (array)($this->modulesDebug[self::PACKAGES_KEY] ?? []),
             'events' => (array)($this->modulesDebug[self::EVENTS_KEY] ?? []),
-            'context' => $this->props['context']->jsonSerialize(),
-            'config' => (array)($this->props['config']->jsonSerialize()),
+            'context' => $this->prop('context')->jsonSerialize(),
+            'config' => (array)($this->prop('config')->jsonSerialize()),
         ];
     }
 
@@ -204,7 +204,7 @@ final class App
      */
     public function config(): Config\Config
     {
-        return $this->props['config'];
+        return $this->prop('config');
     }
 
     /**
@@ -212,7 +212,7 @@ final class App
      */
     public function context(): WpContext
     {
-        $context = $this->props['context'];
+        $context = $this->prop('context');
 
         return clone $context;
     }
@@ -223,7 +223,7 @@ final class App
     public function boot(): void
     {
         try {
-            if ($this->props['booting']) {
+            if ($this->prop('booting')) {
                 throw new \Error("Can't call App::boot() when already booting.");
             }
 
@@ -377,6 +377,21 @@ final class App
 
             return $default;
         }
+    }
+
+    /**
+     * @param "context"|"config"|"debug"|"booting" $prop
+     * @return mixed
+     *
+     * @psalm-return (
+     *    $prop is "context"
+     *        ? WpContext
+     *        : ($prop is "config" ? Config\Config : ($prop is "debug" ? bool|null : bool))
+     * )
+     */
+    private function prop(string $prop)
+    {
+        return $this->props[$prop];
     }
 
     /**
@@ -686,7 +701,7 @@ final class App
             : $params[] = $this;
 
         // "Backup" current booting prop value, then force it to true.
-        $wasBooting = $this->props['booting'];
+        $wasBooting = $this->prop('booting');
         $this->props['booting'] = true;
 
         // Fire the hook after having ensured $this->booting is true, to prevent calls to methods
@@ -704,7 +719,7 @@ final class App
      */
     private function contextIs(string $context, string ...$contexts): bool
     {
-        $wpContext = $this->props['context'];
+        $wpContext = $this->prop('context');
 
         return $wpContext->is($context, ...$contexts);
     }
