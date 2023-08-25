@@ -680,14 +680,9 @@ final class App
             return;
         }
 
-        $pathParts = explode('/', $properties->basePath());
-        $relativePath = implode('/', array_slice($pathParts, -2)); // "some-vendor/some-package"
         $locations = $this->config()->locations();
-        $vendorPath = $locations->vendorDir($relativePath);
-        if ($vendorPath && is_dir($vendorPath)) {
-            $vendorUrl = $locations->vendorUrl($relativePath);
-            $vendorUrl and $properties->withBaseUrl($vendorUrl);
-        }
+        $url = $locations->resolveUrlByPath($properties->basePath());
+        $url and $properties->withBaseUrl($url);
     }
 
     /**
