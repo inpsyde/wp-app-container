@@ -36,7 +36,7 @@ class CompositeContainerTest extends TestCase
         $cont2 = new TestContainer(['b' => 'B', 'c' => 'C']);
         $cont3 = new TestContainer(['d' => null]);
 
-        $container = CompositeContainer::newWithContainers(
+        $container = CompositeContainer::new(
             WpContext::new(),
             new EnvConfig(),
             $cont1,
