@@ -115,7 +115,7 @@ final class App
             $config = $config ?? new Config\EnvConfig();
             $context = $context ?? WpContext::determine();
             $containers = $container ? [$container] : [];
-            $container = CompositeContainer::newWithContainers($context, $config, ...$containers);
+            $container = CompositeContainer::new($context, $config, ...$containers);
         }
 
         $this->container = $container;

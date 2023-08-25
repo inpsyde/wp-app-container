@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Inpsyde\App;
 
 use Inpsyde\App\Config\Config;
-use Inpsyde\App\Config\EnvConfig;
 use Inpsyde\WpContext;
 use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
@@ -57,7 +56,7 @@ final class CompositeContainer implements ContainerInterface
      * @param ContainerInterface ...$containers
      * @return CompositeContainer
      */
-    public static function newWithContainers(
+    public static function new(
         WpContext $context,
         Config $config,
         ContainerInterface ...$containers
@@ -66,39 +65,6 @@ final class CompositeContainer implements ContainerInterface
         $instance = new static($context, $config);
         foreach ($containers as $container) {
             $instance->addContainer($container);
-        }
-
-        return $instance;
-    }
-
-    /**
-     * @param mixed $context
-     * @param mixed $config
-     * @param ContainerInterface ...$containers
-     * @return CompositeContainer
-     *
-     * @deprecated
-     */
-    public static function new(
-        $context = null,
-        $config = null,
-        ...$containers
-    ): CompositeContainer {
-
-        if (!($config instanceof Config)) {
-            $config and array_unshift($containers, $config);
-            $config = new EnvConfig();
-        }
-
-        if (!($context instanceof WpContext)) {
-            $context and array_unshift($containers, $context);
-            $context = WpContext::determine();
-        }
-
-        $instance = new static($context, $config);
-
-        foreach ($containers as $container) {
-            ($container instanceof ContainerInterface) and $instance->addContainer($container);
         }
 
         return $instance;
