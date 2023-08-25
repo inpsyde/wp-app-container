@@ -111,14 +111,18 @@ final class App
             $container = CompositeContainer::newFromExisting($container, $context, $config);
         }
 
+        $prevContainer = null;
         if (!($container instanceof CompositeContainer)) {
-            $config = $config ?? new Config\EnvConfig();
-            $context = $context ?? WpContext::determine();
-            $containers = $container ? [$container] : [];
-            $container = CompositeContainer::new($context, $config, ...$containers);
+            $prevContainer = $container;
+            $container = CompositeContainer::new(
+                $context ?? WpContext::determine(),
+                $config ?? new Config\EnvConfig()
+            );
         }
 
         $this->container = $container;
+        $prevContainer and $this->container->addContainer($prevContainer);
+
         $this->status = AppStatus::new();
 
         $this->props = [
