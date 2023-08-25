@@ -642,17 +642,17 @@ final class App
     }
 
     /**
-     * @param array $modularityStatuses
+     * @param array $statuses
      * @param string $packageId
      * @return void
      */
-    private function syncModularityPackageStatus(array $modularityStatuses, string $packageId): void
+    private function syncModularityPackageStatus(array $statuses, string $packageId): void
     {
         if (!$this->isDebug()) {
             return;
         }
 
-        $packageEvents = $modularityStatuses[Modularity\Package::MODULES_ALL] ?? [];
+        $packageEvents = $statuses[Modularity\Package::MODULES_ALL] ?? [];
         if ($packageEvents && !isset($this->modulesDebug[self::EVENTS_KEY])) {
             $this->modulesDebug[self::EVENTS_KEY] = [];
         }
