@@ -89,7 +89,7 @@ final class CompositeContainer implements ContainerInterface
     }
 
     /**
-     * @return Config
+     * @return array<string, ContainerInterface>
      */
     public function containers(): array
     {
