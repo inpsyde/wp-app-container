@@ -142,7 +142,8 @@ final class ProviderStatus implements \JsonSerializable
     /**
      * @return array<string, string>
      */
-    public function jsonSerialize()
+    #[\ReturnTypeWillChange]
+    public function jsonSerialize(): array
     {
         return $this->appStatuses;
     }
