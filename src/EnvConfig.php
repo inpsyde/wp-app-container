@@ -297,7 +297,7 @@ class EnvConfig implements SiteConfig
      * `wp_get_environment_type()` will return.
      * When we were not able to determine environment unequivocally we use `apply_filters` to that
      * There's one more chance for developers to define the env.
-     * Even in that case the environment will be normalized ot one of the supported environments,
+     * Even in that case the environment will be normalized to one of the supported environments,
      * in the worst case with a fallback to production, just like WP 5.5+ does.
      *
      * @param string $env
