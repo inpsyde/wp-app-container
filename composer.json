@@ -23,7 +23,7 @@
         "ext-json": "*",
         "inpsyde/wp-context": "^1.3.1",
         "psr/container": "^2",
-        "inpsyde/modularity": "^1.4.0"
+        "inpsyde/modularity": "^1.7"
     },
     "require-dev": {
         "phpunit/phpunit": "^8.5.22",
