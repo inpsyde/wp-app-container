@@ -47,8 +47,12 @@ jobs:
     tests-unit-php:
         if: ${{ (github.event_name != 'workflow_dispatch') || ((github.event.inputs.jobs == 'Run all') || (github.event.inputs.jobs == 'Run unit tests only')) }}
         uses: inpsyde/reusable-workflows/.github/workflows/tests-unit-php.yml@main
+        strategy:
+            matrix:
+                php: [ "7.2", "7.3", "7.4", "8.0", "8.1", "8.2" ]
         with:
-            PHP_MATRIX: '["7.2", "7.3", "7.4", "8.0", "8.1", "8.2"]'
+            PHP_VERSION: ${{ matrix.php }}
+
 
     test-project-php:
         if: ${{ (github.event_name != 'workflow_dispatch') || ((github.event.inputs.jobs == 'Run all') || (github.event.inputs.jobs == 'Run unit tests only')) }}
