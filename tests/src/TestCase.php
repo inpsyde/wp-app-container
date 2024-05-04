@@ -124,19 +124,19 @@ abstract class TestCase extends FrameworkTestCase
         $stub = \Mockery::mock(...$interfaces);
         $stub->allows('id')->andReturn($id);
 
-        if (in_array(ServiceModule::class, $interfaces, true) ) {
+        if (in_array(ServiceModule::class, $interfaces, true)) {
             $stub->allows('services')->byDefault()->andReturn([]);
         }
 
-        if (in_array(FactoryModule::class, $interfaces, true) ) {
+        if (in_array(FactoryModule::class, $interfaces, true)) {
             $stub->allows('factories')->byDefault()->andReturn([]);
         }
 
-        if (in_array(ExtendingModule::class, $interfaces, true) ) {
+        if (in_array(ExtendingModule::class, $interfaces, true)) {
             $stub->allows('extensions')->byDefault()->andReturn([]);
         }
 
-        if (in_array(ExecutableModule::class, $interfaces, true) ) {
+        if (in_array(ExecutableModule::class, $interfaces, true)) {
             $stub->allows('run')->byDefault()->andReturn(false);
         }
 
@@ -151,7 +151,7 @@ abstract class TestCase extends FrameworkTestCase
     {
         $services = [];
         foreach ($ids as $id) {
-            $services[$id] = static function () use ($id) {
+            $services[$id] = static function () use ($id): \ArrayObject {
                 return new \ArrayObject(['id' => $id]);
             };
         }

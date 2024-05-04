@@ -353,6 +353,9 @@ final class App
     }
 
     /**
+     * If context is correct
+     *  If package is booted
+     *    Adds the Package Container to the App Container
      * @param Modularity\Package $package
      * @param string ...$contexts
      * @return App
