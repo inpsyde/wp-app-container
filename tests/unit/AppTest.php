@@ -10,8 +10,6 @@ use Inpsyde\Modularity\Container\ReadOnlyContainer;
 use Inpsyde\Modularity\Module\ServiceModule;
 use Inpsyde\Modularity\Package;
 use Inpsyde\WpContext;
-use Psr\Container\ContainerInterface;
-use Inpsyde\App\Config\Config;
 use Brain\Monkey;
 
 class AppTest extends TestCase
@@ -24,9 +22,14 @@ class AppTest extends TestCase
     private $appStatusProp;
     /** @var \ReflectionProperty */
     private $appBootQueueProp;
+    /** @var \ReflectionMethod  */
+    private $appHandleModularityBoot;
+    /** @var \ReflectionMethod  */
+    private $appSyncModularityStatus;
 
     protected function setUp(): void
     {
+        Monkey\Functions\when('remove_all_actions')->justReturn();
         $reflectedApp = new \ReflectionClass(App::class);
         $this->containerProp = $reflectedApp->getProperty('container');
         $this->containerProp->setAccessible(true);
@@ -37,10 +40,12 @@ class AppTest extends TestCase
         $this->mapProp->setAccessible(true);
         $this->appBootQueueProp = $reflectedApp->getProperty('bootQueue');
         $this->appBootQueueProp->setAccessible(true);
+        $this->appHandleModularityBoot = $reflectedApp->getMethod('handleModularityBoot');
+        $this->appSyncModularityStatus = $reflectedApp->getMethod('syncModularityStatus');
         parent::setUp();
     }
 
-    private function prepareShareToPackageCommon(): array
+    private function prepareSharePackageCommon(): array
     {
         \Brain\Monkey\Functions\stubs([
             'plugins_url' => static function (): string {
@@ -59,13 +64,14 @@ class AppTest extends TestCase
 
         $appModule = $this->mockModule($appModuleId, ServiceModule::class);
         $appModule->expects('services')->andReturn($this->stubServices($containerServiceId));
-        $app->addModule($appModule);
+        $app->addEarlyModule($appModule);
 
         $moduleId = 'my-service-module';
         $packageServiceId = 'service-id';
 
         $module = $this->mockModule($moduleId, ServiceModule::class);
-        $module->expects('services')->andReturn($this->stubServices($packageServiceId));
+        $expectedReturnFromService = $this->stubServices($packageServiceId);
+        $module->expects('services')->andReturn($expectedReturnFromService);
 
         $package = Package::new($this->mockProperties())->addModule($module);
 
@@ -76,6 +82,7 @@ class AppTest extends TestCase
             'moduleId' => $moduleId,
             'packageServiceId' => $packageServiceId,
             'package' => $package,
+            'expectedClassFromPackageService' => \ArrayObject::class,
         ];
     }
 
@@ -91,14 +98,56 @@ class AppTest extends TestCase
         static::assertTrue($this->appStatusProp->getValue($app)->isIdle());
     }
 
-    public function testSharePackageToBootShouldAddPackageServicesToContainerIfPackageIsBooted()
+    public function testAddEarlyModule()
+    {
+        $context = WpContext::new()->force(WpContext::CORE);
+        $app = App::new(null, null, $context);
+        $moduleId = 'my-early-service-module';
+        $moduleServiceId = 'early-service-id';
+        $module = $this->mockModule($moduleId, ServiceModule::class);
+        $module->expects('services')->andReturn($this->stubServices($moduleServiceId));
+        $app->addEarlyModule($module);
+        // We expect the service is not resolvable if the App Container is not booted
+        static::assertEquals(null, $app->resolve($moduleServiceId));
+        $app->boot();
+        static::assertInstanceOf(\ArrayObject::class, $app->resolve($moduleServiceId));
+    }
+
+    public function testAddModule()
+    {
+        $context = WpContext::new()->force(WpContext::CORE);
+        $app = App::new(null, null, $context);
+        $moduleId = 'my-early-service-module';
+        $moduleServiceId = 'early-service-id';
+        $module = $this->mockModule($moduleId, ServiceModule::class);
+        $module->expects('services')->andReturn($this->stubServices($moduleServiceId));
+        $app->addModule($module);
+        // We expect the service is not resolvable if the App Container is not booted
+        static::assertEquals(null, $app->resolve($moduleServiceId));
+        $app->boot();
+        // TODO: check how addModule was meant to work
+        static::assertInstanceOf(\ArrayObject::class, $app->resolve($moduleServiceId));
+    }
+
+    /**
+     * Scenario
+     *      Package is booted
+     * Expectations
+     *      Package services are added to the App Container
+     *      Package does NOT receive any definitions from the WP App Container
+     *
+     * @group sharePackageToBoot
+     * @return void
+     */
+    public function testSharePackageToBootWhenPackageIsBooted()
     {
         [
             'app' => $app,
             'containerServiceId' => $containerServiceId,
             'packageServiceId' => $packageServiceId,
-            'package' => $package
-        ] = $this->prepareShareToPackageCommon();
+            'package' => $package,
+            'expectedClassFromPackageService' => $expectedClassFromPackageService,
+        ] = $this->prepareSharePackageCommon();
 
         // When package is booted
         static::assertTrue($package->boot());
@@ -106,29 +155,38 @@ class AppTest extends TestCase
         // When we call sharePackageToBoot and pass a booted package
         static::assertInstanceOf(App::class, $app->sharePackageToBoot($package));
 
-        $container = $this->containerProp->getValue($app);
-
         // The Services from the Package are shared to the App Container
-        static::assertTrue($container->has($packageServiceId));
+        static::assertInstanceOf($expectedClassFromPackageService, $app->resolve($packageServiceId));
 
-        // But, the services from the App Container are NOT added to the Package since the container is ReadOnly
-        static::assertInstanceOf(ReadOnlyContainer::class, $package->container());
+        // But, the services from the App Container are NOT added to the Package since the Package Container is ReadOnly
         static::assertFalse($package->container()->has($containerServiceId));
     }
 
-    public function testSharePackageToBootShouldAddPackageServicesToContainerAfterBootIfPackageIsNotBooted()
+    /**
+     * Scenario
+     *      Package is not booted
+     *      The Services added to the App Container are added via addEarlyModule
+     *      App boot is called after
+     * Expectations
+     *      After App Booting
+     *          App Container can resolve Package services
+     *          Package can resolve App Container Services
+     * @group sharePackageToBoot
+     * @return void
+     */
+    public function testSharePackageToBootWhenPackageIsNotBooted(): void
     {
 
         [
             'app' => $app,
             'containerServiceId' => $containerServiceId,
             'packageServiceId' => $packageServiceId,
-            'package' => $package
-        ] = $this->prepareShareToPackageCommon();
+            'package' => $package,
+        ] = $this->prepareSharePackageCommon();
 
-        Monkey\Functions\when('remove_all_actions')->justReturn();
 
         // When we call sharePackageToBoot passing a NOT booted package
+        // Notice that the WP App container is not booted at this point neither
         static::assertInstanceOf(App::class, $app->sharePackageToBoot($package));
 
         // we don't expect the services from the Package to be in the App Container before booting the App Container
@@ -154,19 +212,129 @@ class AppTest extends TestCase
         $currentQueue = $this->appBootQueueProp->getValue($app);
         static::assertTrue($currentQueue->contains($package));
 
+        // It seems the App Container does not have the service in the container if it is not booted
+        $container = $this->containerProp->getValue($app);
+        static::assertFalse($container->has($containerServiceId));
+
         // if we boot the App container
         $app->boot();
-        $container = $this->containerProp->getValue($app);
 
         // We expect the App Container to have the Package services
-        static::assertTrue($container->has($packageServiceId));
+        static::assertInstanceOf(\ArrayObject::class, $app->resolve($packageServiceId));
 
         // We expect the Package to be booted
         static::assertTrue($package->statusIs(Package::STATUS_BOOTED));
 
-        // we expect the App Container services to be in the Package
-        // sharePackageToBoot is meant to boot the Package
-        // TODO: FIX THIS
-//        static::assertTrue($package->container()->has($containerServiceId));
+        // Note: we can retrieve the service from the App Container because we used App::addEarlyModule
+        static::assertTrue($package->container()->has($containerServiceId));
+        static::assertInstanceOf(\ArrayObject::class, $app->resolve($containerServiceId));
     }
+
+
+    public function testSharePackageWhenPackageIsBooted()
+    {
+        /**
+         * @var App $app
+         */
+        [
+            'app' => $app,
+            'containerServiceId' => $containerServiceId,
+            'packageServiceId' => $packageServiceId,
+            'package' => $package,
+            'expectedClassFromPackageService' => $expectedClassFromPackageService,
+        ] = $this->prepareSharePackageCommon();
+
+        // When package is booted
+        static::assertTrue($package->boot());
+
+        // When we call sharePackage and pass a booted package
+        static::assertInstanceOf(App::class, $app->sharePackage($package));
+
+        // The Services from the Package are shared to the App Container
+        static::assertInstanceOf($expectedClassFromPackageService, $app->resolve($packageServiceId));
+
+        // But, the services from the App Container are NOT added to the Package since the Package Container is ReadOnly
+        static::assertFalse($package->container()->has($containerServiceId));
+    }
+
+
+    /**
+     * Scenario
+     *      Package is not booted
+     *      The Services added to the App Container are added via addEarlyModule
+     *      App boot is called after
+     * Expectations
+     *      After App Booting
+     *          App Container can resolve Package services
+     *          Package can resolve App Container Services
+     * @group sharePackageToBoot
+     * @return void
+     */
+    public function testSharePackageWhenPackageIsNotBooted(): void
+    {
+
+        [
+            'app' => $app,
+            'containerServiceId' => $containerServiceId,
+            'packageServiceId' => $packageServiceId,
+            'package' => $package,
+        ] = $this->prepareSharePackageCommon();
+
+
+
+        // When we call sharePackageToBoot passing a NOT booted package
+        // Notice that the WP App container is not booted at this point neither
+        static::assertInstanceOf(App::class, $app->sharePackage($package));
+
+        // we don't expect the services from the Package to be in the App Container before booting the App Container
+        $container = $this->containerProp->getValue($app);
+        static::assertFalse($container->has($packageServiceId));
+
+        // we don't expect the package to have container to be accessible because is not booted nor built.
+        static::assertFalse($package->statusIs(Package::STATUS_BOOTED));
+        try {
+            $package->container();
+        } catch (\Exception $exception) {
+            static::assertStringContainsString(
+                'Can\'t obtain the container',
+                $exception->getMessage()
+            );
+        }
+
+        // It is only connected with a new Package that is booted already
+        static::assertEquals([ "inpsyde-wp-app" => true ], $package->connectedPackages());
+
+        // we manually boot the package in here since sharePackage enqueues a callback waiting for this
+        $package->boot();
+
+        // we have to mimic the internals of the waitForPackageBoot
+        // (we are hardcoding a callback there)
+        $this->appSyncModularityStatus->invoke(
+            $app,
+            $package,
+            Package::MODULE_ADDED
+        );
+
+        $this->appHandleModularityBoot->invoke(
+            $app,
+            $package,
+            true,
+        );
+
+        // package can't see the service from app container if the Wp App Container is not booted
+        static::assertFalse($package->container()->has($containerServiceId));
+
+        // if we boot the App container
+        $app->boot();
+
+        // We expect the Package to have container services
+        static::assertTrue($package->container()->has($containerServiceId));
+
+        // We expect the App Container to have the Package services
+        static::assertInstanceOf(\ArrayObject::class, $app->resolve($packageServiceId));
+
+        // Note: we can retrieve the service from the App Container because we used App::addEarlyModule
+        static::assertInstanceOf(\ArrayObject::class, $app->resolve($containerServiceId));
+    }
+
 }
