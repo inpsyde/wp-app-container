@@ -6,7 +6,6 @@ namespace Inpsyde\App\Tests;
 
 use Inpsyde\App\App;
 use Inpsyde\App\CompositeContainer;
-use Inpsyde\Modularity\Container\ReadOnlyContainer;
 use Inpsyde\Modularity\Module\ServiceModule;
 use Inpsyde\Modularity\Package;
 use Inpsyde\WpContext;
@@ -184,7 +183,6 @@ class AppTest extends TestCase
             'package' => $package,
         ] = $this->prepareSharePackageCommon();
 
-
         // When we call sharePackageToBoot passing a NOT booted package
         // Notice that the WP App container is not booted at this point neither
         static::assertInstanceOf(App::class, $app->sharePackageToBoot($package));
@@ -230,7 +228,6 @@ class AppTest extends TestCase
         static::assertInstanceOf(\ArrayObject::class, $app->resolve($containerServiceId));
     }
 
-
     public function testSharePackageWhenPackageIsBooted()
     {
         /**
@@ -257,7 +254,6 @@ class AppTest extends TestCase
         static::assertFalse($package->container()->has($containerServiceId));
     }
 
-
     /**
      * Scenario
      *      Package is not booted
@@ -279,8 +275,6 @@ class AppTest extends TestCase
             'packageServiceId' => $packageServiceId,
             'package' => $package,
         ] = $this->prepareSharePackageCommon();
-
-
 
         // When we call sharePackageToBoot passing a NOT booted package
         // Notice that the WP App container is not booted at this point neither
@@ -318,7 +312,7 @@ class AppTest extends TestCase
         $this->appHandleModularityBoot->invoke(
             $app,
             $package,
-            true,
+            true
         );
 
         // package can't see the service from app container if the Wp App Container is not booted
@@ -336,5 +330,4 @@ class AppTest extends TestCase
         // Note: we can retrieve the service from the App Container because we used App::addEarlyModule
         static::assertInstanceOf(\ArrayObject::class, $app->resolve($containerServiceId));
     }
-
 }
