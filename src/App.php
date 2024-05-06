@@ -353,6 +353,9 @@ final class App
     }
 
     /**
+     * If context is correct
+     *  If package is booted
+     *    Adds the Package Container to the App Container
      * @param Modularity\Package $package
      * @param string ...$contexts
      * @return App
@@ -475,7 +478,6 @@ final class App
 
             return $this;
         }
-
         $this->initializeModularity($early);
         $this->ensureWillBoot();
 
@@ -634,6 +636,7 @@ final class App
             : Modularity\Package::MODULE_EXECUTED;
         $this->syncModularityStatus($package, $status);
 
+        // TODO: this if condition is running twice when called from sharePackage or sharePackageToBoot
         if (
             $package->statusIs(Modularity\Package::STATUS_BOOTED)
             || ($onPackageReady && $package->statusIs(Modularity\Package::STATUS_INITIALIZED))

@@ -49,6 +49,7 @@
     "minimum-stability": "stable",
     "scripts": {
         "cs": "@php ./vendor/squizlabs/php_codesniffer/bin/phpcs",
+        "fix:cs": "@php ./vendor/squizlabs/php_codesniffer/bin/phpcbf",
         "psalm": "@php ./vendor/vimeo/psalm/psalm --no-cache --output-format=compact",
         "tests": "@php ./vendor/phpunit/phpunit/phpunit",
         "tests:no-cov": "@php ./vendor/phpunit/phpunit/phpunit --no-coverage",

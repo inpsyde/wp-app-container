@@ -26,11 +26,23 @@ class ProjectTest extends TestCase
         fwrite(STDOUT, print_r(app()->resolve(Logger::class)->allLogs(), true));
     }
 
+    protected function checkLateModule(bool $expectToBeThere = false): void
+    {
+        if (!$expectToBeThere) {
+            static::assertTrue(app()->status()->isBooted());
+            static::assertNull(app()->resolve('dummy-test'));
+            return;
+        }
+        static::assertNotNull(app()->resolve('dummy-test'));
+        static::assertEquals(app()->resolve('dummy-test')->text(), 'Hello World');
+    }
+
     /**
      * @return void
      */
     protected function onBeforePlugins(): void
     {
+        $this->checkLateModule();
     }
 
     /**
@@ -38,6 +50,7 @@ class ProjectTest extends TestCase
      */
     protected function onAfterPlugins(): void
     {
+        $this->checkLateModule();
     }
 
     /**
@@ -45,6 +58,7 @@ class ProjectTest extends TestCase
      */
     protected function onAfterTheme(): void
     {
+        $this->checkLateModule();
     }
 
     /**
@@ -61,6 +75,8 @@ class ProjectTest extends TestCase
         static::assertTrue($logger->hasLog("{$pre} 'Lorem Ipsum'"));
         static::assertTrue($logger->hasLog("{$pre} 'Dolor Sit Amet'"));
         static::assertFalse($logger->hasLog("{$pre} '[From Plugin 2] Plugin Two is Good For You'"));
+
+        $this->checkLateModule(true);
     }
 
     /**
