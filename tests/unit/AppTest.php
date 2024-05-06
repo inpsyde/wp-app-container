@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Inpsyde\App\Tests;
 
 use Inpsyde\App\App;
+use Inpsyde\App\AppStatus;
 use Inpsyde\App\CompositeContainer;
 use Inpsyde\Modularity\Module\ServiceModule;
 use Inpsyde\Modularity\Package;
@@ -25,6 +26,8 @@ class AppTest extends TestCase
     private $appHandleModularityBoot;
     /** @var \ReflectionMethod  */
     private $appSyncModularityStatus;
+    /** @var \ReflectionClass  */
+    private $appStatusReflection;
 
     protected function setUp(): void
     {
@@ -41,6 +44,9 @@ class AppTest extends TestCase
         $this->appBootQueueProp->setAccessible(true);
         $this->appHandleModularityBoot = $reflectedApp->getMethod('handleModularityBoot');
         $this->appSyncModularityStatus = $reflectedApp->getMethod('syncModularityStatus');
+
+        $this->appStatusReflection = new \ReflectionClass(AppStatus::class);
+
         parent::setUp();
     }
 
@@ -112,6 +118,11 @@ class AppTest extends TestCase
         static::assertInstanceOf(\ArrayObject::class, $app->resolve($moduleServiceId));
     }
 
+    /**
+     *
+     * @return void
+     * @throws \ReflectionException
+     */
     public function testAddModule()
     {
         $context = WpContext::new()->force(WpContext::CORE);
@@ -123,8 +134,16 @@ class AppTest extends TestCase
         $app->addModule($module);
         // We expect the service is not resolvable if the App Container is not booted
         static::assertEquals(null, $app->resolve($moduleServiceId));
+
+        // we have to force the internal status of the AppStatus
+        // we need $lastRun to be true when calling isThemeStep inside boot
+        $appStatusInternalStatusProp = $this->appStatusReflection->getProperty('status');
+        $appStatusInternalStatusProp->setValue(
+            $this->appStatusProp->getValue($app),
+            AppStatus::REGISTERING_THEMES
+        );
+
         $app->boot();
-        // TODO: check how addModule was meant to work
         static::assertInstanceOf(\ArrayObject::class, $app->resolve($moduleServiceId));
     }
 

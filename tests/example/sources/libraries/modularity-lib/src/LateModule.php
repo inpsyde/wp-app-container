@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Inpsyde\App\Tests\Project\ModularityLib;
 
 use Inpsyde\App\Tests\Project\ModularityPlugin3\Calc;
+use Inpsyde\Modularity\Module\ServiceModule;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
@@ -27,5 +28,23 @@ final class LateModule extends BaseModule
         );
 
         return parent::run($container);
+    }
+
+    public function services(): array
+    {
+        return array_merge(
+            parent::services(),
+            [
+                // phpcs:ignore Inpsyde.CodeQuality.ReturnTypeDeclaration.NoReturnType
+                'dummy-test' => static function () {
+                    return new class {
+                        public function text(): string
+                        {
+                            return 'Hello World';
+                        }
+                    };
+                },
+            ]
+        );
     }
 }
