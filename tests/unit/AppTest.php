@@ -247,6 +247,10 @@ class AppTest extends TestCase
         static::assertInstanceOf(\ArrayObject::class, $app->resolve($containerServiceId));
     }
 
+    /**
+     * @return void
+     * @group sharePackage
+     */
     public function testSharePackageWhenPackageIsBooted()
     {
         /**
@@ -282,7 +286,7 @@ class AppTest extends TestCase
      *      After App Booting
      *          App Container can resolve Package services
      *          Package can resolve App Container Services
-     * @group sharePackageToBoot
+     * @group sharePackage
      * @return void
      */
     public function testSharePackageWhenPackageIsNotBooted(): void
