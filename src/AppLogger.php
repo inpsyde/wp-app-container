@@ -8,15 +8,10 @@ use Inpsyde\App\Provider\ServiceProvider;
 
 final class AppLogger
 {
-    /**
-     * @var bool
-     */
-    private $debugEnabled;
+    private bool $debugEnabled;
 
-    /**
-     * @var array<string, ProviderStatus>
-     */
-    private $providers = [];
+    /** @var array<string, ProviderStatus> */
+    private array $providers = [];
 
     /**
      * @return AppLogger
@@ -26,6 +21,8 @@ final class AppLogger
         return new static();
     }
 
+    /**
+     */
     private function __construct()
     {
         /** @psalm-suppress TypeDoesNotContainType */

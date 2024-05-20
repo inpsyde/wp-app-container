@@ -12,25 +12,12 @@ class ConfigurableProvider implements ServiceProvider
     public const REGISTER_LATER = 16;
     public const BOOT_EARLY = 32;
 
-    /**
-     * @var string
-     */
-    private $id;
-
-    /**
-     * @var callable|null
-     */
+    private string $id;
+    private int $flags;
+    /** @var callable|null */
     private $register;
-
-    /**
-     * @var callable|null
-     */
+    /** @var callable|null */
     private $boot;
-
-    /**
-     * @var int
-     */
-    private $flags;
 
     /**
      * @param string $id
@@ -82,7 +69,7 @@ class ConfigurableProvider implements ServiceProvider
     public function register(Container $container): bool
     {
         try {
-            return $this->register ? (bool)(($this->register)($container)) : false;
+            return ($this->register !== null) && ($this->register)($container);
         } catch (\Throwable $throwable) {
             App::handleThrowable($throwable);
         }
@@ -97,7 +84,7 @@ class ConfigurableProvider implements ServiceProvider
     public function boot(Container $container): bool
     {
         try {
-            return $this->boot ? (bool)(($this->boot)($container)) : false;
+            return ($this->boot !== null) && ($this->boot)($container);
         } catch (\Throwable $throwable) {
             App::handleThrowable($throwable);
         }

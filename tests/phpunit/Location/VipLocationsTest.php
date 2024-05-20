@@ -6,35 +6,15 @@ namespace Inpsyde\App\Tests\Location;
 
 use Inpsyde\App\EnvConfig;
 use Inpsyde\App\Location\LocationResolver;
+use Inpsyde\App\Location\Locations;
 use Inpsyde\App\Location\VipLocations;
 use Inpsyde\App\Tests\TestCase;
-use Brain\Monkey\Functions;
 
 /**
  * @runTestsInSeparateProcesses
  */
 class VipLocationsTest extends TestCase
 {
-    /**
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        Functions\when('network_site_url')->alias(static function (string $path = '/'): string {
-            return 'http://example.com/' . ltrim($path, '/');
-        });
-
-        Functions\when('content_url')->alias(static function (string $path = '/'): string {
-            return 'http://example.com/wp-content/' . ltrim($path, '/');
-        });
-
-        Functions\when('wp_normalize_path')->alias(static function (string $path): string {
-            return str_replace('\\', '/', $path);
-        });
-    }
-
     /**
      * @test
      */
@@ -61,11 +41,11 @@ class VipLocationsTest extends TestCase
         $configDir = $locations->vipConfigDir('vip-config.php');
 
         static::assertSame("{$contentDir}/images/", $imagesDir);
-        static::assertSame('http://example.com/wp-content/images/', $imagesUrl);
+        static::assertSame('https://example.com/wp-content/images/', $imagesUrl);
         static::assertSame("{$contentDir}/client-mu-plugins/", $clientMuDir);
-        static::assertSame('http://example.com/wp-content/client-mu-plugins/', $clientMuUrl);
+        static::assertSame('https://example.com/wp-content/client-mu-plugins/', $clientMuUrl);
         static::assertSame("{$contentDir}/client-mu-plugins/vendor/", $vendorDir);
-        static::assertSame('http://example.com/wp-content/client-mu-plugins/vendor/', $vendorUrl);
+        static::assertSame('https://example.com/wp-content/client-mu-plugins/vendor/', $vendorUrl);
         static::assertSame("{$contentDir}/private/", $privateDir);
         static::assertSame("{$contentDir}/vip-config/vip-config.php", $configDir);
     }
@@ -87,7 +67,7 @@ class VipLocationsTest extends TestCase
             'LOCATIONS',
             [
                 LocationResolver::URL => [
-                    VipLocations::CONTENT => 'http://static.example.com',
+                    Locations::CONTENT => 'https://static.example.com',
                 ],
                 LocationResolver::DIR => [
                     VipLocations::PRIVATE => '/var/www/private/',
@@ -109,12 +89,12 @@ class VipLocationsTest extends TestCase
         $themeUrl = $locations->themesUrl('twentytwenty');
 
         static::assertSame('/var/www/images/', $imagesDir);
-        static::assertSame('http://static.example.com/images/', $imagesUrl);
+        static::assertSame('https://static.example.com/images/', $imagesUrl);
         static::assertSame("{$contentDir}/client-mu-plugins/", $clientMuDir);
-        static::assertSame('http://static.example.com/client-mu-plugins/', $clientMuUrl);
+        static::assertSame('https://static.example.com/client-mu-plugins/', $clientMuUrl);
         static::assertSame("{$contentDir}/client-mu-plugins/vendor/", $vendorDir);
-        static::assertSame('http://static.example.com/client-mu-plugins/vendor/', $vendorUrl);
+        static::assertSame('https://static.example.com/client-mu-plugins/vendor/', $vendorUrl);
         static::assertSame('/var/www/private/', $privateDir);
-        static::assertSame('http://static.example.com/themes/twentytwenty', $themeUrl);
+        static::assertSame('https://static.example.com/themes/twentytwenty', $themeUrl);
     }
 }

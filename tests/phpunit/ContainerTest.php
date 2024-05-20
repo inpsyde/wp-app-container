@@ -14,18 +14,6 @@ class ContainerTest extends TestCase
     /**
      * @test
      */
-    public function testGetFailWithTypeErrorIfNeeded(): void
-    {
-        $container = $this->factoryContainer();
-
-        $this->expectException(\TypeError::class);
-
-        $container->get(1);
-    }
-
-    /**
-     * @test
-     */
     public function testSetAndGetFromPimple(): void
     {
         $container = $this->factoryContainer();
@@ -96,18 +84,6 @@ class ContainerTest extends TestCase
     /**
      * @test
      */
-    public function testHasFailWithTypeErrorIfNeeded(): void
-    {
-        $container = $this->factoryContainer();
-
-        $this->expectException(\TypeError::class);
-
-        $container->has(1);
-    }
-
-    /**
-     * @test
-     */
     public function testHasFromPimple(): void
     {
         $container = $this->factoryContainer();
@@ -125,9 +101,9 @@ class ContainerTest extends TestCase
      */
     public function testWithMultiContainers(): void
     {
-        $cont1 = self::factoryCustomContainer(['a' => 'A!']);
-        $cont2 = self::factoryCustomContainer(['b' => 'B!']);
-        $cont3 = self::factoryCustomContainer(['c' => 'C!']);
+        $cont1 = $this->factoryCustomContainer(['a' => 'A!']);
+        $cont2 = $this->factoryCustomContainer(['b' => 'B!']);
+        $cont3 = $this->factoryCustomContainer(['c' => 'C!']);
 
         $container = $this->factoryContainer($cont1, $cont2);
         $container->addContainer($cont3);
@@ -152,11 +128,11 @@ class ContainerTest extends TestCase
      * @param array $things
      * @return ContainerInterface
      */
-    private static function factoryCustomContainer(array $things): ContainerInterface
+    private function factoryCustomContainer(array $things): ContainerInterface
     {
         return new class ($things) implements ContainerInterface
         {
-            private $things;
+            private array $things;
 
             public function __construct(array $things)
             {

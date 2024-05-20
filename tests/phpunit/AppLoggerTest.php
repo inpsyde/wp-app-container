@@ -17,7 +17,7 @@ class AppLoggerTest extends TestCase
     /**
      * @test
      */
-    public function testThatNoLoggingHappenIfDebugIsDisabled()
+    public function testThatNoLoggingHappenIfDebugIsDisabled(): void
     {
         $logger = AppLogger::new();
         $logger->disableDebug();

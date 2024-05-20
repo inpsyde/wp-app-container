@@ -9,31 +9,13 @@ use Pimple;
 use Pimple\Exception\UnknownIdentifierException;
 use Psr\Container\ContainerInterface;
 
-/**
- * phpcs:disable Inpsyde.CodeQuality.ArgumentTypeDeclaration
- * phpcs:disable Inpsyde.CodeQuality.ReturnTypeDeclaration
- */
 final class Container implements ContainerInterface
 {
-    /**
-     * @var SiteConfig
-     */
-    private $config;
-
-    /**
-     * @var WpContext
-     */
-    private $context;
-
-    /**
-     * @var Pimple\Container|null
-     */
-    private $pimple;
-
-    /**
-     * @var ContainerInterface[]
-     */
-    private $containers = [];
+    /** @var list<ContainerInterface> */
+    private array $containers;
+    private SiteConfig $config;
+    private WpContext $context;
+    private ?Pimple\Container $pimple = null;
 
     /**
      * @param SiteConfig|null $config
@@ -48,8 +30,8 @@ final class Container implements ContainerInterface
 
         $this->config = $config ?? new EnvConfig();
         $this->context = $context ?? WpContext::determine();
-        $this->containers = $containers;
-        if (!$containers) {
+        $this->containers = array_values($containers);
+        if ($containers === []) {
             $this->ensurePimple();
         }
     }
@@ -102,7 +84,6 @@ final class Container implements ContainerInterface
     {
         try {
             $this->ensurePimple();
-            /** @psalm-suppress PossiblyNullReference */
             $this->pimple[$id] = $this->wrapCallback($factory);
         } catch (\Throwable $throwable) {
             do_action(App::ACTION_ERROR, $throwable);
@@ -120,13 +101,11 @@ final class Container implements ContainerInterface
     {
         try {
             $this->ensurePimple();
-            /** @psalm-suppress PossiblyNullReference */
             $this->pimple->extend(
                 $id,
                 /**
-                 * @psalm-suppress MissingClosureParamType
-                 * @psalm-suppress MissingClosureReturnType
-                 * @psalm-suppress MixedFunctionCall
+                 * @param mixed $service
+                 * @return mixed
                  */
                 function ($service) use (&$extender) {
                     return $extender($service, $this);
@@ -147,7 +126,6 @@ final class Container implements ContainerInterface
     {
         try {
             $this->ensurePimple();
-            /** @psalm-suppress PossiblyNullReference */
             $this->pimple[$id] = $this->pimple->factory($this->wrapCallback($callable));
         } catch (\Throwable $throwable) {
             do_action(App::ACTION_ERROR, $throwable);
@@ -157,17 +135,11 @@ final class Container implements ContainerInterface
     }
 
     /**
-     * @param mixed $id
+     * @param string $id
      * @return mixed
-     *
-     * @psalm-suppress MissingReturnType
-     * @psalm-suppress MissingParamType
-     * @psalm-suppress RedundantConditionGivenDocblockType
      */
-    public function get($id)
+    public function get(string $id)
     {
-        $this->assertString($id, __METHOD__);
-
         try {
             foreach ($this->containers as $container) {
                 if ($container->has($id)) {
@@ -184,16 +156,11 @@ final class Container implements ContainerInterface
     }
 
     /**
-     * @param mixed $id
+     * @param string $id
      * @return bool
-     *
-     * @psalm-suppress MissingParamType
-     * @psalm-suppress RedundantConditionGivenDocblockType
      */
-    public function has($id): bool
+    public function has(string $id): bool
     {
-        $this->assertString($id, __METHOD__);
-
         try {
             foreach ($this->containers as $container) {
                 if ($container->has($id)) {
@@ -211,6 +178,8 @@ final class Container implements ContainerInterface
 
     /**
      * @return void
+     *
+     * @psalm-assert Pimple\Container $this->pimple
      */
     private function ensurePimple(): void
     {
@@ -222,37 +191,14 @@ final class Container implements ContainerInterface
     }
 
     /**
-     * Simulating type declaration, which is not possible due to PSR-11 interface.
-     *
-     * @param mixed $value Should be string
-     * @param string $method
-     * @return void
-     *
-     * @psalm-suppress MissingParamType
-     * @psalm-assert string $value
-     */
-    private function assertString($value, string $method): void
-    {
-        if (!is_string($value)) {
-            throw new \TypeError(
-                sprintf(
-                    'Argument 1 passed to %s() must be a string, %s given.',
-                    $method,
-                    gettype($value)
-                )
-            );
-        }
-    }
-
-    /**
      * @param callable $factory
      * @return \Closure
      */
     private function wrapCallback(callable $factory): \Closure
     {
         /**
+         * @return mixed
          * @psalm-suppress MissingClosureReturnType
-         * @psalm-suppress MixedFunctionCall
          */
         return function () use (&$factory) {
             return $factory($this);

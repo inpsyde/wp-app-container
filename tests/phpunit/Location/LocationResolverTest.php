@@ -8,33 +8,12 @@ use Inpsyde\App\EnvConfig;
 use Inpsyde\App\Location\LocationResolver;
 use Inpsyde\App\Location\Locations;
 use Inpsyde\App\Tests\TestCase;
-use Brain\Monkey\Functions;
 
 /**
  * @runTestsInSeparateProcesses
  */
 class LocationResolverTest extends TestCase
 {
-    /**
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        Functions\when('network_site_url')->alias(static function (string $path = '/'): string {
-            return 'http://example.com/' . ltrim($path, '/');
-        });
-
-        Functions\when('content_url')->alias(static function (string $path = '/'): string {
-            return 'http://example.com/wp-content/' . ltrim($path, '/');
-        });
-
-        Functions\when('wp_normalize_path')->alias(static function (string $path): string {
-            return str_replace('\\', '/', $path);
-        });
-    }
-
     /**
      * @test
      */
@@ -69,13 +48,13 @@ class LocationResolverTest extends TestCase
         $rootUrl = $resolver->resolveUrl(Locations::ROOT);
 
         static::assertSame($vendorDir, WP_CONTENT_DIR . '/vendor/foo/bar');
-        static::assertSame($vendorUrl, 'http://example.com/wp-content/vendor/');
+        static::assertSame($vendorUrl, 'https://example.com/wp-content/vendor/');
 
         static::assertSame($contentDir, WP_CONTENT_DIR . '/');
-        static::assertSame($contentUrl, 'http://example.com/wp-content/');
+        static::assertSame($contentUrl, 'https://example.com/wp-content/');
 
         static::assertSame($rootDir, ABSPATH);
-        static::assertSame($rootUrl, 'http://example.com/');
+        static::assertSame($rootUrl, 'https://example.com/');
     }
 
     /**
@@ -90,7 +69,7 @@ class LocationResolverTest extends TestCase
             'LOCATIONS',
             [
                 LocationResolver::URL => [
-                    Locations::ROOT => 'http://root.example.com',
+                    Locations::ROOT => 'https://root.example.com',
                 ],
             ]
         );
@@ -99,7 +78,7 @@ class LocationResolverTest extends TestCase
             new EnvConfig(),
             [
                 LocationResolver::URL => [
-                    Locations::VENDOR => 'http://example.com/vendor',
+                    Locations::VENDOR => 'https://example.com/vendor',
                 ],
                 LocationResolver::DIR => [
                     Locations::VENDOR => __DIR__ . '/vendor',
@@ -108,7 +87,7 @@ class LocationResolverTest extends TestCase
         );
 
         $_ENV['WP_APP_ROOT_DIR'] = '/var/www/';
-        $_ENV['WP_APP_CONTENT_URL'] = 'http://content.example.com';
+        $_ENV['WP_APP_CONTENT_URL'] = 'https://content.example.com';
 
         $vendorDir = $resolver->resolveDir(Locations::VENDOR, 'foo/bar');
         $vendorUrl = $resolver->resolveUrl(Locations::VENDOR);
@@ -119,12 +98,12 @@ class LocationResolverTest extends TestCase
         $pluginUrl = $resolver->resolveUrl(Locations::PLUGINS, 'multilingualpress');
 
         static::assertSame(str_replace('\\', '/', __DIR__) . '/vendor/foo/bar', $vendorDir);
-        static::assertSame('http://example.com/vendor/', $vendorUrl);
+        static::assertSame('https://example.com/vendor/', $vendorUrl);
         static::assertSame('/var/www/', $rootDir);
-        static::assertSame('http://root.example.com/', $rootUrl);
-        static::assertSame('http://content.example.com/', $contentUrl);
+        static::assertSame('https://root.example.com/', $rootUrl);
+        static::assertSame('https://content.example.com/', $contentUrl);
         static::assertSame(str_replace('\\', '/', __DIR__) . '/wp-content/', $contentDir);
-        static::assertSame('http://content.example.com/plugins/multilingualpress', $pluginUrl);
+        static::assertSame('https://content.example.com/plugins/multilingualpress', $pluginUrl);
     }
 
     /**
@@ -139,7 +118,7 @@ class LocationResolverTest extends TestCase
             new EnvConfig(),
             [
                 LocationResolver::URL => [
-                    'foo' => 'http://example.com/foo',
+                    'foo' => 'https://example.com/foo',
                 ],
                 LocationResolver::DIR => [
                     'foo' => __DIR__,
@@ -148,7 +127,7 @@ class LocationResolverTest extends TestCase
         );
 
         $_ENV['WP_APP_BAR_DIR'] = dirname(__DIR__);
-        $_ENV['WP_APP_BAR_URL'] = 'http://example.com/bar';
+        $_ENV['WP_APP_BAR_URL'] = 'https://example.com/bar';
 
         $fooDir = $resolver->resolveDir('foo');
         $fooUrl = $resolver->resolveUrl('foo');
@@ -157,9 +136,9 @@ class LocationResolverTest extends TestCase
         $barUrl = $resolver->resolveUrl('bar');
 
         static::assertSame($fooDir, str_replace('\\', '/', __DIR__) . '/');
-        static::assertSame($fooUrl, 'http://example.com/foo/');
+        static::assertSame($fooUrl, 'https://example.com/foo/');
 
         static::assertSame($barDir, str_replace('\\', '/', dirname(__DIR__)) . '/');
-        static::assertSame($barUrl, 'http://example.com/bar/');
+        static::assertSame($barUrl, 'https://example.com/bar/');
     }
 }

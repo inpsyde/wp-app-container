@@ -18,8 +18,10 @@ class AutoDiscoverIdTest extends TestCase
      */
     public function testIdFromProperty(): void
     {
-        $provider = new class extends RegisteredOnly {
-            public $id = 'hi there';
+        $provider = new class extends RegisteredOnly
+        {
+            public string $id = 'hi there';
+
             public function register(Container $container): bool
             {
                 return false;
@@ -34,8 +36,10 @@ class AutoDiscoverIdTest extends TestCase
      */
     public function testIdFromConstant(): void
     {
-        $provider = new class extends RegisteredOnly {
+        $provider = new class extends RegisteredOnly
+        {
             public const ID = 'constant!';
+
             public function register(Container $container): bool
             {
                 return false;
@@ -50,7 +54,8 @@ class AutoDiscoverIdTest extends TestCase
      */
     public function testFromClass(): void
     {
-        $provider = new class extends RegisteredOnly {
+        $provider = new class extends RegisteredOnly
+        {
             public function register(Container $container): bool
             {
                 return false;
@@ -75,9 +80,9 @@ class AutoDiscoverIdTest extends TestCase
         $provider2 = clone $provider1;
         $provider3 = clone $provider1;
 
-        $one =  $provider1->id();
-        $two =  $provider2->id();
-        $three =  $provider3->id();
+        $one = $provider1->id();
+        $two = $provider2->id();
+        $three = $provider3->id();
 
         static::assertSame(get_class($provider1) . '_1', $one);
         static::assertSame(get_class($provider2) . '_2', $two);
@@ -91,6 +96,9 @@ class AutoDiscoverIdTest extends TestCase
         static::assertSame($three, $provider3->id());
     }
 
+    /**
+     * @test
+     */
     public function testIfObjectHasNotReference(): void
     {
         $providerId1 = (new class extends RegisteredOnly {

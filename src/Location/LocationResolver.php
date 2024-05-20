@@ -6,6 +6,10 @@ namespace Inpsyde\App\Location;
 
 use Inpsyde\App\EnvConfig;
 
+/**
+ * @psalm-type Location-Type = array<string, string|null>
+ * @psalm-type Location-Types = array{"url": Location-Type, "dir": Location-Type}
+ */
 class LocationResolver
 {
     public const URL = 'url';
@@ -18,15 +22,9 @@ class LocationResolver
         Locations::THEMES => 'themes/',
     ];
 
-    /**
-     * @var array
-     */
-    private $locations;
-
-    /**
-     * @var EnvConfig
-     */
-    private $config;
+    /** @var Location-Types */
+    private array $locations;
+    private EnvConfig $config;
 
     /**
      * @param EnvConfig $config
@@ -39,20 +37,19 @@ class LocationResolver
         // phpcs:enable Generic.Metrics.CyclomaticComplexity
 
         $this->config = $config;
-        $vendorPath = $this->discoverVendorPath();
-        $contentPath = trailingslashit(wp_normalize_path((string)WP_CONTENT_DIR));
+        $vendorPath = $this->discoverVendorPath() ?? '';
+        $contentPath = trailingslashit(wp_normalize_path((string) WP_CONTENT_DIR));
         $contentUrl = content_url('/');
 
-        if ($vendorPath && strpos($vendorPath, $contentPath) === 0) {
+        if (($vendorPath !== '') && (strpos($vendorPath, $contentPath) === 0)) {
             // If vendor path is inside content path, then we can calculate vendor URL
-            $subFolder = substr($vendorPath, strlen($contentPath));
-            $vendorUrl = $contentUrl . (string)$subFolder;
+            $vendorUrl = $contentUrl . (string) substr($vendorPath, strlen($contentPath));
         }
 
         $locations = [
             self::DIR => [
-                Locations::ROOT => trailingslashit((string)ABSPATH),
-                Locations::VENDOR => $vendorPath ?: null,
+                Locations::ROOT => trailingslashit((string) ABSPATH),
+                Locations::VENDOR => ($vendorPath === '') ? null : $vendorPath,
                 Locations::CONTENT => $contentPath,
             ],
             self::URL => [
@@ -62,22 +59,22 @@ class LocationResolver
             ],
         ];
 
-        $custom = $extendedDefaults ? $this->parseExtendedDefaults($extendedDefaults) : [];
-        if ($custom[self::DIR] ?? null) {
+        $custom = $this->parseExtendedDefaults($extendedDefaults);
+        if ($custom[self::DIR] !== []) {
             $locations[self::DIR] = array_merge($locations[self::DIR], $custom[self::DIR]);
         }
-        if ($custom[self::URL] ?? null) {
+        if ($custom[self::URL] !== []) {
             $locations[self::URL] = array_merge($locations[self::URL], $custom[self::URL]);
         }
 
         $byConfig = $this->locationsByConfig($config);
-        if ($byConfig[self::DIR] ?? null) {
+        if ($byConfig[self::DIR] !== []) {
             $locations[self::DIR] = array_merge($locations[self::DIR], $byConfig[self::DIR]);
         }
-        if ($byConfig[self::URL] ?? null) {
+        if ($byConfig[self::URL] !== []) {
             $locations[self::URL] = array_merge($locations[self::URL], $byConfig[self::URL]);
         }
-
+        /** @var Location-Types $locations */
         $this->locations = $locations;
     }
 
@@ -106,29 +103,32 @@ class LocationResolver
      */
     private function discoverVendorPath(): ?string
     {
-        $baseDir = (string)wp_normalize_path(dirname(__DIR__, 2));
+        $baseDir = (string) wp_normalize_path(dirname(__DIR__, 2));
         $dependency = 'psr/container/composer.json';
 
         $dirParts = explode('/', $baseDir);
         $countParts = count($dirParts);
-        $vendorName = $countParts > 3 ? array_slice($dirParts, -3, 1)[0] : '';
-        $vendorPath = trim($vendorName, '/')
+        $vendorName = ($countParts > 3) ? array_slice($dirParts, -3, 1)[0] : '';
+        $vendorPath = trim((string) $vendorName, '/') !== ''
             ? implode('/', array_slice($dirParts, 0, $countParts - 3)) . "/{$vendorName}"
             : null;
 
         // if vendor dir is found, but our dependency in it, then what's found is wrong or Composer
         // dependencies not installed. In both cases we want to disable vendor path.
-        if ($vendorPath && !is_file("{$vendorPath}/{$dependency}")) {
+        if (
+            ($vendorPath !== null)
+            && !is_file("{$vendorPath}/{$dependency}")
+        ) {
             $vendorPath = null;
         }
 
         // if no vendor dir found, but our dependency inside base dir, package is installed as root,
         // e.g. during unit tests, so we can calculate vendor
-        if (!$vendorPath && is_file("{$baseDir}/vendor/{$dependency}")) {
+        if (($vendorPath === null) && is_file("{$baseDir}/vendor/{$dependency}")) {
             $vendorPath = "{$baseDir}/vendor/";
         }
 
-        return $vendorPath ?: null;
+        return $vendorPath;
     }
 
     /**
@@ -139,52 +139,56 @@ class LocationResolver
      */
     private function resolve(string $location, string $dirOrUrl, ?string $subDir = null): ?string
     {
-        $envBase = (string)$this->config->get('WP_APP_' . strtoupper("{$location}_{$dirOrUrl}"));
+        $envBase = (string) $this->config->get('WP_APP_' . strtoupper("{$location}_{$dirOrUrl}"));
 
         $base = $envBase
             ? ($dirOrUrl === self::DIR ? wp_normalize_path($envBase) : $envBase)
             : ($this->locations[$dirOrUrl][$location] ?? null);
 
-        if ($base === null && array_key_exists($location, self::CONTENT_LOCATIONS)) {
+        if (($base === null) && array_key_exists($location, self::CONTENT_LOCATIONS)) {
             $contentBase = $this->resolve(Locations::CONTENT, $dirOrUrl);
-            $contentBase and $base = $contentBase . self::CONTENT_LOCATIONS[$location];
+            if (($contentBase !== '') && ($contentBase !== null)) {
+                $base = $contentBase . self::CONTENT_LOCATIONS[$location];
+            }
         }
 
         if ($base === null) {
             return null;
         }
 
-        $base = trailingslashit((string)$base);
+        $base = trailingslashit((string) $base);
 
-        if (!$subDir) {
+        if (($subDir === '') || ($subDir === null)) {
             return $base;
         }
 
         ($dirOrUrl === self::DIR) and $subDir = wp_normalize_path($subDir);
 
-        return $base . ltrim((string)$subDir, '\\/');
+        return $base . ltrim((string) $subDir, '\\/');
     }
 
     /**
      * @param EnvConfig $config
-     * @return array<string, array<string, string>>
+     * @return Location-Types
      */
     private function locationsByConfig(EnvConfig $config): array
     {
         $locations = $config->get('LOCATIONS');
-        if (!$locations || !is_array($locations)) {
-            return [];
-        }
 
-        return $this->parseExtendedDefaults($locations);
+        return $this->parseExtendedDefaults(is_array($locations) ? $locations : []);
     }
 
     /**
-     * @return array<string, array<string, string>>
+     * @param array $locations
+     * @return Location-Types
      */
     private function parseExtendedDefaults(array $locations): array
     {
+        /** @var Location-Types $custom */
         $custom = [self::DIR => [], self::URL => []];
+        if ($locations === []) {
+            return $custom;
+        }
 
         $customDirs = $locations[self::DIR] ?? [];
         is_array($customDirs) or $customDirs = [];
@@ -193,20 +197,18 @@ class LocationResolver
         is_array($customUrls) or $customUrls = [];
 
         foreach ($customDirs as $key => $customDir) {
-            if ($key && $customDir && is_string($key) && is_string($customDir)) {
+            if (($key !== '') && ($customDir !== '') && is_string($key) && is_string($customDir)) {
                 $custom[self::DIR][$key] = trailingslashit(wp_normalize_path($customDir));
             }
         }
 
         foreach ($customUrls as $key => $customUrl) {
-            if ($key && $customUrl && is_string($key) && is_string($customUrl)) {
+            if (($key !== '') && ($customUrl !== '') && is_string($key) && is_string($customUrl)) {
                 $custom[self::URL][$key] = trailingslashit($customUrl);
             }
         }
 
-        /** @var  array<string, array<string, string>> $custom */
-        $custom = array_filter($custom);
-
+        /** @var Location-Types */
         return $custom;
     }
 }

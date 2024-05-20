@@ -31,15 +31,8 @@ final class AppStatus
         self::BOOTING_THEMES => self::BOOTED_THEMES,
     ];
 
-    /**
-     * @var string
-     */
-    private $status;
-
-    /**
-     * @var string
-     */
-    private $lastStepHook = 'init';
+    private string $status;
+    private string $lastStepHook = 'init';
 
     /**
      * @return AppStatus
@@ -49,12 +42,15 @@ final class AppStatus
         return new static();
     }
 
+    /**
+     */
     private function __construct()
     {
         $this->status = self::IDLE;
     }
 
     /**
+     * @param string $hook
      * @return AppStatus
      */
     public function lastStepOn(string $hook): AppStatus
@@ -81,7 +77,9 @@ final class AppStatus
         $status = self::NEXT_STEP_MAP[$this->status] ?? null;
 
         if ($status === null) {
+            // phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped
             throw new \DomainException("Can't move out of status '{$this->status}'.");
+            // phpcs:enable WordPress.Security.EscapeOutput.ExceptionNotEscaped
         }
 
         $this->status = $status;
@@ -210,7 +208,7 @@ final class AppStatus
             $filter = current_filter();
             $filter and $message .= " WordPress is at {$filter} hook.";
 
-            throw new \DomainException($message);
+            throw new \DomainException(esc_html($message));
         }
 
         if (!did_action('plugins_loaded')) {

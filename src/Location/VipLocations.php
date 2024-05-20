@@ -30,8 +30,8 @@ class VipLocations implements Locations
     private function __construct(EnvConfig $config)
     {
         $baseResolver = new LocationResolver($config);
-        $contentUrl = $baseResolver->resolveUrl(self::CONTENT);
-        $contentDir = $baseResolver->resolveDir(self::CONTENT);
+        $contentUrl = $baseResolver->resolveUrl(self::CONTENT) ?? '';
+        $contentDir = $baseResolver->resolveDir(self::CONTENT) ?? '';
 
         /** @psalm-suppress MixedArgument */
         $privateDir = defined('WPCOM_VIP_PRIVATE_DIR')
@@ -39,28 +39,28 @@ class VipLocations implements Locations
             : null;
 
         $clientMuDir = defined('WPCOM_VIP_CLIENT_MU_PLUGIN_DIR')
-            ? trailingslashit(wp_normalize_path((string)WPCOM_VIP_CLIENT_MU_PLUGIN_DIR))
+            ? trailingslashit(wp_normalize_path((string) WPCOM_VIP_CLIENT_MU_PLUGIN_DIR))
             : "{$contentDir}client-mu-plugins/";
 
-        $clientMuUrl = "{$contentUrl}client-mu-plugins/";
+        $clientMuUrl = $contentUrl . 'client-mu-plugins/';
 
-        $abspath = trailingslashit(wp_normalize_path((string)ABSPATH));
+        $abspath = trailingslashit(wp_normalize_path((string) ABSPATH));
 
         $this->injectResolver(
             new LocationResolver(
                 $config,
                 [
                     LocationResolver::DIR => [
-                        self::IMAGES => "{$contentDir}images/",
+                        self::IMAGES => $contentDir . 'images/',
                         self::CLIENT_MU_PLUGINS => $clientMuDir,
-                        self::VENDOR => "{$clientMuDir}vendor/",
+                        self::VENDOR => $clientMuDir . 'vendor/',
                         self::PRIVATE => $privateDir,
-                        self::VIP_CONFIG => "{$abspath}vip-config/",
+                        self::VIP_CONFIG => $abspath . 'vip-config/',
                     ],
                     LocationResolver::URL => [
-                        self::IMAGES => "{$contentUrl}images",
+                        self::IMAGES => $contentUrl . 'images',
                         self::CLIENT_MU_PLUGINS => $clientMuUrl,
-                        self::VENDOR => "{$clientMuUrl}vendor/",
+                        self::VENDOR => $clientMuUrl . 'vendor/',
                     ],
                 ]
             )

@@ -96,13 +96,13 @@ interface Locations
 
     /**
      * @param string $path
-     * @return string|null|null
+     * @return string|null
      */
     public function vendorDir(string $path = '/'): ?string;
 
     /**
      * @param string $path
-     * @return string|null|null It is expected to be null if vendor folder is outside web-root.
+     * @return string|null It is expected to be null if vendor folder is outside web-root.
      */
     public function vendorUrl(string $path = '/'): ?string;
 

@@ -11,7 +11,7 @@ class ServiceProviders
     /**
      * @var \SplObjectStorage<ServiceProvider, array<string>>|null
      */
-    private $providers;
+    private ?\SplObjectStorage $providers = null;
 
     /**
      * @return ServiceProviders
@@ -28,7 +28,7 @@ class ServiceProviders
      */
     public function add(ServiceProvider $provider, string ...$contexts): ServiceProviders
     {
-        if (!$this->providers) {
+        if ($this->providers === null) {
             $this->providers = new \SplObjectStorage();
         }
 
@@ -42,9 +42,10 @@ class ServiceProviders
      */
     public function provideTo(App $app): void
     {
-        if (!$this->providers) {
+        if ($this->providers === null) {
             return;
         }
+
         $this->addProvidersToApp($app, $this->providers);
         $this->providers = null;
     }
