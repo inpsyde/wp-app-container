@@ -16,18 +16,27 @@
             "role": "Developer"
         }
     ],
+    "repositories": [
+        {
+            "type": "composer",
+            "url": "https://raw.githubusercontent.com/inpsyde/wp-stubs/main",
+            "only": [
+                "inpsyde/wp-stubs-versions"
+            ]
+        }
+    ],
     "require": {
-        "php": ">=7.2.5 < 9",
+        "php": ">=7.4 < 8.4",
         "ext-json": "*",
-        "inpsyde/wp-context": "^1.2.0",
-        "pimple/pimple": "^3"
+        "inpsyde/wp-context": "^1.5.0",
+        "pimple/pimple": "^v3.5.0"
     },
     "require-dev": {
-        "phpunit/phpunit": "^8.5.22",
-        "inpsyde/php-coding-standards": "^1",
-        "vimeo/psalm": "^4.26.0",
+        "phpunit/phpunit": "^9.6.19",
+        "inpsyde/php-coding-standards": "^2@dev",
+        "vimeo/psalm": "^5.24.0",
         "brain/monkey": "^2.6.1",
-        "inpsyde/wp-stubs": "dev-main"
+        "inpsyde/wp-stubs-versions": "dev-latest"
     },
     "autoload": {
         "psr-4": {
@@ -42,13 +51,13 @@
     "minimum-stability": "stable",
     "scripts": {
         "cs": "@php ./vendor/squizlabs/php_codesniffer/bin/phpcs",
-        "psalm": "@php ./vendor/vimeo/psalm/psalm --no-cache --output-format=compact",
-        "tests": "@php ./vendor/phpunit/phpunit/phpunit",
-        "tests:no-cov": "@php ./vendor/phpunit/phpunit/phpunit --no-coverage",
+        "psalm": "@php ./vendor/vimeo/psalm/psalm --no-suggestions --report-show-info=false --find-unused-psalm-suppress --no-diff --no-cache --no-file-cache --output-format=compact",
+        "tests": "@php ./vendor/phpunit/phpunit/phpunit --no-coverage",
+        "tests:coverage": "@php ./vendor/phpunit/phpunit/phpunit",
         "qa": [
             "@cs",
             "@psalm",
-            "@tests:no-cov"
+            "@tests"
         ]
     },
     "extra": {

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Inpsyde\App;
 
 use Inpsyde\App\Location\Locations;
@@ -8,8 +10,9 @@ interface SiteConfig extends \JsonSerializable
 {
     public const HOSTING_VIP = 'vip';
     public const HOSTING_WPE = 'wpe';
-    public const HOSTING_SPACES = 'spaces';
     public const HOSTING_OTHER = 'other';
+    /** @deprecated  */
+    public const HOSTING_SPACES = 'spaces';
 
     /**
      * @return Locations
@@ -44,13 +47,8 @@ interface SiteConfig extends \JsonSerializable
 
     /**
      * @param string $name
-     * @param null $default
+     * @param mixed $default
      * @return mixed|null
-     *
-     * phpcs:disable Inpsyde.CodeQuality.ReturnTypeDeclaration
-     * phpcs:disable Inpsyde.CodeQuality.ArgumentTypeDeclaration
-     * @psalm-suppress MissingReturnType
-     * @psalm-suppress MissingParamType
      */
     public function get(string $name, $default = null);
 }

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Inpsyde\App\Tests;
 
 use Brain\Monkey\Actions;
-use Brain\Monkey\Functions;
 use Inpsyde\App\App;
 use Inpsyde\App\AppStatus;
 use Inpsyde\App\Container;
@@ -18,23 +17,6 @@ use Psr\Container\NotFoundExceptionInterface;
 
 class AppTest extends TestCase
 {
-    /**
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        Functions\when('remove_all_actions')->justReturn();
-
-        Actions\expectDone(App::ACTION_ERROR)
-            ->with(\Mockery::type(\Throwable::class))
-            ->zeroOrMoreTimes()
-            ->whenHappen(static function (\Throwable $throwable) {
-                throw $throwable;
-            });
-    }
-
     /**
      * @test
      * @runInSeparateProcess
@@ -100,22 +82,14 @@ class AppTest extends TestCase
 
         $info = $app->debugInfo();
 
-        static::assertSame($info['status'], (string)AppStatus::new());
+        static::assertSame($info['status'], (string) AppStatus::new());
         static::assertIsArray($info['providers']);
         static::assertSame(['p1', 'p2'], array_keys($info['providers']));
     }
 
-    public function debugProvider(): array
-    {
-        return [
-            'debug disabled' => [false],
-            'debug enabled' => [true],
-        ];
-    }
-
     /**
      * @test
-     * @dataProvider debugProvider
+     * @dataProvider provideDebugData
      * @param bool $isDebug
      */
     public function testBootFlow(bool $isDebug): void
@@ -127,13 +101,13 @@ class AppTest extends TestCase
 
         Actions\expectAdded('plugins_loaded')
             ->once()
-            ->whenHappen(static function (callable $callable) use (&$onPluginsLoaded) {
+            ->whenHappen(static function (callable $callable) use (&$onPluginsLoaded): void {
                 $onPluginsLoaded = $callable;
             });
 
         Actions\expectAdded('after_setup_theme')
             ->once()
-            ->whenHappen(static function (callable $callable) use (&$onAfterSetupTheme) {
+            ->whenHappen(static function (callable $callable) use (&$onAfterSetupTheme): void {
                 $onAfterSetupTheme = $callable;
             });
 
@@ -160,8 +134,7 @@ class AppTest extends TestCase
                             'p-plugins-1',
                             '__return_true',
                             static function (Container $container): bool {
-                                echo
-                                    $container->get('a')
+                                echo $container->get('a')
                                     . $container->get('b')
                                     . $container->get('c');
                                 return true;
@@ -241,7 +214,7 @@ class AppTest extends TestCase
 
     /**
      * @test
-     * @dataProvider debugProvider
+     * @dataProvider provideDebugData
      * @param bool $isDebug
      */
     public function testNestedAddProvider(bool $isDebug): void
@@ -314,7 +287,7 @@ class AppTest extends TestCase
 
     /**
      * @test
-     * @dataProvider debugProvider
+     * @dataProvider provideDebugData
      * @param bool $isDebug
      */
     public function testCallingBootFromNestedAddProviderFails(bool $isDebug): void
@@ -342,7 +315,7 @@ class AppTest extends TestCase
 
     /**
      * @test
-     * @dataProvider debugProvider
+     * @dataProvider provideDebugData
      * @param bool $isDebug
      */
     public function testDependantProviderOnLastBootIsBooted(bool $isDebug): void
@@ -376,20 +349,20 @@ class AppTest extends TestCase
 
         Actions\expectAdded('plugins_loaded')
             ->once()
-            ->whenHappen(static function (callable $callable) use (&$onPluginsLoaded) {
+            ->whenHappen(static function (callable $callable) use (&$onPluginsLoaded): void {
                 $onPluginsLoaded = $callable;
             });
 
         Actions\expectAdded('init')
             ->once()
-            ->whenHappen(static function (callable $callable) use (&$onInit) {
+            ->whenHappen(static function (callable $callable) use (&$onInit): void {
                 $onInit = $callable;
             });
 
         Actions\expectDone(App::ACTION_REGISTERED_PROVIDER)
             ->with($dependency->id(), \Mockery::type(App::class))
             ->once()
-            ->whenHappen(static function (string $providerId, App $app) use ($dependant) {
+            ->whenHappen(static function (string $providerId, App $app) use ($dependant): void {
                 static::assertTrue($app->status()->isThemesStep());
                 $app->addProvider($dependant);
             });
@@ -417,6 +390,17 @@ class AppTest extends TestCase
     }
 
     /**
+     * @return array
+     */
+    public static function provideDebugData(): array
+    {
+        return [
+            'debug disabled' => [false],
+            'debug enabled' => [true],
+        ];
+    }
+
+    /**
      * @param string $id
      * @param callable|null $register
      * @return ServiceProvider
@@ -434,7 +418,7 @@ class AppTest extends TestCase
     {
         return new class ($string)
         {
-            private $string;
+            private string $string;
 
             public function __construct(string $string)
             {

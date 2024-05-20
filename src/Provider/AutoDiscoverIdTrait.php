@@ -6,10 +6,7 @@ namespace Inpsyde\App\Provider;
 
 trait AutoDiscoverIdTrait
 {
-    /**
-     * @var string|null
-     */
-    private $discoveredId = null;
+    private ?string $discoveredId = null;
 
     /**
      * @return string
@@ -20,8 +17,9 @@ trait AutoDiscoverIdTrait
             return $this->discoveredId;
         }
 
-        if (isset($this->id) && is_string($this->id)) {
+        if (is_string($this->id ?? null)) {
             $this->discoveredId = $this->id;
+            /** @var string */
             return $this->discoveredId;
         }
 

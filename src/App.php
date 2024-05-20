@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Inpsyde\App;
 
+use Inpsyde\App\Container\ContainerCollector;
 use Inpsyde\App\Provider\Package;
 use Inpsyde\App\Provider\ServiceProvider;
 use Inpsyde\WpContext;
@@ -12,52 +13,23 @@ use Pimple\Exception\UnknownIdentifierException;
 final class App
 {
     public const ACTION_ADD_PROVIDERS = 'wp-app.add-providers';
-    public const ACTION_REGISTERED = 'wp-app.all-providers-registered';
-    public const ACTION_BOOTED = 'wp-app.all-providers-booted';
-    public const ACTION_REGISTERED_PROVIDER = 'wp-app.provider-registered';
     public const ACTION_ADDED_PROVIDER = 'wp-app.provider-added';
+    public const ACTION_BOOTED = 'wp-app.all-providers-booted';
     public const ACTION_BOOTED_PROVIDER = 'wp-app.provider-booted';
     public const ACTION_ERROR = 'wp-app.error';
+    public const ACTION_REGISTERED = 'wp-app.all-providers-registered';
+    public const ACTION_REGISTERED_PROVIDER = 'wp-app.provider-registered';
 
-    /**
-     * @var App|null
-     */
-    private static $app;
+    private static ?App $app = null;
 
-    /**
-     * @var Container|null
-     */
-    private $container;
-
-    /**
-     * @var AppLogger
-     */
-    private $logger;
-
-    /**
-     * @var AppStatus
-     */
-    private $status;
-
-    /**
-     * @var \SplQueue|null
-     */
-    private $bootable;
-
-    /**
-     * @var \SplQueue|null
-     */
-    private $delayed;
-
-    /**
-     * @var bool
-     */
-    private $booting = false;
-
-    /**
-     * @var array<string,bool>
-     */
-    private $providers = [];
+    private Container $container;
+    private AppLogger $logger;
+    private AppStatus $status;
+    private \SplQueue $bootable;
+    private \SplQueue $delayed;
+    private bool $booting = false;
+    /** @var array<string, bool> */
+    private array $providers = [];
 
     /**
      * @param Container|null $container
@@ -75,13 +47,10 @@ final class App
      * @param string $id
      * @return mixed
      *
-     * phpcs:disable Inpsyde.CodeQuality.ReturnTypeDeclaration
-     * @psalm-suppress MissingReturnType
+     * @deprecated
      */
     public static function make(string $id)
     {
-        // phpcs:enable Inpsyde.CodeQuality.ReturnTypeDeclaration
-
         if (!self::$app) {
             static::handleThrowable(new \Exception('No valid app found.'));
 
@@ -107,11 +76,13 @@ final class App
     /**
      * @param Container|null $container
      */
-    private function __construct(Container $container = null)
+    private function __construct(?Container $container = null)
     {
         $this->status = AppStatus::new();
         $this->logger = AppLogger::new();
-        $this->container = $container;
+        $this->container = $container ?? new Container();
+        $this->delayed = new \SplQueue();
+        $this->bootable = new \SplQueue();
     }
 
     /**
@@ -154,24 +125,12 @@ final class App
      */
     public function debugInfo(): ?array
     {
-        $providers = $this->logger->dump();
-        if ($providers === null) {
-            return null;
-        }
-
-        $data = [
-            'status' => (string)$this->status,
-            'providers' => $providers,
-            'context' => null,
-            'config' => null,
+        return [
+            'status' => (string) $this->status,
+            'providers' => $this->logger->dump(),
+            'context' => $this->container->context()->jsonSerialize(),
+            'config' => $this->container->config()->jsonSerialize(),
         ];
-
-        if ($this->container) {
-            $data['context'] = $this->container->context()->jsonSerialize();
-            $data['config'] = $this->container->config()->jsonSerialize();
-        }
-
-        return $data;
     }
 
     /**
@@ -189,7 +148,7 @@ final class App
     {
         try {
             if ($this->booting) {
-                throw new \DomainException('Can\'t call App::boot() when already booting.');
+                throw new \DomainException("Can't call App::boot() when already booting.");
             }
 
             $this->status = $this->status->next($this); // registering
@@ -241,15 +200,12 @@ final class App
         try {
             $contexts or $contexts = [WpContext::CORE];
 
-            $this->initializeContainer();
-
             $providerId = $provider->id();
 
             if ($this->hasProviders($providerId)) {
                 return $this;
             }
 
-            /** @psalm-suppress PossiblyNullReference */
             if (!$this->container->context()->is(...$contexts)) {
                 $this->logger->providerSkipped($provider, $this->status);
 
@@ -260,12 +216,10 @@ final class App
             $this->logger->providerAdded($provider, $this->status);
             $this->fireBootingHook(self::ACTION_ADDED_PROVIDER, $providerId);
 
-            /** @psalm-suppress PossiblyNullReference */
             $provider->registerLater()
                 ? $this->delayed->enqueue($provider)
                 : $this->registerProvider($provider);
 
-            /** @psalm-suppress PossiblyNullReference */
             $this->bootable->enqueue($provider);
         } catch (\Throwable $throwable) {
             static::handleThrowable($throwable);
@@ -287,18 +241,11 @@ final class App
 
     /**
      * @param string $id
-     * @param mixed|null $default
+     * @param mixed $default
      * @return mixed
-     *
-     * phpcs:disable Inpsyde.CodeQuality.ArgumentTypeDeclaration
-     * phpcs:disable Inpsyde.CodeQuality.ReturnTypeDeclaration
-     * @psalm-suppress MissingReturnType
-     * @psalm-suppress MissingParamType
      */
     public function resolve(string $id, $default = null)
     {
-        // phpcs:enable Inpsyde.CodeQuality.ReturnTypeDeclaration
-
         $value = $default;
 
         try {
@@ -306,9 +253,6 @@ final class App
                 throw new \DomainException('Can\'t resolve from an uninitialised application.');
             }
 
-            $this->initializeContainer();
-
-            /** @psalm-suppress PossiblyNullReference */
             if (!$this->container->has($id)) {
                 do_action(
                     self::ACTION_ERROR,
@@ -329,19 +273,8 @@ final class App
     /**
      * @return void
      */
-    private function initializeContainer(): void
-    {
-        $this->container or $this->container = new Container();
-        $this->delayed or $this->delayed = new \SplQueue();
-        $this->bootable or $this->bootable = new \SplQueue();
-    }
-
-    /**
-     * @return void
-     */
     private function registerAndBootProviders(): void
     {
-        $this->initializeContainer();
         $lastRun = $this->status->isThemesStep();
 
         try {
@@ -374,22 +307,19 @@ final class App
      */
     private function registerDeferredProviders(): void
     {
-        if (!$this->delayed) {
+        if ($this->delayed->count() === 0) {
             return;
         }
 
         $lastRun = $this->status->isThemesStep();
-        $toRegisterLater = $lastRun ? null : new \SplQueue();
+        $toRegisterLater = new \SplQueue();
 
         while ($this->delayed->count()) {
             /** @var ServiceProvider $delayed */
             $delayed = $this->delayed->dequeue();
-            $toRegisterNow = $lastRun || $delayed->bootEarly();
-            $toRegisterNow and $this->registerProvider($delayed);
-
-            if ($toRegisterLater && !$toRegisterNow) {
-                $toRegisterLater->enqueue($delayed);
-            }
+            ($lastRun || $delayed->bootEarly())
+                ? $this->registerProvider($delayed)
+                : $toRegisterLater->enqueue($delayed);
         }
 
         $this->delayed = $toRegisterLater;
@@ -400,13 +330,13 @@ final class App
      */
     private function bootProviders(): void
     {
-        if (!$this->bootable) {
+        if ($this->bootable->count() === 0) {
             return;
         }
 
         $lastRun = $this->status->isThemesStep();
 
-        $toBootLater = $lastRun ? null : new \SplQueue();
+        $toBootLater = new \SplQueue();
 
         while ($this->bootable->count()) {
             /** @var ServiceProvider $bootable */
@@ -417,9 +347,7 @@ final class App
                 continue;
             }
 
-            if ($toBootLater) {
-                $toBootLater->enqueue($bootable);
-            }
+            $toBootLater->enqueue($bootable);
         }
 
         $this->bootable = $toBootLater;
@@ -432,8 +360,6 @@ final class App
     private function registerProvider(ServiceProvider $provider): void
     {
         try {
-            $this->initializeContainer();
-            /** @psalm-suppress PossiblyNullArgument */
             if ($provider->register($this->container)) {
                 $this->fireBootingHook(self::ACTION_REGISTERED_PROVIDER, $provider->id());
                 $this->logger->providerRegistered($provider, $this->status);
@@ -449,8 +375,6 @@ final class App
      */
     private function bootProvider(ServiceProvider $provider): void
     {
-        $this->initializeContainer();
-        /** @psalm-suppress PossiblyNullArgument */
         if (!$provider->boot($this->container)) {
             return;
         }

@@ -6,10 +6,7 @@ namespace Inpsyde\App\Location;
 
 trait ResolverTrait
 {
-    /**
-     * @var LocationResolver|null
-     */
-    private $resolver;
+    private ?LocationResolver $resolver;
 
     /**
      * @param LocationResolver $resolver
@@ -149,6 +146,7 @@ trait ResolverTrait
     }
 
     /**
+     * @param string $path
      * @return string|null
      */
     public function vendorUrl(string $path = '/'): ?string

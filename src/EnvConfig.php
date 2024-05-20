@@ -18,54 +18,20 @@ class EnvConfig implements SiteConfig
     public const PRODUCTION = 'production';
     public const STAGING = 'staging';
 
-    private const ENV_ALIASES = [
-        'local' => self::LOCAL,
-        'development' => self::DEVELOPMENT,
-        'dev' => self::DEVELOPMENT,
-        'develop' => self::DEVELOPMENT,
-        'staging' => self::STAGING,
-        'stage' => self::STAGING,
-        'preprod' => self::STAGING,
-        'pre-prod' => self::STAGING,
-        'pre-production' => self::STAGING,
-        'test' => self::STAGING,
-        'uat' => self::STAGING,
-        'production' => self::PRODUCTION,
-        'prod' => self::PRODUCTION,
-        'live' =>  self::PRODUCTION,
-    ];
-
+    /** @psalm-suppress DeprecatedConstant */
     private const HOSTING_LOCATIONS_CLASS_MAP = [
         self::HOSTING_WPE => WpEngineLocations::class,
         self::HOSTING_VIP => VipLocations::class,
-        self::HOSTING_SPACES => GenericLocations::class,
         self::HOSTING_OTHER => GenericLocations::class,
+        self::HOSTING_SPACES => GenericLocations::class,
     ];
 
-    /**
-     * @var string
-     */
-    private $env = '';
-
-    /**
-     * @var array<string, mixed>
-     */
-    private $data = [];
-
-    /**
-     * @var string[]
-     */
-    private $namespaces = [];
-
-    /**
-     * @var Locations|null
-     */
-    private $locations;
-
-    /**
-     * @var string
-     */
-    private $hosting = '';
+    /** @var array<string, mixed> */
+    private array $data = [];
+    /** list<non-empty-string> */
+    private array $namespaces = [];
+    private ?Locations $locations = null;
+    private string $hosting = '';
 
     /**
      * @param string ...$namespaces
@@ -73,8 +39,8 @@ class EnvConfig implements SiteConfig
     public function __construct(string ...$namespaces)
     {
         foreach ($namespaces as $namespace) {
-            $trimmed = $namespace ? trim($namespace, '\\') : null;
-            $trimmed and $this->namespaces[] = $trimmed;
+            $trimmed = trim($namespace, '\\');
+            ($trimmed !== '') and $this->namespaces[] = $trimmed;
         }
     }
 
@@ -89,19 +55,16 @@ class EnvConfig implements SiteConfig
 
         $locationClassName = self::HOSTING_LOCATIONS_CLASS_MAP[$this->hosting()] ?? '';
         if (
-            !$locationClassName
+            ($locationClassName === '')
             || !class_exists($locationClassName)
             || !is_subclass_of($locationClassName, Locations::class)
         ) {
             $locationClassName = GenericLocations::class;
         }
 
-        /** @var callable $factory */
+        /** @var callable(EnvConfig):Locations $factory */
         $factory = [$locationClassName, 'createFromConfig'];
-        /** @var Locations $locations */
-        $locations = $factory($this);
-
-        $this->locations = $locations;
+        $this->locations = $factory($this);
 
         return $this->locations;
     }
@@ -122,7 +85,7 @@ class EnvConfig implements SiteConfig
             return $this->hosting;
         }
 
-        if ($this->get('VIP_GO_ENV') !== null) {
+        if (($this->get('VIP_GO_ENV') !== null) || $this->canReadVipEnv()) {
             $this->hosting = self::HOSTING_VIP;
 
             return $this->hosting;
@@ -135,7 +98,15 @@ class EnvConfig implements SiteConfig
         }
 
         if ($this->get('SPACES_SPACE_ID')) {
+            /** @psalm-suppress DeprecatedConstant */
             $this->hosting = self::HOSTING_SPACES;
+
+            return $this->hosting;
+        }
+
+        $hosting = apply_filters('wp-app.hosting', null);
+        if (($hosting !== '') && is_string($hosting)) {
+            $this->hosting = $hosting;
 
             return $this->hosting;
         }
@@ -156,41 +127,10 @@ class EnvConfig implements SiteConfig
 
     /**
      * @return string
-     *
-     * phpcs:disable Generic.Metrics.CyclomaticComplexity
      */
     public function env(): string
     {
-        // phpcs:enable Generic.Metrics.CyclomaticComplexity
-        if ($this->env) {
-            return $this->env;
-        }
-
-        // Use WP function if we can (WP 5.5+).
-        $env = function_exists('wp_get_environment_type') ? wp_get_environment_type() : null;
-        $env = $env
-            ?? $this->readEnvVarOrConstant('WP_ENVIRONMENT_TYPE')    // WP core
-            ?? $this->readEnvVarOrConstant('WP_ENV')                 // WP Starter or Bedrock
-            ?? $this->readEnvVarOrConstant('WORDPRESS_ENV')          // WP Starter legacy
-            ?? $this->readEnvVarOrConstant('VIP_GO_APP_ENVIRONMENT') // VIP Go
-            ?? $this->readEnvVarOrConstant('VIP_GO_ENV');            // VIP Go legacy
-
-        if ($env) {
-            return $this->normalizeEnv((string)$env, false);
-        }
-
-        if (function_exists('is_wpe')) {   // WP Engine legacy
-            $env = ((int)is_wpe()) > 0 ? self::PRODUCTION : self::STAGING;
-            $this->env = $this->normalizeEnv($env, true);
-
-            return $this->env;
-        }
-
-        /** @psalm-suppress TypeDoesNotContainType */
-        $env = (defined('WP_DEBUG') && WP_DEBUG) ? self::DEVELOPMENT : self::PRODUCTION;
-        $this->env = $this->normalizeEnv($env, true);
-
-        return $this->env;
+        return wp_get_environment_type();
     }
 
     /**
@@ -199,30 +139,17 @@ class EnvConfig implements SiteConfig
      */
     public function envIs(string $env): bool
     {
-        $env = strtolower($env);
-        if (array_key_exists($env, self::ENV_ALIASES)) {
-            $env = self::ENV_ALIASES[$env];
-        }
-
-        return $this->env() === $env;
+        return $this->env() === strtolower($env);
     }
 
     /**
      * @param string $name
-     * @param null $default
-     * @return mixed|null
-     *
-     * phpcs:disable Inpsyde.CodeQuality.ReturnTypeDeclaration
-     * phpcs:disable Inpsyde.CodeQuality.ArgumentTypeDeclaration
-     * @psalm-suppress MissingReturnType
-     * @psalm-suppress MissingParamType
+     * @param mixed $default
+     * @return mixed
      */
     public function get(string $name, $default = null)
     {
-        // phpcs:enable Inpsyde.CodeQuality.ReturnTypeDeclaration
-        // phpcs:enable Inpsyde.CodeQuality.ArgumentTypeDeclaration
-
-        if (!$name) {
+        if ($name === '') {
             return $default;
         }
 
@@ -255,7 +182,6 @@ class EnvConfig implements SiteConfig
     /**
      * @return array{env:string, hosting:string, keys:array<string>}
      */
-    #[\ReturnTypeWillChange]
     public function jsonSerialize(): array
     {
         return [
@@ -268,59 +194,41 @@ class EnvConfig implements SiteConfig
     /**
      * @param string $name
      * @return mixed
-     *
-     * phpcs:disable Inpsyde.CodeQuality.ReturnTypeDeclaration
-     * @psalm-suppress MissingReturnType
      */
     private function readEnvVarOrConstant(string $name)
     {
-        // phpcs:enable
-
         if (defined($name)) {
             return constant($name);
         }
 
-        $value = $_ENV[$name] ?? null;
-        if ($value === null && stripos($name, 'HTTP_') !== 0) {
-            $value = $_SERVER[$name] ?? null; // phpcs:ignore
+        /** @psalm-suppress UndefinedClass */
+        if ($this->canReadVipEnv() && \Automattic\VIP\Environment::has_var($name)) {
+            return \Automattic\VIP\Environment::get_var($name);
         }
 
-        if ($value === null && (PHP_SAPI === 'cli' || PHP_SAPI === 'cli-server')) {
-            $value = getenv($name) ?: null;
+        // phpcs:disable WordPress.Security.ValidatedSanitizedInput
+        $value = $_ENV[$name] ?? null;
+        if (($value === null) && stripos($name, 'HTTP_') !== 0) {
+            $value = $_SERVER[$name] ?? null;
+        }
+        // phpcs:enable WordPress.Security.ValidatedSanitizedInput
+
+        if (($value === null) && ((PHP_SAPI === 'cli') || (PHP_SAPI === 'cli-server'))) {
+            $value = getenv($name);
+            ($value === false) and $value = null;
         }
 
         return $value;
     }
 
     /**
-     * Ensures the environment is one of the four supported, to ensure it matches what
-     * `wp_get_environment_type()` will return.
-     * When we were not able to determine environment unequivocally we use `apply_filters` to that
-     * There's one more chance for developers to define the env.
-     * Even in that case the environment will be normalized to one of the supported environments,
-     * in the worst case with a fallback to production, just like WP 5.5+ does.
-     *
-     * @param string $env
-     * @param bool $applyFilters
-     * @return string
+     * @return bool
      */
-    private function normalizeEnv(string $env, bool $applyFilters): string
+    private function canReadVipEnv(): bool
     {
-        $lower = strtolower($env);
-
-        // When we are going to apply_filters we don't want to fallback to production already,
-        // we'll do later, if needed.
-        $default = $applyFilters ? $lower : self::PRODUCTION;
-        $env = self::ENV_ALIASES[$lower] ?? $default;
-        if (!$applyFilters) {
-            return $env;
-        }
-
-        $filtered = apply_filters(self::FILTER_ENV_NAME, $env);
-        if ($filtered && is_string($filtered)) {
-            $env = strtolower($filtered);
-        }
-
-        return self::ENV_ALIASES[$env] ?? self::PRODUCTION;
+        static $hasVipEnv;
+        isset($hasVipEnv) or $hasVipEnv = class_exists(\Automattic\VIP\Environment::class);
+        /** @var bool */
+        return $hasVipEnv;
     }
 }

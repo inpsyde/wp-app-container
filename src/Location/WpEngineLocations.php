@@ -26,14 +26,14 @@ class WpEngineLocations implements Locations
      */
     private function __construct(EnvConfig $config)
     {
-        $muDir = wp_normalize_path(trailingslashit((string)WP_CONTENT_DIR) . 'mu-plugins');
+        $muDir = wp_normalize_path(trailingslashit((string) WP_CONTENT_DIR) . 'mu-plugins');
 
         $this->injectResolver(
             new LocationResolver(
                 $config,
                 [
                     LocationResolver::DIR => [
-                        self::PRIVATE => wp_normalize_path((string)ABSPATH) . '_wpeprivate/',
+                        self::PRIVATE => wp_normalize_path((string) ABSPATH) . '_wpeprivate/',
                         self::VENDOR => "{$muDir}/vendor/",
                     ],
                     LocationResolver::URL => [

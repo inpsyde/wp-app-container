@@ -21,7 +21,7 @@ class ProviderStatusTest extends TestCase
 
         $status->nowSkipped($appStatus); // this works before just created, so idle
 
-        static::assertStringStartsWith(ProviderStatus::SKIPPED, (string)$status);
+        static::assertStringStartsWith(ProviderStatus::SKIPPED, (string) $status);
         static::assertTrue($status->isAnyOf(ProviderStatus::SKIPPED));
         static::assertFalse($status->isAnyOf(ProviderStatus::ADDED));
 
@@ -41,7 +41,7 @@ class ProviderStatusTest extends TestCase
 
         $status->nowAdded($appStatus); // this works before just created, so idle
 
-        static::assertStringStartsWith(ProviderStatus::ADDED, (string)$status);
+        static::assertStringStartsWith(ProviderStatus::ADDED, (string) $status);
         static::assertTrue($status->isAnyOf(ProviderStatus::ADDED));
         static::assertFalse($status->isAnyOf(ProviderStatus::SKIPPED));
 
@@ -80,8 +80,8 @@ class ProviderStatusTest extends TestCase
         $status1->nowRegistered($appStatus, false);
         $status2->nowRegistered($appStatus, true);
 
-        static::assertStringStartsWith(ProviderStatus::REGISTERED, (string)$status1);
-        static::assertStringStartsWith(ProviderStatus::REGISTERED_DELAYED, (string)$status2);
+        static::assertStringStartsWith(ProviderStatus::REGISTERED, (string) $status1);
+        static::assertStringStartsWith(ProviderStatus::REGISTERED_DELAYED, (string) $status2);
         static::assertTrue($status1->isAnyOf(ProviderStatus::REGISTERED));
         static::assertFalse($status1->isAnyOf(ProviderStatus::REGISTERED_DELAYED));
         static::assertTrue($status2->isAnyOf(ProviderStatus::REGISTERED_DELAYED));
@@ -123,8 +123,8 @@ class ProviderStatusTest extends TestCase
         $status1->nowBooted($appStatus);
         $status2->nowBooted($appStatus);
 
-        static::assertStringStartsWith(ProviderStatus::BOOTED, (string)$status1);
-        static::assertStringStartsWith(ProviderStatus::BOOTED, (string)$status2);
+        static::assertStringStartsWith(ProviderStatus::BOOTED, (string) $status1);
+        static::assertStringStartsWith(ProviderStatus::BOOTED, (string) $status2);
         static::assertTrue($status1->isAnyOf(ProviderStatus::BOOTED));
         static::assertFalse($status1->isAnyOf(ProviderStatus::REGISTERED));
         static::assertTrue($status2->isAnyOf(ProviderStatus::BOOTED));
@@ -216,6 +216,6 @@ class ProviderStatusTest extends TestCase
         $regex .= ProviderStatus::REGISTERED . '(.+?)' . AppStatus::REGISTERING_PLUGINS . ', ';
         $regex .= ProviderStatus::BOOTED . '(.+?)' . AppStatus::BOOTING_PLUGINS . '\)$~i';
 
-        static::assertTrue((bool)preg_match($regex, (string)$status));
+        static::assertTrue((bool) preg_match($regex, (string) $status));
     }
 }

@@ -13,22 +13,13 @@ final class ProviderStatus implements \JsonSerializable
     public const BOOTED = 'Booted';
     public const SKIPPED = 'Skipped';
 
-    /**
-     * @var string
-     */
-    private $status;
+    private string $status;
+    private AppStatus $appStatus;
+    /** @var array<string, string> */
+    private array $appStatuses = [];
 
     /**
-     * @var AppStatus
-     */
-    private $appStatus;
-
-    /**
-     * @var array<string, string>
-     */
-    private $appStatuses = [];
-
-    /**
+     * @param AppStatus $appStatus
      * @return ProviderStatus
      */
     public static function new(AppStatus $appStatus): ProviderStatus
@@ -68,7 +59,7 @@ final class ProviderStatus implements \JsonSerializable
      */
     public function nowAdded(AppStatus $appStatus): ProviderStatus
     {
-        if ($this->status !== self::IDLE && $this->status !== self::SKIPPED) {
+        if (($this->status !== self::IDLE) && ($this->status !== self::SKIPPED)) {
             $this->cantMoveTo(self::ADDED);
         }
 
@@ -142,7 +133,6 @@ final class ProviderStatus implements \JsonSerializable
     /**
      * @return array<string, string>
      */
-    #[\ReturnTypeWillChange]
     public function jsonSerialize(): array
     {
         return $this->appStatuses;
@@ -154,7 +144,9 @@ final class ProviderStatus implements \JsonSerializable
      */
     private function cantMoveTo(string $desired): void
     {
+        // phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped
         throw new \DomainException("Can't move from status '{$this->status}' to '{$desired}'.");
+        // phpcs:enable WordPress.Security.EscapeOutput.ExceptionNotEscaped
     }
 
     /**
@@ -167,18 +159,18 @@ final class ProviderStatus implements \JsonSerializable
         $error = sprintf(
             "Can't move to status '%s': current App status '%s', is not compatible with '%s'.",
             $status,
-            (string)$this->appStatus,
-            (string)$appStatus
+            (string) $this->appStatus,
+            (string) $appStatus
         );
 
         if ($this->appStatus->isThemesStep() && !$appStatus->isThemesStep()) {
-            throw new \DomainException($error);
+            throw new \DomainException(esc_html($error));
         }
 
         if ($this->appStatus->isPluginsStep() && $appStatus->isEarly()) {
-            throw new \DomainException($error);
+            throw new \DomainException(esc_html($error));
         }
 
-        $this->appStatuses[$status] = (string)$appStatus;
+        $this->appStatuses[$status] = (string) $appStatus;
     }
 }
