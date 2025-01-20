@@ -43,8 +43,7 @@ _DI Container and related tools to be used at website level_.
     - [Resolve objects outside providers](#resolve-objects-outside-providers)
     - [Debug info](#debug-info)
 - [Installation](#installation)
-- [Crafted by Inpsyde](#crafted-by-inpsyde)
-- [License](#license)
+- [Copyright and License](#copyright-and-license)
 - [Contributing](#contributing)
 
 ---
@@ -830,10 +829,9 @@ $ composer require inpsyde/wp-app-container
 ```
 
 
-## License
+## Copyright and License
 
-This repository is a free software, and is released under the terms of the GNU General Public License version 2 or (at your option) any later version. See [LICENSE](./LICENSE) for complete license.
-
+This package is [free software](https://www.gnu.org/philosophy/free-sw.en.html) distributed under the terms of the GNU General Public License version 2 or (at your option) any later version. For the full license, see [LICENSE](./LICENSE).
 
 ## Contributing
 
