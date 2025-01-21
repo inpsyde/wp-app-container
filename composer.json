@@ -2,17 +2,17 @@
     "name": "inpsyde/wp-app-container",
     "type": "library",
     "description": "DI Container and related tools to be used at website level.",
-    "license": "gpl-2.0-or-later",
+    "license": "GPL-2.0-or-later",
     "authors": [
         {
-            "name": "Inpsyde GmbH",
-            "homepage": "https://inpsyde.com/",
-            "email": "hello@inpsyde.com",
+            "name": "Syde GmbH",
+            "homepage": "https://syde.com/",
+            "email": "hello@syde.com",
             "role": "Company"
         },
         {
             "name": "Giuseppe Mazzapica",
-            "email": "g.mazzapica@inpsyde.com",
+            "email": "g.mazzapica@syde.com",
             "role": "Developer"
         }
     ],
