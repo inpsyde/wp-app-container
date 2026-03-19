@@ -841,6 +841,6 @@ Before sending a PR make sure that `composer run qa` will output no errors.
 
 It will run, in turn:
 
-- [PHPCS](https://github.com/squizlabs/PHP_CodeSniffer) checks
+- [PHPCS](https://github.com/PHPCSStandards/PHP_CodeSniffer) checks
 - [Psalm](https://psalm.dev/) checks
 - [PHPUnit](https://phpunit.de/) tests
