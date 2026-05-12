@@ -28,7 +28,7 @@ final class AppLogger
 
     private function __construct()
     {
-        /** @psalm-suppress TypeDoesNotContainType */
+        /** @psalm-suppress RedundantCondition */
         $this->debugEnabled = defined('WP_DEBUG') && WP_DEBUG;
     }
 
