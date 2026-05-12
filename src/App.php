@@ -63,7 +63,7 @@ final class App
      * @param Container|null $container
      * @return App
      */
-    public static function new(Container $container = null): App
+    public static function new(?Container $container = null): App
     {
         $app = new App($container);
         self::$app or self::$app = $app;
@@ -107,7 +107,7 @@ final class App
     /**
      * @param Container|null $container
      */
-    private function __construct(Container $container = null)
+    private function __construct(?Container $container = null)
     {
         $this->status = AppStatus::new();
         $this->logger = AppLogger::new();

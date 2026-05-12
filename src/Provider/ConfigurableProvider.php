@@ -40,8 +40,8 @@ class ConfigurableProvider implements ServiceProvider
      */
     public function __construct(
         string $id,
-        callable $register = null,
-        callable $boot = null,
+        ?callable $register = null,
+        ?callable $boot = null,
         int $flags = 0
     ) {
 

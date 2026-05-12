@@ -41,8 +41,8 @@ final class Container implements ContainerInterface
      * @param ContainerInterface ...$containers
      */
     public function __construct(
-        SiteConfig $config = null,
-        WpContext $context = null,
+        ?SiteConfig $config = null,
+        ?WpContext $context = null,
         ContainerInterface ...$containers
     ) {
 
