@@ -63,7 +63,7 @@ final class App
      * @param Container|null $container
      * @return App
      */
-    public static function new(Container $container = null): App
+    public static function new(?Container $container = null): App
     {
         $app = new App($container);
         self::$app or self::$app = $app;
@@ -98,7 +98,7 @@ final class App
     {
         do_action(self::ACTION_ERROR, $throwable);
 
-        /** @psalm-suppress TypeDoesNotContainType */
+        /** @psalm-suppress RedundantCondition */
         if (defined('WP_DEBUG') && WP_DEBUG) {
             throw $throwable;
         }
@@ -107,7 +107,7 @@ final class App
     /**
      * @param Container|null $container
      */
-    private function __construct(Container $container = null)
+    private function __construct(?Container $container = null)
     {
         $this->status = AppStatus::new();
         $this->logger = AppLogger::new();

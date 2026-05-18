@@ -421,7 +421,7 @@ class AppTest extends TestCase
      * @param callable|null $register
      * @return ServiceProvider
      */
-    private static function factoryProvider(string $id, callable $register = null): ServiceProvider
+    private static function factoryProvider(string $id, ?callable $register = null): ServiceProvider
     {
         return new ConfigurableProvider($id, $register ?? '__return_true', '__return_true');
     }
